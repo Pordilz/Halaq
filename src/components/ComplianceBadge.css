@@ -1,0 +1,61 @@
+.compliance-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: var(--radius-lg);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+/* Sizes */
+.compliance-badge--sm {
+  padding: 6px 14px;
+  font-size: var(--font-size-xs);
+  gap: 6px;
+  border-radius: var(--radius-full);
+}
+
+.compliance-badge--sm .compliance-badge__icon {
+  width: 14px;
+  height: 14px;
+}
+
+.compliance-badge--md {
+  padding: 10px 20px;
+  font-size: var(--font-size-sm);
+}
+
+.compliance-badge--md .compliance-badge__icon {
+  width: 18px;
+  height: 18px;
+}
+
+.compliance-badge--lg {
+  padding: 16px 28px;
+  font-size: var(--font-size-lg);
+}
+
+.compliance-badge--lg .compliance-badge__icon {
+  width: 24px;
+  height: 24px;
+}
+
+/* Variants */
+.compliance-badge--compliant {
+  background: linear-gradient(135deg, rgba(22, 163, 74, 0.1) 0%, rgba(22, 163, 74, 0.05) 100%);
+  color: var(--color-success);
+  border: 1.5px solid rgba(22, 163, 74, 0.25);
+}
+
+.compliance-badge--non-compliant {
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.1) 0%, rgba(220, 38, 38, 0.05) 100%);
+  color: var(--color-danger);
+  border: 1.5px solid rgba(220, 38, 38, 0.25);
+}
+
+.compliance-badge--doubtful {
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.1) 0%, rgba(217, 119, 6, 0.05) 100%);
+  color: var(--color-warning);
+  border: 1.5px solid rgba(217, 119, 6, 0.25);
+}
