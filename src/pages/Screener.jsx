@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { Search, AlertTriangle, Building2, TrendingUp, Info, Loader2, BookmarkPlus, CheckCircle2 } from 'lucide-react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { Search, AlertTriangle, Building2, TrendingUp, Info, Loader2, BookmarkPlus, CheckCircle2, X } from 'lucide-react'
 import { fetchAllScreeningData } from '../services/yahooFinanceApi'
 import { screenStock } from '../services/complianceEngine'
 import ComplianceBadge from '../components/ComplianceBadge'
@@ -37,6 +37,14 @@ export default function Screener() {
   const [error, setError] = useState(null)
   const [result, setResult] = useState(null)
   const [rawData, setRawData] = useState(null)
+
+  // Autocomplete state
+  const [suggestions, setSuggestions] = useState([])
+  const [showDropdown, setShowDropdown] = useState(false)
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [activeIndex, setActiveIndex] = useState(-1)
+  const searchTimeout = useRef(null)
+  const wrapperRef = useRef(null)
   
   // Portfolio save state
   const { user } = useAuth()
@@ -52,6 +60,43 @@ export default function Screener() {
       performScreen(query)
     }
   }, [location.search])
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClick(e) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setShowDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  // Debounced symbol search
+  const searchSymbols = useCallback((query) => {
+    clearTimeout(searchTimeout.current)
+    if (!query || query.trim().length < 1) {
+      setSuggestions([])
+      setShowDropdown(false)
+      return
+    }
+    setSearchLoading(true)
+    searchTimeout.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`)
+        if (res.ok) {
+          const data = await res.json()
+          setSuggestions(data)
+          setShowDropdown(data.length > 0)
+          setActiveIndex(-1)
+        }
+      } catch (e) {
+        setSuggestions([])
+      } finally {
+        setSearchLoading(false)
+      }
+    }, 280)
+  }, [])
 
   async function performScreen(targetTicker) {
     const cleanTicker = targetTicker.trim().toUpperCase()
@@ -90,7 +135,38 @@ export default function Screener() {
 
   async function handleScreen(e) {
     e.preventDefault()
+    setShowDropdown(false)
     performScreen(ticker)
+  }
+
+  function handleInputChange(e) {
+    const val = e.target.value
+    setTicker(val)
+    searchSymbols(val)
+  }
+
+  function handleSuggestionSelect(suggestion) {
+    setTicker(suggestion.symbol)
+    setSuggestions([])
+    setShowDropdown(false)
+    performScreen(suggestion.symbol)
+  }
+
+  function handleKeyDown(e) {
+    if (!showDropdown || suggestions.length === 0) return
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setActiveIndex(i => Math.min(i + 1, suggestions.length - 1))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setActiveIndex(i => Math.max(i - 1, -1))
+    } else if (e.key === 'Enter' && activeIndex >= 0) {
+      e.preventDefault()
+      handleSuggestionSelect(suggestions[activeIndex])
+    } else if (e.key === 'Escape') {
+      setShowDropdown(false)
+      setActiveIndex(-1)
+    }
   }
   
   async function saveToPortfolio() {
@@ -134,17 +210,51 @@ export default function Screener() {
 
         {/* Search */}
         <form onSubmit={handleScreen} className="screener__search animate-fade-in-up delay-1">
-          <div className="screener__input-wrapper">
-            <Search size={20} className="screener__input-icon" />
+          <div className="screener__input-wrapper" ref={wrapperRef}>
+            <Search size={20} className={`screener__input-icon${searchLoading ? ' screener__input-icon--spinning' : ''}`} />
             <input
               id="ticker-input"
               type="text"
-              placeholder="Enter ticker (e.g. AAPL, SBK.JO, MTN.JO)"
+              placeholder="Search by company name or ticker (e.g. Apple, AAPL, MTN)"
               value={ticker}
-              onChange={(e) => setTicker(e.target.value)}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              onFocus={() => suggestions.length > 0 && setShowDropdown(true)}
               className="screener__input"
               autoComplete="off"
+              aria-autocomplete="list"
+              aria-expanded={showDropdown}
             />
+            {ticker && (
+              <button
+                type="button"
+                className="screener__clear-btn"
+                onClick={() => { setTicker(''); setSuggestions([]); setShowDropdown(false) }}
+                aria-label="Clear search"
+              >
+                <X size={14} />
+              </button>
+            )}
+
+            {/* Autocomplete dropdown */}
+            {showDropdown && suggestions.length > 0 && (
+              <ul className="screener__dropdown" role="listbox">
+                {suggestions.map((s, i) => (
+                  <li
+                    key={s.symbol}
+                    role="option"
+                    aria-selected={i === activeIndex}
+                    className={`screener__dropdown-item${i === activeIndex ? ' screener__dropdown-item--active' : ''}`}
+                    onMouseDown={(e) => { e.preventDefault(); handleSuggestionSelect(s) }}
+                    onMouseEnter={() => setActiveIndex(i)}
+                  >
+                    <span className="screener__dropdown-symbol">{s.symbol}</span>
+                    <span className="screener__dropdown-name">{s.name}</span>
+                    <span className="screener__dropdown-exchange">{s.exchange}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
           <button
             type="submit"
@@ -165,19 +275,21 @@ export default function Screener() {
           </button>
         </form>
 
-        {/* Sample tickers */}
-        <div className="screener__samples animate-fade-in-up delay-2">
-          <span>Try:</span>
-          {['AAPL', 'MSFT', 'SBK.JO', 'MTN.JO', 'NPN.JO'].map(t => (
-            <button
-              key={t}
-              className="screener__sample-btn"
-              onClick={() => { setTicker(t); }}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
+        {/* Sample tickers — hidden while dropdown is open */}
+        {!showDropdown && (
+          <div className="screener__samples animate-fade-in-up delay-2">
+            <span>Try:</span>
+            {['AAPL', 'MSFT', 'SBK.JO', 'MTN.JO', 'NPN.JO'].map(t => (
+              <button
+                key={t}
+                className="screener__sample-btn"
+                onClick={() => { setTicker(t); performScreen(t) }}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Loading */}
         {loading && (
