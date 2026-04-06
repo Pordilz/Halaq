@@ -14,7 +14,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.80.0",
     "@lemonsqueezy/lemonsqueezy.js": "^4.0.0",
     "@supabase/supabase-js": "^2.100.0",
     "concurrently": "^9.2.1",

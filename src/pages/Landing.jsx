@@ -178,11 +178,11 @@ export default function Landing() {
             <div className="pricing__card card animate-fade-in-up delay-1">
               <div className="pricing__tier">Free</div>
               <div className="pricing__price">
-                <span className="pricing__amount">$0</span>
+                <span className="pricing__amount">R0</span>
                 <span className="pricing__period">/month</span>
               </div>
               <ul className="pricing__features">
-                <li><CheckCircle size={16} /> 5 stock screens / month</li>
+                <li><CheckCircle size={16} /> 5 stock screens / day</li>
                 <li><CheckCircle size={16} /> Basic JSE & US stocks</li>
                 <li><CheckCircle size={16} /> AAOIFI financial ratios</li>
               </ul>
@@ -199,7 +199,7 @@ export default function Landing() {
               </div>
               <div className="pricing__tier">Pro</div>
               <div className="pricing__price">
-                <span className="pricing__amount">$9</span>
+                <span className="pricing__amount">R79</span>
                 <span className="pricing__period">/month</span>
               </div>
               <ul className="pricing__features">
@@ -209,7 +209,7 @@ export default function Landing() {
                 <li><CheckCircle size={16} /> Batch Screening (up to 20)</li>
               </ul>
               <Link to="/settings" className="btn btn-primary" style={{ width: '100%' }}>
-                Subscribe — $9/mo
+                Subscribe — R79/mo
               </Link>
             </div>
 
@@ -217,7 +217,7 @@ export default function Landing() {
             <div className="pricing__card card animate-fade-in-up delay-3">
               <div className="pricing__tier">Scholar</div>
               <div className="pricing__price">
-                <span className="pricing__amount">$19</span>
+                <span className="pricing__amount">R149</span>
                 <span className="pricing__period">/month</span>
               </div>
               <ul className="pricing__features">
@@ -228,7 +228,7 @@ export default function Landing() {
                 <li><CheckCircle size={16} /> Formal Compliance PDF Reports</li>
               </ul>
               <Link to="/settings" className="btn btn-secondary" style={{ width: '100%' }}>
-                Subscribe — $19/mo
+                Subscribe — R149/mo
               </Link>
             </div>
           </div>

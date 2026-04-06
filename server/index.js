@@ -10,7 +10,7 @@ import YahooFinance from 'yahoo-finance2';
 import { lemonSqueezySetup, createCheckout, getSubscription } from '@lemonsqueezy/lemonsqueezy.js';
 import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
-import Anthropic from '@anthropic-ai/sdk';
+
 
 const app = express();
 const PORT = process.env.PORT || 3005;
@@ -21,7 +21,7 @@ const supabaseAdmin = createClient(
   process.env.VITE_SUPABASE_URL || 'http://localhost:54321', // fallback to local mock
   process.env.SUPABASE_SERVICE_ROLE_KEY || 'anon-key-placeholder'
 );
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY || 'sk-ant-mock' });
+
 
 const yahooFinance = new YahooFinance({
   suppressNotices: ['yahooSurvey']

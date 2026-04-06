@@ -76,7 +76,7 @@ export default function Settings() {
                 <div className="settings-plan-card">
                   <h3>Pro</h3>
                   <div className="price-container">
-                    <div className="price">$9</div>
+                    <div className="price">R79</div>
                     <div className="period">/month</div>
                   </div>
                   <ul>
@@ -86,7 +86,7 @@ export default function Settings() {
                     <li><CheckCircle2 size={18}/> Batch Screening (up to 20)</li>
                   </ul>
                   <button className="btn btn-primary btn-block" onClick={() => handleCheckout('pro')} disabled={loadingTier !== null}>
-                    {loadingTier === 'pro' ? 'Preparing checkout...' : 'Upgrade to Pro'}
+                    {loadingTier === 'pro' ? 'Preparing checkout...' : 'Upgrade to Pro — R79/mo'}
                   </button>
                 </div>
               )}
@@ -97,7 +97,7 @@ export default function Settings() {
                 </div>
                 <h3>Scholar</h3>
                 <div className="price-container">
-                  <div className="price">$19</div>
+                  <div className="price">R149</div>
                   <div className="period">/month</div>
                 </div>
                 <ul>
@@ -108,7 +108,7 @@ export default function Settings() {
                   <li><CheckCircle2 size={18}/> Formal Compliance PDF Reports</li>
                 </ul>
                 <button className="btn btn-primary btn-block" onClick={() => handleCheckout('scholar')} disabled={loadingTier !== null}>
-                  {loadingTier === 'scholar' ? 'Preparing checkout...' : 'Upgrade to Scholar'}
+                  {loadingTier === 'scholar' ? 'Preparing checkout...' : 'Upgrade to Scholar — R149/mo'}
                 </button>
               </div>
             </div>
