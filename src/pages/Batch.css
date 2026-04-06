@@ -1,0 +1,66 @@
+.batch-page {
+  padding: var(--space-2xl) 0;
+}
+.batch-header {
+  text-align: center;
+  margin-bottom: var(--space-xl);
+}
+.batch-form {
+  max-width: 700px;
+  margin: 0 auto var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+.batch-input {
+  width: 100%;
+  padding: 16px;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  font-family: 'Inter', monospace;
+  font-size: var(--font-size-base);
+  background: var(--color-bg-card);
+  color: var(--color-text);
+  resize: vertical;
+}
+.batch-input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+.batch-table-container {
+  overflow-x: auto;
+  border-radius: var(--radius-lg);
+}
+.batch-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+.batch-table th, .batch-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border-light);
+  white-space: nowrap;
+}
+.batch-table th {
+  background: var(--color-bg);
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+.batch-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.batch-company-name {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.batch-row-error {
+  background: var(--color-danger-bg);
+}
+.spinner {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}
