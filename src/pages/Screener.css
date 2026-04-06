@@ -503,6 +503,58 @@
   line-height: 1.6;
 }
 
+/* ---- Paywall ---- */
+.screener__paywall-blur-container {
+  filter: blur(6px);
+  pointer-events: none;
+  user-select: none;
+  opacity: 0.7;
+  transition: all var(--transition-normal);
+}
+
+.screener__paywall-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-xl);
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: var(--radius-lg);
+  gap: var(--space-sm);
+  z-index: 10;
+}
+
+.screener__paywall-overlay--small {
+  flex-direction: row;
+  padding: var(--space-md);
+  font-weight: bold;
+}
+
+.screener__paywall-icon {
+  color: var(--color-primary);
+  margin-bottom: var(--space-xs);
+}
+
+.screener__paywall-overlay h4 {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.screener__paywall-overlay p {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  max-width: 320px;
+  margin-bottom: var(--space-md);
+}
+
 /* ---- Responsive ---- */
 @media (max-width: 768px) {
   .screener__search {

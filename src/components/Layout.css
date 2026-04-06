@@ -29,8 +29,10 @@
   text-decoration: none;
 }
 
-.header__logo-icon {
-  color: var(--color-primary);
+.header__logo-img {
+  height: 32px;
+  width: auto;
+  object-fit: contain;
 }
 
 .header__brand-name {
@@ -96,8 +98,11 @@
   color: #fff;
 }
 
-.footer__logo-icon {
-  color: var(--color-accent);
+.footer__logo-img {
+  height: 24px;
+  width: auto;
+  object-fit: contain;
+  filter: brightness(0) invert(1) opacity(0.8); /* Make it white to fit the dark footer */
 }
 
 .footer__disclaimer {

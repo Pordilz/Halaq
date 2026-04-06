@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Search, AlertTriangle, Building2, TrendingUp, Info, Loader2, BookmarkPlus, CheckCircle2, X } from 'lucide-react'
+import { Search, AlertTriangle, Building2, TrendingUp, Info, Loader2, BookmarkPlus, CheckCircle2, X, Lock } from 'lucide-react'
 import { fetchAllScreeningData } from '../services/yahooFinanceApi'
 import { screenStock } from '../services/complianceEngine'
 import ComplianceBadge from '../components/ComplianceBadge'
@@ -47,7 +47,7 @@ export default function Screener() {
   const wrapperRef = useRef(null)
   
   // Portfolio save state
-  const { user } = useAuth()
+  const { user, isPro, isScholar } = useAuth()
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const location = useLocation()
@@ -177,6 +177,20 @@ export default function Screener() {
     }
     
     setSaving(true)
+    
+    // Check Watchlist Limits
+    const limit = isScholar ? 500 : (isPro ? 200 : 10);
+    const { count, error: countError } = await supabase
+      .from('portfolio_items')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id);
+      
+    if (!countError && count >= limit) {
+      alert(`You have reached your portfolio limit of ${limit} stocks.\n\nPlease upgrade your plan to add more.`);
+      setSaving(false);
+      return;
+    }
+
     const { error } = await supabase
       .from('portfolio_items')
       .insert([
@@ -376,8 +390,17 @@ export default function Screener() {
                 <div className="screener__business-status">
                   {result.businessScreen.status}
                 </div>
-                <p className="screener__business-reason">{result.businessScreen.reason}</p>
-                <p className="screener__business-detail">{result.businessScreen.detail}</p>
+                {isPro ? (
+                  <>
+                    <p className="screener__business-reason">{result.businessScreen.reason}</p>
+                    <p className="screener__business-detail">{result.businessScreen.detail}</p>
+                  </>
+                ) : (
+                  <div className="screener__paywall-blur-container">
+                    <p className="screener__business-reason">Detailed breakdown locked</p>
+                    <p className="screener__business-detail">The specifics of this company's business activities and flagged revenue streams are hidden for this tier.</p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -387,65 +410,84 @@ export default function Screener() {
                 <TrendingUp size={18} />
                 Financial Ratio Screen
               </h3>
-              <div className="screener__ratios">
-                {result.financialScreen.ratios.map((ratio, i) => (
-                  <RatioBar key={i} {...ratio} />
-                ))}
+              
+              <div className={!isPro ? "screener__paywall-blur-container" : ""}>
+                <div className="screener__ratios">
+                  {result.financialScreen.ratios.map((ratio, i) => (
+                    <RatioBar key={i} {...ratio} />
+                  ))}
+                </div>
+                {rawData && (
+                  <div className="screener__raw-data">
+                    <details>
+                      <summary>
+                        <Info size={14} />
+                        View Raw Financial Data
+                      </summary>
+                      <div className="screener__raw-grid">
+                        <div className="screener__raw-item">
+                          <span className="screener__raw-label">Total Debt</span>
+                          <span className="screener__raw-value">{formatCurrency(rawData.balanceSheet.totalDebt, result.currency)}</span>
+                        </div>
+                        <div className="screener__raw-item">
+                          <span className="screener__raw-label">Market Cap</span>
+                          <span className="screener__raw-value">{formatCurrency(result.marketCap, result.currency)}</span>
+                        </div>
+                        <div className="screener__raw-item">
+                          <span className="screener__raw-label">Cash & ST Investments</span>
+                          <span className="screener__raw-value">{formatCurrency(rawData.balanceSheet.cashAndShortTermInvestments, result.currency)}</span>
+                        </div>
+                        <div className="screener__raw-item">
+                          <span className="screener__raw-label">Net Receivables</span>
+                          <span className="screener__raw-value">{formatCurrency(rawData.balanceSheet.netReceivables, result.currency)}</span>
+                        </div>
+                        <div className="screener__raw-item">
+                          <span className="screener__raw-label">Total Revenue</span>
+                          <span className="screener__raw-value">{formatCurrency(rawData.income.revenue, result.currency)}</span>
+                        </div>
+                        <div className="screener__raw-item">
+                          <span className="screener__raw-label">Interest Income</span>
+                          <span className="screener__raw-value">{formatCurrency(rawData.income.interestIncome, result.currency)}</span>
+                        </div>
+                        <div className="screener__raw-item">
+                          <span className="screener__raw-label">Balance Sheet Period</span>
+                          <span className="screener__raw-value">{result.dataSources.balanceSheetPeriod}</span>
+                        </div>
+                        <div className="screener__raw-item">
+                          <span className="screener__raw-label">Income Statement Period</span>
+                          <span className="screener__raw-value">{result.dataSources.incomeStatementPeriod}</span>
+                        </div>
+                      </div>
+                    </details>
+                  </div>
+                )}
               </div>
-              {rawData && (
-                <div className="screener__raw-data">
-                  <details>
-                    <summary>
-                      <Info size={14} />
-                      View Raw Financial Data
-                    </summary>
-                    <div className="screener__raw-grid">
-                      <div className="screener__raw-item">
-                        <span className="screener__raw-label">Total Debt</span>
-                        <span className="screener__raw-value">{formatCurrency(rawData.balanceSheet.totalDebt, result.currency)}</span>
-                      </div>
-                      <div className="screener__raw-item">
-                        <span className="screener__raw-label">Market Cap</span>
-                        <span className="screener__raw-value">{formatCurrency(result.marketCap, result.currency)}</span>
-                      </div>
-                      <div className="screener__raw-item">
-                        <span className="screener__raw-label">Cash & ST Investments</span>
-                        <span className="screener__raw-value">{formatCurrency(rawData.balanceSheet.cashAndShortTermInvestments, result.currency)}</span>
-                      </div>
-                      <div className="screener__raw-item">
-                        <span className="screener__raw-label">Net Receivables</span>
-                        <span className="screener__raw-value">{formatCurrency(rawData.balanceSheet.netReceivables, result.currency)}</span>
-                      </div>
-                      <div className="screener__raw-item">
-                        <span className="screener__raw-label">Total Revenue</span>
-                        <span className="screener__raw-value">{formatCurrency(rawData.income.revenue, result.currency)}</span>
-                      </div>
-                      <div className="screener__raw-item">
-                        <span className="screener__raw-label">Interest Income</span>
-                        <span className="screener__raw-value">{formatCurrency(rawData.income.interestIncome, result.currency)}</span>
-                      </div>
-                      <div className="screener__raw-item">
-                        <span className="screener__raw-label">Balance Sheet Period</span>
-                        <span className="screener__raw-value">{result.dataSources.balanceSheetPeriod}</span>
-                      </div>
-                      <div className="screener__raw-item">
-                        <span className="screener__raw-label">Income Statement Period</span>
-                        <span className="screener__raw-value">{result.dataSources.incomeStatementPeriod}</span>
-                      </div>
-                    </div>
-                  </details>
+              
+              {!isPro && (
+                <div className="screener__paywall-overlay">
+                  <Lock size={32} className="screener__paywall-icon" />
+                  <h4>Financial Details Locked</h4>
+                  <p>Upgrade to Pro to see the exact ratios and raw data calculations.</p>
+                  <Link to="/settings" className="btn btn-primary">Upgrade to Pro</Link>
                 </div>
               )}
             </div>
 
-            {/* Purification Note */}
             {result.purificationNote && (
-              <div className="screener__section card screener__purification">
+              <div className="screener__section card screener__purification" style={{ position: 'relative' }}>
                 <h3 className="screener__section-title">
                   <AlertTriangle size={18} />
                   Purification Required
                 </h3>
-                <p>{result.purificationNote}</p>
+                <div className={!isPro ? "screener__paywall-blur-container" : ""}>
+                  <p>{result.purificationNote}</p>
+                </div>
+                {!isPro && (
+                  <div className="screener__paywall-overlay screener__paywall-overlay--small">
+                    <Lock size={20} className="screener__paywall-icon" />
+                    <span>Locked</span>
+                  </div>
+                )}
               </div>
             )}
 

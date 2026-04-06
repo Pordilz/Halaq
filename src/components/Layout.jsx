@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Shield, Menu, X, User } from 'lucide-react'
+import { Menu, X } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import './Layout.css'
@@ -24,7 +24,7 @@ export default function Layout({ children }) {
       <header className="header">
         <div className="header__inner container">
           <Link to="/" className="header__brand">
-            <Shield className="header__logo-icon" size={28} />
+            <img src="/logo.png" alt="Halaq" className="header__logo-img" />
             <span className="header__brand-name">Halaq</span>
           </Link>
 
@@ -68,7 +68,7 @@ export default function Layout({ children }) {
       <footer className="footer">
         <div className="footer__inner container">
           <div className="footer__brand">
-            <Shield size={20} className="footer__logo-icon" />
+            <img src="/logo.png" alt="Halaq" className="footer__logo-img" />
             <span>Halaq</span>
           </div>
           <div className="footer__disclaimer">
