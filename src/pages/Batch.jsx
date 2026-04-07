@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { Layers, Search, AlertCircle, Loader2 } from 'lucide-react'
+import MaterialIcon from '../components/MaterialIcon'
 import { fetchAllScreeningData } from '../services/yahooFinanceApi'
 import { screenStock } from '../services/complianceEngine'
 import ComplianceBadge from '../components/ComplianceBadge'
@@ -42,7 +42,7 @@ export default function Batch() {
   if (!isPro) {
     return (
       <div className="container animate-fade-in-up" style={{ padding: '6rem 0', textAlign: 'center' }}>
-        <Layers size={64} style={{ color: 'var(--color-primary-muted)', margin: '0 auto 24px' }} />
+        <MaterialIcon name="layers" size={64} style={{ color: 'var(--color-primary-muted)', margin: '0 auto 24px' }} />
         <h1>Pro Feature</h1>
         <p className="text-muted" style={{ maxWidth: '400px', margin: '0 auto 24px' }}>
           Batch screening is exclusively available to Pro and Scholar members.
@@ -68,7 +68,7 @@ export default function Batch() {
             rows={4}
           />
           <button type="submit" className="btn btn-primary" disabled={loading || !input.trim()}>
-            {loading ? <><Loader2 size={18} className="spinner"/> Screening...</> : <><Search size={18} /> Run Batch Screen</>}
+            {loading ? <><MaterialIcon name="refresh" className="spinner" size={18}/> Screening...</> : <><MaterialIcon name="search" size={18} /> Run Batch Screen</>}
           </button>
         </form>
 
@@ -94,7 +94,7 @@ export default function Batch() {
                         <tr key={i} className="batch-row-error">
                           <td style={{ fontWeight: 'bold' }}>{r.ticker}</td>
                           <td colSpan="6" style={{ color: 'var(--color-danger)' }}>
-                            <AlertCircle size={14} style={{ display: 'inline', marginRight: 4, verticalAlign: 'middle' }} />
+                            <MaterialIcon name="error" size={14} style={{ display: 'inline', marginRight: 4, verticalAlign: 'middle' }} />
                             Error fetching data
                           </td>
                         </tr>

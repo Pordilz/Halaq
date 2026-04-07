@@ -1,35 +1,40 @@
-import { CheckCircle, XCircle, AlertTriangle } from 'lucide-react'
+import MaterialIcon from './MaterialIcon'
 import './ComplianceBadge.css'
 
 /**
- * Large compliance status badge
- * @param {{ status: 'COMPLIANT'|'NON_COMPLIANT'|'DOUBTFUL', size?: 'sm'|'md'|'lg' }} props
+ * Compliance Status Chip
+ * @param {{ status: 'COMPLIANT'|'NON_COMPLIANT'|'DOUBTFUL'|'PENDING', size?: 'sm'|'md'|'lg' }} props
  */
-export default function ComplianceBadge({ status, size = 'lg' }) {
+export default function ComplianceBadge({ status, size = 'sm' }) {
   const config = {
     COMPLIANT: {
-      label: 'Shariah Compliant',
-      icon: CheckCircle,
+      label: 'COMPLIANT',
+      icon: 'check_circle',
       className: 'compliance-badge--compliant',
     },
     NON_COMPLIANT: {
-      label: 'Non-Compliant',
-      icon: XCircle,
+      label: 'NON-COMPLIANT',
+      icon: 'cancel',
       className: 'compliance-badge--non-compliant',
     },
     DOUBTFUL: {
-      label: 'Doubtful',
-      icon: AlertTriangle,
+      label: 'DOUBTFUL',
+      icon: 'help',
       className: 'compliance-badge--doubtful',
     },
+    PENDING: {
+      label: 'PENDING',
+      icon: 'schedule',
+      className: 'compliance-badge--pending',
+    }
   }
 
-  const { label, icon: Icon, className } = config[status] || config.DOUBTFUL
+  const { label, icon, className } = config[status] || config.DOUBTFUL
 
   return (
-    <div className={`compliance-badge compliance-badge--${size} ${className}`}>
-      <Icon className="compliance-badge__icon" />
-      <span className="compliance-badge__label">{label}</span>
-    </div>
+    <span className={`compliance-badge compliance-badge--${size} ${className}`}>
+      <MaterialIcon name={icon} fill={true} className="compliance-badge__icon" />
+      {label}
+    </span>
   )
 }

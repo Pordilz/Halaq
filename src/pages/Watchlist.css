@@ -1,0 +1,90 @@
+/* =============================================
+   WATCHLIST PAGE CSS
+   ============================================= */
+
+.watchlist-layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.summary-strip {
+  padding: var(--space-5);
+}
+
+.summary-stats {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  margin-bottom: var(--space-4);
+}
+
+.stat-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-value {
+  font-size: var(--text-h2);
+  font-weight: var(--font-weight-display);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: var(--text-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-outline);
+  margin-top: 4px;
+}
+
+.stat-divider {
+  width: 1px;
+  height: 40px;
+  background-color: var(--color-surface-container-high);
+}
+
+.stacked-bar {
+  display: flex;
+  height: 8px;
+  width: 100%;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  gap: 2px;
+}
+
+.stacked-bar > div {
+  height: 100%;
+  transition: width var(--transition-fast);
+}
+
+.stock-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4); /* Decoupled elements so they are not clustered */
+}
+
+.empty-watchlist {
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8);
+}
+
+@media (min-width: 1024px) {
+  .watchlist-layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+  
+  .watchlist-main {
+    flex: 1;
+  }
+  
+  .watchlist-sidebar {
+    width: 320px;
+  }
+}

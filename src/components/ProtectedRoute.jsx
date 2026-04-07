@@ -1,7 +1,7 @@
 import React from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { Loader2 } from 'lucide-react'
+import MaterialIcon from './MaterialIcon'
 
 // Prevents non-authenticated users from accessing protected pages
 export function ProtectedRoute({ children }) {
@@ -10,7 +10,7 @@ export function ProtectedRoute({ children }) {
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh', color: 'var(--color-primary)' }}>
-        <Loader2 className="spinner" size={32} />
+        <MaterialIcon name="refresh" className="spinner text-primary" size={32} />
       </div>
     )
   }

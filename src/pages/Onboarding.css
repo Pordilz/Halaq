@@ -1,0 +1,323 @@
+/* =============================================
+   ONBOARDING CSS
+   ============================================= */
+
+.onboarding-container {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--color-surface);
+  transition: background-color var(--transition-medium);
+}
+
+.onboarding-container.slide-1 {
+  background-color: var(--color-surface-container-low);
+}
+
+.onboarding-header {
+  height: 4rem;
+  padding: 0 var(--space-5);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  z-index: 10;
+}
+
+.skip-btn {
+  padding: 0.5rem 1.5rem;
+  border-radius: var(--radius-full);
+  font-weight: var(--font-weight-subheading);
+  color: var(--color-primary);
+  background-color: var(--color-surface-container-low);
+  transition: all var(--transition-fast);
+}
+
+.skip-btn:active {
+  background-color: var(--color-surface-container);
+}
+
+.onboarding-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0 var(--space-5) var(--space-8);
+  max-width: var(--max-w-xl);
+  margin: 0 auto;
+  width: 100%;
+  z-index: 10;
+}
+
+/* --- Illustrations --- */
+.onboarding-illustration {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  min-height: 40vh;
+}
+
+.slide-visual {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.95);
+  transition: all var(--transition-medium);
+}
+
+.slide-visual.active {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+
+/* Slide 1 Visual */
+.slide-1-visual {
+  background: linear-gradient(135deg, rgba(163, 240, 202, 0.2) 0%, var(--color-surface-container-low) 100%);
+  border-radius: 3rem;
+  margin-bottom: var(--space-6);
+  overflow: hidden;
+  position: relative;
+}
+
+.glass-card-center {
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: var(--space-6);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-standard);
+}
+
+.hero-icon {
+  font-size: 6rem; /* 96px */
+}
+
+/* Slide 2 Visual */
+.compliance-card-stack {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mock-card {
+  position: absolute;
+  background-color: var(--color-surface-container-lowest);
+  padding: var(--space-5);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-standard);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 220px;
+  align-items: center;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mock-card .ticker {
+  font-weight: var(--font-weight-display);
+  font-size: var(--text-h3);
+}
+
+.card-back {
+  transform: rotate(2deg) translateY(24px);
+  z-index: 1;
+  opacity: 0.8;
+}
+
+.card-front {
+  transform: rotate(-2deg);
+  z-index: 2;
+  box-shadow: var(--shadow-floating);
+}
+
+/* Slide 3 Visual */
+.hero-circle {
+  background: linear-gradient(tr, rgba(0, 104, 55, 0.1), rgba(34, 135, 90, 0.2));
+  width: 12rem;
+  height: 12rem;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.hero-circle .hero-icon {
+  font-size: 5rem;
+}
+
+.floating-chip {
+  position: absolute;
+  top: -10px;
+  right: -20px;
+  padding: var(--space-3);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-floating);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.sector-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: center;
+  margin-top: var(--space-6);
+}
+
+.sector-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-full);
+  font-size: var(--text-micro);
+  font-weight: var(--font-weight-heading);
+}
+
+.sector-chip.ok {
+  background-color: var(--color-tertiary-fixed);
+  color: var(--color-on-tertiary-fixed);
+}
+
+.sector-chip.fail {
+  background-color: var(--color-error-container);
+  color: var(--color-on-error-container);
+}
+
+/* --- Text & Footer --- */
+.onboarding-text-area {
+  text-align: center;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+}
+
+.slide-text h1 {
+  margin-bottom: var(--space-2);
+}
+
+.privacy-card {
+  background-color: var(--color-surface-container-high);
+  padding: var(--space-4);
+  border-radius: var(--radius-xl);
+  font-size: var(--text-body-sm);
+  color: var(--color-on-surface-variant);
+  text-align: left;
+}
+
+.onboarding-footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.pagination-dots {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  background-color: var(--color-surface-container-highest);
+  border-radius: var(--radius-full);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.dot.active {
+  width: 24px;
+  background-color: var(--color-primary-container);
+}
+
+.btn-next {
+  width: 100%;
+}
+
+.flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Desktop override logic placeholder */
+.desktop-split {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  /* Actually implementing 50/50 desktop split */
+  .onboarding-container {
+    flex-direction: row;
+  }
+  
+  .onboarding-header {
+    position: absolute;
+    top: 0;
+    right: 0;
+  }
+
+  .onboarding-content {
+    flex: 1;
+    justify-content: center;
+    align-items: flex-start;
+    padding: var(--space-8);
+    margin: auto 0;
+  }
+
+  .onboarding-text-area {
+    text-align: left;
+    max-width: 400px;
+  }
+
+  .slide-text h1 {
+    font-size: 3rem;
+  }
+
+  .onboarding-illustration {
+    display: none; /* Hide mobile illustration */
+  }
+
+  /* We'll use this container for the left side full height illustration */
+  .desktop-split {
+    display: block;
+    flex: 1;
+    background: linear-gradient(135deg, rgba(163, 240, 202, 0.25) 0%, var(--color-surface-container-low) 100%);
+    position: relative;
+    border-top-right-radius: 3rem;
+    border-bottom-right-radius: 3rem;
+  }
+  
+  .desktop-illustration {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .desktop-illustration::after {
+    content: 'monitoring';
+    font-family: 'Material Symbols Outlined';
+    font-variation-settings: 'FILL' 1;
+    font-size: 15rem;
+    color: var(--color-primary);
+    opacity: 0.8;
+  }
+}

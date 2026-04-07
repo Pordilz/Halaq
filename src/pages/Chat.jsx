@@ -1,4 +1,4 @@
-import { MessageSquare, Lock } from 'lucide-react'
+import MaterialIcon from '../components/MaterialIcon'
 
 export default function Chat() {
   return (
@@ -6,7 +6,7 @@ export default function Chat() {
       <div className="card card-elevated animate-fade-in-up">
         <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'center' }}>
           <div style={{ background: 'var(--color-blue-soft)', display: 'inline-block', padding: '16px', borderRadius: '50%' }}>
-            <MessageSquare size={32} color="var(--color-blue)" />
+            <MaterialIcon name="chat" size={24} className="text-secondary" />
           </div>
         </div>
         <div style={{ display: 'inline-block', background: 'var(--color-primary-subtle)', color: 'var(--color-primary)', padding: '4px 12px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold', marginBottom: '1rem', textTransform: 'uppercase' }}>

@@ -1,0 +1,176 @@
+/* =============================================
+   STOCK DETAIL CSS
+   ============================================= */
+
+.stock-detail-page {
+  padding-bottom: 8rem; /* space for mobile footer */
+}
+
+.back-nav {
+  margin-top: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-on-surface-variant);
+  font-weight: var(--font-weight-subheading);
+  padding: var(--space-2) 0;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast);
+}
+
+.back-btn:hover {
+  color: var(--color-on-surface);
+}
+
+.stock-detail-layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/* Hero */
+.stock-hero-card {
+  padding: var(--space-6);
+  margin-bottom: var(--space-4);
+}
+
+.ticker-badge {
+  background-color: rgba(163, 240, 202, 0.4);
+  color: var(--color-primary);
+  font-weight: var(--font-weight-display);
+  font-size: var(--text-h3);
+  padding: 0.25rem 1rem;
+  border-radius: var(--radius-lg);
+  font-variant-numeric: tabular-nums;
+  display: inline-block;
+}
+
+/* Status Banner */
+.status-banner {
+  border-radius: var(--radius-2xl);
+  padding: var(--space-5) var(--space-6);
+  margin-bottom: var(--space-6);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--shadow-standard);
+}
+
+/* Tabs */
+.tabs-container {
+  display: flex;
+  overflow-x: auto;
+  border-bottom: 2px solid var(--color-surface-container-high);
+  margin-bottom: var(--space-6);
+}
+
+.tabs-container::-webkit-scrollbar { display: none; }
+
+.tab-btn {
+  padding: var(--space-3) var(--space-4);
+  font-weight: var(--font-weight-heading);
+  color: var(--color-on-surface-variant);
+  white-space: nowrap;
+  position: relative;
+  transition: color var(--transition-fast);
+}
+
+.tab-btn:hover {
+  color: var(--color-on-surface);
+}
+
+.tab-btn.active {
+  color: var(--color-primary);
+}
+
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--color-primary);
+  border-top-left-radius: 2px;
+  border-top-right-radius: 2px;
+}
+
+.tab-content {
+  min-height: 300px;
+}
+
+.tab-pane {
+  display: none;
+}
+
+.tab-pane.active {
+  display: block;
+  animation: fadeSlideUp 300ms ease-out forwards;
+}
+
+.grid-1 { grid-template-columns: 1fr; display: grid; }
+
+/* Premium Lock */
+.premium-gate-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+  border-radius: var(--radius-2xl);
+}
+
+/* Mobile Fixed Footer */
+.mobile-detail-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: var(--space-3) var(--space-5) max(1rem, env(safe-area-inset-bottom));
+  display: flex;
+  gap: var(--space-3);
+  z-index: 50;
+  border-top-left-radius: var(--radius-2xl);
+  border-top-right-radius: var(--radius-2xl);
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
+}
+
+.mobile-only { display: flex; }
+.md\:block { display: none; }
+.md\:grid-2 { display: grid; grid-template-columns: 1fr; }
+
+@media (min-width: 768px) {
+  .stock-detail-page {
+    padding-bottom: var(--space-8);
+  }
+  
+  .stock-detail-layout {
+    flex-direction: row;
+    gap: var(--space-8);
+  }
+  
+  .detail-main {
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .detail-sidebar {
+    width: 300px;
+    flex-shrink: 0;
+  }
+  
+  .mobile-only { display: none; }
+  .md\:block { display: block; }
+  .md\:grid-2 { grid-template-columns: 1fr 1fr; }
+  
+  .stock-hero-card {
+    padding: var(--space-8);
+  }
+}

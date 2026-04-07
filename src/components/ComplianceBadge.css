@@ -1,61 +1,67 @@
 .compliance-badge {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  border-radius: var(--radius-lg);
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-
-/* Sizes */
-.compliance-badge--sm {
-  padding: 6px 14px;
-  font-size: var(--font-size-xs);
-  gap: 6px;
   border-radius: var(--radius-full);
+  font-weight: var(--font-weight-heading);
+  letter-spacing: 0.025em;
 }
 
+.compliance-badge--sm {
+  gap: 0.375rem;
+  padding: 0.25rem 0.75rem; /* py-1 px-3 */
+  font-size: var(--text-micro);
+}
 .compliance-badge--sm .compliance-badge__icon {
-  width: 14px;
-  height: 14px;
+  font-size: 14px;
 }
 
 .compliance-badge--md {
-  padding: 10px 20px;
-  font-size: var(--font-size-sm);
+  gap: 0.5rem;
+  padding: 0.375rem 1rem;
+  font-size: var(--text-label);
 }
-
 .compliance-badge--md .compliance-badge__icon {
-  width: 18px;
-  height: 18px;
+  font-size: 18px;
 }
 
 .compliance-badge--lg {
-  padding: 16px 28px;
-  font-size: var(--font-size-lg);
+  gap: 0.5rem;
+  padding: 0.5rem 1.25rem;
+  font-size: var(--text-body-sm);
 }
-
 .compliance-badge--lg .compliance-badge__icon {
-  width: 24px;
-  height: 24px;
+  font-size: 24px;
 }
 
-/* Variants */
+/* Base styles for individual statuses */
 .compliance-badge--compliant {
-  background: linear-gradient(135deg, rgba(22, 163, 74, 0.1) 0%, rgba(22, 163, 74, 0.05) 100%);
-  color: var(--color-success);
-  border: 1.5px solid rgba(22, 163, 74, 0.25);
+  background-color: var(--color-tertiary-fixed);
+  color: var(--color-on-tertiary-fixed);
 }
-
-.compliance-badge--non-compliant {
-  background: linear-gradient(135deg, rgba(220, 38, 38, 0.1) 0%, rgba(220, 38, 38, 0.05) 100%);
-  color: var(--color-danger);
-  border: 1.5px solid rgba(220, 38, 38, 0.25);
+.compliance-badge--compliant .compliance-badge__icon {
+  color: var(--color-tertiary);
 }
 
 .compliance-badge--doubtful {
-  background: linear-gradient(135deg, rgba(217, 119, 6, 0.1) 0%, rgba(217, 119, 6, 0.05) 100%);
-  color: var(--color-warning);
-  border: 1.5px solid rgba(217, 119, 6, 0.25);
+  background-color: var(--color-caution-container);
+  color: var(--color-on-caution-container);
+}
+.compliance-badge--doubtful .compliance-badge__icon {
+  color: var(--color-caution);
+}
+
+.compliance-badge--non-compliant {
+  background-color: var(--color-error-container);
+  color: var(--color-on-error-container);
+}
+.compliance-badge--non-compliant .compliance-badge__icon {
+  color: var(--color-error);
+}
+
+.compliance-badge--pending {
+  background-color: var(--color-surface-container-high);
+  color: var(--color-on-surface-variant);
+}
+.compliance-badge--pending .compliance-badge__icon {
+  color: var(--color-outline);
 }
