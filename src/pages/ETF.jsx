@@ -2,36 +2,42 @@ import MaterialIcon from '../components/MaterialIcon'
 
 export default function ETF() {
   return (
-    <div className="container" style={{ padding: '4rem 0', maxWidth: '600px', textAlign: 'center' }}>
-      <div className="card card-elevated animate-fade-in-up">
-        <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'center' }}>
-          <div style={{ background: 'var(--color-purple-soft)', display: 'inline-block', padding: '16px', borderRadius: '50%' }}>
-            <MaterialIcon name="activity" size={24} className="text-secondary" />
+    <div className="container animate-entrance" style={{ paddingTop: '5rem', paddingBottom: 'var(--space-12)' }}>
+      <div className="max-w-xl mx-auto">
+        <div className="card-standard text-center flex-column" style={{ alignItems: 'center' }}>
+          <div className="w-16 h-16 rounded-full flex flex-row" style={{ backgroundColor: 'rgba(26, 107, 71, 0.1)', color: 'var(--color-primary)', alignItems: 'center', justifyContent: 'center', marginBottom: 'var(--space-6)', width: '64px', height: '64px' }}>
+            <MaterialIcon name="monitoring" size={32} fill />
           </div>
-        </div>
-        <div style={{ display: 'inline-block', background: 'var(--color-primary-subtle)', color: 'var(--color-primary)', padding: '4px 12px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold', marginBottom: '1rem', textTransform: 'uppercase' }}>
-          Coming Soon
-        </div>
-        <h1 style={{ marginBottom: '1rem' }}>ETF X-Ray Scanner</h1>
-        <p className="text-muted" style={{ marginBottom: '2rem', lineHeight: '1.6' }}>
-          We are currently building internal holding extraction to automatically assess ETF Shariah compliance. This feature will let you scan the contents of popular index funds.
-        </p>
+          
+          <div className="text-micro font-bold uppercase mb-4" style={{ backgroundColor: 'var(--color-tertiary-container)', color: 'var(--color-on-tertiary-container)', padding: '0.25rem 1rem', borderRadius: '9999px', letterSpacing: '0.1em' }}>
+            Coming Soon
+          </div>
+          
+          <h1 className="text-h1 mb-4 text-on-surface">ETF X-Ray Scanner</h1>
+          <p className="text-on-surface-variant text-body-lg mb-8 leading-relaxed">
+            We are currently building internal holding extraction to automatically assess ETF Shariah compliance. This feature will let you scan the contents of popular index funds.
+          </p>
 
-        <div style={{ borderTop: '1px solid var(--color-border-light)', paddingTop: '1.5rem', textAlign: 'left', background: 'var(--color-bg)', padding: '1.5rem', borderRadius: 'var(--radius-md)' }}>
-          <h3 style={{ fontSize: '1rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text)' }}>
-            <Lock size={16} /> Exclusive Scholar Features
-          </h3>
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '12px', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
-            <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ color: 'var(--color-primary)' }}>✓</div> Breakdown of Top 50 ETF holdings
-            </li>
-            <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ color: 'var(--color-primary)' }}>✓</div> Aggregate ETF Compliance Score
-            </li>
-            <li style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ color: 'var(--color-primary)' }}>✓</div> Weighted Haram Income Purification
-            </li>
-          </ul>
+          <div className="w-full text-left" style={{ backgroundColor: 'var(--color-surface-container-low)', padding: 'var(--space-6)', borderRadius: 'var(--radius-2xl)', border: '1px solid rgba(15, 26, 39, 0.05)' }}>
+            <h3 className="text-h3 flex-row gap-2 mb-4">
+              <MaterialIcon name="lock" size={20} className="text-primary" /> 
+              Exclusive Scholar Feature
+            </h3>
+            <ul className="flex-column gap-3 text-body-sm text-on-surface-variant" style={{ listStyle: 'none', padding: 0 }}>
+              <li className="flex-row gap-3">
+                <MaterialIcon name="check_circle" className="text-primary" size={18} fill /> 
+                <span>Breakdown of Top 50 ETF holdings</span>
+              </li>
+              <li className="flex-row gap-3">
+                <MaterialIcon name="check_circle" className="text-primary" size={18} fill /> 
+                <span>Aggregate ETF Compliance Score</span>
+              </li>
+              <li className="flex-row gap-3">
+                <MaterialIcon name="check_circle" className="text-primary" size={18} fill /> 
+                <span>Weighted Haram Income Purification</span>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>

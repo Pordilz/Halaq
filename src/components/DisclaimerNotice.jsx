@@ -7,7 +7,7 @@ export default function DisclaimerNotice({ compact = false }) {
       <MaterialIcon name="info" className={`text-caution mt-0.5 ${compact ? 'text-lg' : 'text-xl'}`} />
       <p className={compact ? 'text-xs font-medium' : 'text-sm'}>
         {compact ? (
-          "ⓘ For guidance only. Not financial or fatwa advice."
+          "For guidance only. Not financial or fatwa advice."
         ) : (
           "This tool provides general Shariah compliance guidance based on publicly available financial data. It does not constitute a fatwa, financial advice, or an endorsement of any investment. Rulings may differ between scholars and standards. Please consult a qualified Islamic finance scholar for personal guidance."
         )}

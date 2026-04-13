@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import MaterialIcon from '../components/MaterialIcon'
 import StockRowCard from '../components/StockRowCard'
+import SetupFlow from '../components/SetupFlow'
 import './Screener.css'
 
 export default function Screener() {
+  const location = useLocation()
+  const [showSetup, setShowSetup] = useState(location.state?.showSetup || false)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
   const [loading, setLoading] = useState(false)
@@ -17,6 +20,13 @@ export default function Screener() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const searchTimeout = useRef(null)
+
+  // Remove location state so refresh doesn't show setup again
+  useEffect(() => {
+    if (showSetup) {
+      navigate(location.pathname, { replace: true, state: {} })
+    }
+  }, [])
 
   const searchSymbols = useCallback((q) => {
     clearTimeout(searchTimeout.current)
@@ -86,6 +96,8 @@ export default function Screener() {
 
   return (
     <div className="screener-page container">
+      {showSetup && <SetupFlow onComplete={() => setShowSetup(false)} />}
+      
       {/* Hero Search Section */}
       <div className="screener-hero">
         <h1 className="text-h1 mb-2">Find Halal Stocks</h1>
@@ -93,8 +105,8 @@ export default function Screener() {
           Screen 10,000+ JSE and US equities against strict AAOIFI standards.
         </p>
 
-        <div className="search-section-row flex-row gap-3 relative z-10 w-full max-w-2xl">
-          <div className="search-bar-wrapper flex-1">
+        <div className="search-section-row max-w-2xl">
+          <div className="search-bar-wrapper">
             <MaterialIcon name="search" size={24} className="search-icon" />
             <input 
               type="text" 

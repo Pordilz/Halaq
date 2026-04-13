@@ -41,12 +41,26 @@ export default function Batch() {
 
   if (!isPro) {
     return (
-      <div className="container animate-fade-in-up" style={{ padding: '6rem 0', textAlign: 'center' }}>
-        <MaterialIcon name="layers" size={64} style={{ color: 'var(--color-primary-muted)', margin: '0 auto 24px' }} />
-        <h1>Pro Feature</h1>
-        <p className="text-muted" style={{ maxWidth: '400px', margin: '0 auto 24px' }}>
-          Batch screening is exclusively available to Pro and Scholar members.
-        </p>
+      <div className="container animate-entrance" style={{ paddingTop: '5rem', paddingBottom: 'var(--space-12)' }}>
+        <div className="max-w-xl mx-auto">
+          <div className="card-standard text-center flex-col items-center">
+            <div className="w-16 h-16 rounded-full bg-primary-container/30 text-primary flex items-center justify-center mb-6">
+              <MaterialIcon name="layers" size={32} />
+            </div>
+            
+            <div className="bg-primary px-3 py-1 rounded-full text-on-primary text-micro font-bold uppercase tracking-widest mb-4">
+              Requires Upgrade
+            </div>
+            
+            <h1 className="text-h1 mb-4">Batch Screening</h1>
+            <p className="text-on-surface-variant text-body-lg mb-8">
+              Analyze up to 20 portfolios at once. Batch screening is exclusively available to Pro and Scholar members.
+            </p>
+            <div className="flex gap-4 w-full justify-center">
+              <button className="btn btn-primary">Upgrade Plan</button>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -54,9 +68,9 @@ export default function Batch() {
   return (
     <div className="batch-page">
       <div className="container">
-        <div className="batch-header animate-fade-in-up">
-          <h1>Batch Screening</h1>
-          <p className="text-muted">Screen up to 20 tickers at once. Enter JSE or US tickers separated by commas or spaces.</p>
+        <div className="text-center mb-10 max-w-2xl mx-auto animate-fade-in-up">
+          <h1 className="text-h1 mb-3">Batch Screening</h1>
+          <p className="text-on-surface-variant text-body-lg">Screen up to 20 tickers at once. Enter JSE or US tickers separated by commas, spaces, or newlines.</p>
         </div>
 
         <form onSubmit={handleBatch} className="batch-form animate-fade-in-up delay-1">
@@ -93,7 +107,7 @@ export default function Batch() {
                       return (
                         <tr key={i} className="batch-row-error">
                           <td style={{ fontWeight: 'bold' }}>{r.ticker}</td>
-                          <td colSpan="6" style={{ color: 'var(--color-danger)' }}>
+                          <td colSpan="6" className="text-error">
                             <MaterialIcon name="error" size={14} style={{ display: 'inline', marginRight: 4, verticalAlign: 'middle' }} />
                             Error fetching data
                           </td>
@@ -103,7 +117,8 @@ export default function Batch() {
 
                     const getRatioValue = (name) => {
                       const ratio = r.financialScreen.ratios.find(rate => rate.name.includes(name));
-                      return ratio ? ratio.ratioPercent : 'N/A';
+                      if (!ratio) return 'N/A';
+                      return `${(ratio.value * 100).toFixed(1)}%`;
                     }
 
                     return (
@@ -111,8 +126,8 @@ export default function Batch() {
                         <td style={{ fontWeight: 'bold' }}>{r.ticker}</td>
                         <td className="batch-company-name" title={r.companyName}>{r.companyName}</td>
                         <td><ComplianceBadge status={r.status} /></td>
-                        <td>{getRatioValue('Leverage')}</td>
-                        <td>{getRatioValue('Liquidity')}</td>
+                        <td>{getRatioValue('Debt')}</td>
+                        <td>{getRatioValue('Cash')}</td>
                         <td>{getRatioValue('Receivables')}</td>
                         <td>{getRatioValue('Haram')}</td>
                       </tr>

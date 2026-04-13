@@ -34,7 +34,7 @@ export default function Layout({ children }) {
   // Conditionally add monetized features (from implementation plan decisions)
   const premiumTools = [
     { to: '/batch', label: 'Batch', icon: 'layers' },
-    { to: '/etf', label: 'ETF X-Ray', icon: 'activity' },
+    { to: '/etf', label: 'ETF X-Ray', icon: 'monitoring' },
     { to: '/chat', label: 'AI Chat', icon: 'message' },
   ]
 

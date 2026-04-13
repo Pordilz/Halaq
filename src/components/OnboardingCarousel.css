@@ -1,0 +1,201 @@
+/* =============================================
+   CAROUSEL SHELL (WEBSITE)
+   ============================================= */
+@media (min-width: 768px) {
+  .carousel-outer {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    height: 100dvh;
+    overflow: hidden;
+    position: relative;
+  }
+  .carousel-illustration-panel {
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.6s ease;
+    overflow: hidden;
+  }
+  .carousel-text-panel {
+    height: 100dvh;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .slide-content {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 80px 64px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease, transform 0.35s ease;
+    transform: translateX(20px);
+  }
+  .slide-content.active {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0);
+  }
+}
+
+/* =============================================
+   CAROUSEL SHELL (MOBILE)
+   ============================================= */
+@media (max-width: 767px) {
+  .carousel-outer {
+    display: flex;
+    width: 100vw;
+    height: 100dvh;
+    overflow: hidden;
+    position: relative;
+  }
+  .carousel-container {
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    display: flex;
+    width: 100%;
+    height: 100%;
+  }
+  .carousel-container::-webkit-scrollbar { display: none; }
+  .carousel-slide {
+    scroll-snap-align: start;
+    flex-shrink: 0;
+    width: 100vw;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    transition: background-color 0.4s ease;
+  }
+  .carousel-illustration-panel { display: none; }
+  
+  .mobile-illustration-block {
+    width: 100%;
+    height: 45vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  
+  .mobile-text-block {
+    padding: 24px;
+  }
+  
+  .carousel-skip-mobile {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 50;
+  }
+  
+  .mobile-dots-container {
+    position: fixed;
+    bottom: 48px;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    z-index: 40;
+  }
+}
+
+/* =============================================
+   SHARED CAROUSEL COMPONENTS
+   ============================================= */
+.carousel-skip-btn {
+  padding: 8px 24px;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--color-primary-container);
+  background-color: var(--color-surface-container-low);
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.carousel-skip-btn:hover {
+  background-color: var(--color-surface-container);
+}
+
+.carousel-skip-btn:active {
+  transform: scale(0.95);
+}
+
+/* Glass variants */
+.glass-white {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Illustration shapes */
+.illustration-sq {
+  width: min(80%, 400px);
+  aspect-ratio: 1/1;
+  background-color: var(--color-surface-container-low);
+  border-radius: 3rem;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tilt-left {
+  transform: rotate(-3deg);
+}
+
+.tilt-right {
+  transform: rotate(3deg);
+}
+
+.watchlist-circle {
+  width: 256px;
+  height: 256px;
+  border-radius: 9999px;
+  background: linear-gradient(to top right, rgba(0,104,55,0.10), rgba(34,135,90,0.20));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.watchlist-circle-sm {
+  width: 192px;
+  height: 192px;
+  border-radius: 9999px;
+  background: linear-gradient(to top right, rgba(0,104,55,0.10), rgba(34,135,90,0.20));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Animations mapping */
+.animate-bar-grow {
+  animation: barGrow 1.2s ease 0.8s both;
+}
+.float-badge-anim {
+  animation: floatBadge 3s ease-in-out infinite 1.2s;
+}
+.gentle-sway-icon {
+  animation: scaleSpring 0.6s ease 0.4s both, gentleSway 5s ease-in-out infinite 1.0s;
+}
+.gentle-sway-icon-late {
+  animation: gentleSway 5s ease-in-out infinite 0.8s;
+}
+.slide-anim-container {
+  animation: scaleSpring 0.7s ease 0.1s both;
+}

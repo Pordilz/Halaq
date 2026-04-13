@@ -1,6 +1,6 @@
 import { Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
-import Onboarding from './pages/Onboarding'
+import Landing from './pages/Landing'
 import Screener from './pages/Screener'
 import StockDetail from './pages/StockDetail'
 import Login from './pages/Login'
@@ -17,7 +17,7 @@ export default function App() {
   return (
     <Layout>
       <Routes>
-        <Route path="/" element={<Onboarding />} />
+        <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         
