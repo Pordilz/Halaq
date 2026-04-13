@@ -154,26 +154,7 @@ export default function Signup() {
       <div style={{ position: 'fixed', bottom: '-10%', right: '-5%', width: '350px', height: '350px', borderRadius: '50%', filter: 'blur(90px)', zIndex: -10, backgroundColor: 'rgba(163, 240, 202, 0.18)', animation: 'glowPulse 7s infinite' }} />
       <div style={{ position: 'fixed', top: '15%', left: '-10%', width: '280px', height: '280px', borderRadius: '50%', filter: 'blur(70px)', zIndex: -10, backgroundColor: 'rgba(255, 231, 146, 0.12)', animation: 'glowPulse 9s infinite 3s' }} />
 
-      {/* MOBILE SHELL */}
-      <div className="animate-entrance delay-100" style={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', '@media (minWidth: 768px)': { display: 'none' } }}>
-        <header className="glass-panel" style={{ height: '4rem', display: 'flex', alignItems: 'center', padding: '0 1rem', width: '100%', borderBottom: '1px solid var(--color-surface-container-low)', position: 'relative' }}>
-          <Link to="/" style={{ color: 'var(--color-primary)', textDecoration: 'none' }}><MaterialIcon name="arrow_back" size={24} /></Link>
-          <span style={{ fontWeight: 700, fontSize: '1.25rem', color: 'var(--color-primary)', letterSpacing: '-0.025em', marginLeft: '0.5rem' }}>Sign Up</span>
-        </header>
 
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem 1.5rem 3rem 1.5rem', width: '100%', maxWidth: '28rem', margin: '0 auto' }}>
-          <div className="animate-entrance delay-100" style={{ width: '100%' }}>
-            <h1 style={{ fontSize: '2.5rem', fontWeight: 800, letterSpacing: '-0.025em', lineHeight: 1.15, color: 'var(--color-on-surface)', marginBottom: '0.75rem' }}>Begin Your<br/><span className="text-primary">Halal Journey.</span></h1>
-            <p style={{ fontSize: '1.125rem', fontWeight: 500, color: 'var(--color-on-surface-variant)', opacity: 0.8, maxWidth: '280px', lineHeight: 1.6 }}>Join Muslim investors screening stocks with clarity and conscience.</p>
-          </div>
-
-          <div className="animate-entrance delay-200 shadow-standard" style={{ width: '100%', backgroundColor: 'white', borderRadius: '1.5rem', padding: '2rem', marginTop: '2rem' }}>
-             {formContent}
-          </div>
-        </div>
-      </div>
-
-      {/* DESKTOP SHELL */}
       <div className="animate-scale-in card-standard" style={{ display: 'none', width: '100%', maxWidth: '960px', backgroundColor: 'white', borderRadius: '1.5rem', boxShadow: 'var(--shadow-floating)', overflow: 'hidden', animation: 'scaleIn 0.5s ease 0.1s both', zIndex: 10, '@media (minWidth: 768px)': { display: 'flex' } }}>
         <style dangerouslySetInnerHTML={{__html: `
           @media (min-width: 768px) {
