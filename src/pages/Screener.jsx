@@ -8,8 +8,9 @@ import './Screener.css'
 
 export default function Screener() {
   const location = useLocation()
+  const searchParams = new URLSearchParams(location.search)
   const [showSetup, setShowSetup] = useState(location.state?.showSetup || false)
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = useState(searchParams.get('q') || '')
   const [results, setResults] = useState([])
   const [loading, setLoading] = useState(false)
   
@@ -102,7 +103,7 @@ export default function Screener() {
       <div className="screener-hero">
         <h1 className="text-h1 mb-2">Find Halal Stocks</h1>
         <p className="text-on-surface-variant text-body-lg mb-6">
-          Screen 10,000+ JSE and US equities against strict AAOIFI standards.
+          Screen thousands of JSE and US equities against AAOIFI standards.
         </p>
 
         <div className="search-section-row max-w-2xl">
@@ -172,10 +173,10 @@ export default function Screener() {
               </h2>
               <div className="stock-list">
                 {[
-                  { ticker: 'AGL', name: 'Anglo American', sector: 'Mining', exchange: 'JSE', status: 'NON_COMPLIANT', marketCap: 'R450B' },
-                  { ticker: 'TSLA', name: 'Tesla Inc', sector: 'Consumer Cyclical', exchange: 'NASDAQ', status: 'DOUBTFUL', marketCap: '$600B' },
-                  { ticker: 'FSR', name: 'FirstRand Ltd', sector: 'Finance', exchange: 'JSE', status: 'NON_COMPLIANT', marketCap: 'R380B' },
-                  { ticker: 'AAPL', name: 'Apple Inc.', sector: 'Technology', exchange: 'NASDAQ', status: 'COMPLIANT', marketCap: '$2.8T' },
+                  { ticker: 'AGL', name: 'Anglo American', sector: 'Mining', exchange: 'JSE', status: null, marketCap: 'R450B' },
+                  { ticker: 'TSLA', name: 'Tesla Inc', sector: 'Consumer Cyclical', exchange: 'NASDAQ', status: null, marketCap: '$600B' },
+                  { ticker: 'FSR', name: 'FirstRand Ltd', sector: 'Finance', exchange: 'JSE', status: null, marketCap: 'R380B' },
+                  { ticker: 'AAPL', name: 'Apple Inc.', sector: 'Technology', exchange: 'NASDAQ', status: null, marketCap: '$2.8T' },
                 ].map(stock => (
                    <StockRowCard 
                      key={stock.ticker}
@@ -190,7 +191,7 @@ export default function Screener() {
           ) : loading ? (
              <div className="loading-state">
                <MaterialIcon name="refresh" className="spinner text-primary" size={32} />
-               <p className="mt-4 text-on-surface-variant font-subheading">Scanning registries...</p>
+               <p className="mt-4 text-on-surface-variant font-subheading">Searching stocks...</p>
              </div>
           ) : results.length > 0 ? (
             <div className="results-section animate-entrance">

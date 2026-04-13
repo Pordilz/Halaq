@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import MaterialIcon from './MaterialIcon'
 import DisclaimerNotice from './DisclaimerNotice'
@@ -8,8 +8,9 @@ import { useState, useEffect } from 'react'
 export default function Layout({ children }) {
   const location = useLocation()
   const { user, profile } = useAuth()
-  
+  const navigate = useNavigate()
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+  const [topbarQuery, setTopbarQuery] = useState('')
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768)
@@ -51,11 +52,8 @@ export default function Layout({ children }) {
           <span className="logo-text">Halaq</span>
         </Link>
         <div className="mobile-header-actions">
-          <button className="icon-btn focus-ghost">
+          <button className="icon-btn focus-ghost" onClick={() => navigate('/screener')}>
             <MaterialIcon name="search" outline className="text-primary" />
-          </button>
-          <button className="icon-btn focus-ghost">
-            <MaterialIcon name="notifications" outline className="text-primary" />
           </button>
         </div>
       </header>
@@ -109,7 +107,19 @@ export default function Layout({ children }) {
       <header className="desktop-topbar glass-panel">
         <div className="topbar-search">
           <MaterialIcon name="search" outline size={20} className="text-outline" />
-          <input type="text" placeholder="Search by name or ticker..." className="topbar-search-input focus-ghost" />
+          <input
+            type="text"
+            placeholder="Search by name or ticker..."
+            className="topbar-search-input focus-ghost"
+            value={topbarQuery}
+            onChange={(e) => setTopbarQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && topbarQuery.trim()) {
+                navigate(`/screener?q=${encodeURIComponent(topbarQuery.trim())}`)
+                setTopbarQuery('')
+              }
+            }}
+          />
         </div>
         <div className="topbar-actions">
           <button className="icon-btn focus-ghost">

@@ -88,7 +88,8 @@ export default function Learn() {
       {/* Grid */}
       <div className="articles-grid">
         {filteredArticles.map(article => (
-          <div key={article.id} className="article-card card-standard interactive-element">
+          <div key={article.id} className="article-card card-standard interactive-element" style={{ position: 'relative', cursor: 'default', opacity: 0.85 }}>
+            <div style={{ position: 'absolute', top: '1rem', right: '1rem', fontSize: '0.625rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--color-on-surface-variant)', background: 'var(--color-surface-container-low)', padding: '0.2rem 0.5rem', borderRadius: '9999px' }}>Coming Soon</div>
             <div className="article-icon-wrapper">
               <MaterialIcon name={article.icon} size={28} className="text-primary" />
             </div>

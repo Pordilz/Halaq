@@ -59,7 +59,7 @@ export default function Landing() {
           {/* Hero Left Text */}
           <div className="flex-column justify-center" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <div className="bg-surface-low animate-entrance delay-100" style={{ borderRadius: '9999px', padding: '0.5rem 1rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', width: 'max-content' }}>
-               <span className="text-on-surface-variant" style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>✦ Free · AAOIFI-Aligned · 10,000+ Stocks</span>
+               <span className="text-on-surface-variant" style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>✦ Free · AAOIFI-Aligned · JSE & US Stocks</span>
             </div>
             
             <h1 className="text-on-surface animate-entrance delay-200" style={{ fontSize: '4rem', fontWeight: 800, letterSpacing: '-0.025em', lineHeight: 1.05 }}>
@@ -72,8 +72,8 @@ export default function Landing() {
 
             <div className="flex-row animate-entrance delay-400" style={{ gap: '1.25rem', marginTop: '2.5rem' }}>
                <button onClick={() => setShowCarousel(true)} className="btn btn-primary" style={{ height: '56px', minHeight: '56px', padding: '0 2rem', fontSize: '1rem' }}>Start Screening Free →</button>
-               <button className="text-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, fontSize: '0.875rem' }}>
-                  <MaterialIcon name="play_circle" /> See how it works ▶
+               <button onClick={() => document.getElementById('how')?.scrollIntoView({ behavior: 'smooth' })} className="text-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600, fontSize: '0.875rem', background: 'none', border: 'none', cursor: 'pointer' }}>
+                   <MaterialIcon name="play_circle" /> See how it works
                </button>
             </div>
 
@@ -85,7 +85,7 @@ export default function Landing() {
                    </div>
                  ))}
                </div>
-               <span className="text-on-surface-variant" style={{ fontSize: '0.875rem' }}>Trusted by Muslim investors screening stocks across 40+ countries</span>
+               <span className="text-on-surface-variant" style={{ fontSize: '0.875rem' }}>Built for Muslim investors worldwide</span>
             </div>
           </div>
 
@@ -248,7 +248,9 @@ export default function Landing() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
              <div style={{ fontWeight: 700, marginBottom: '0.5rem' }}>Product</div>
-             {['Screener', 'Watchlist', 'Portfolio', 'Learn'].map(l => <a key={l} href="#" style={{ fontSize: '0.875rem', color: 'rgba(234,241,255,0.7)', textDecoration: 'none' }}>{l}</a>)}
+             <Link to="/screener" style={{ fontSize: '0.875rem', color: 'rgba(234,241,255,0.7)', textDecoration: 'none' }}>Screener</Link>
+             <Link to="/watchlist" style={{ fontSize: '0.875rem', color: 'rgba(234,241,255,0.7)', textDecoration: 'none' }}>Watchlist</Link>
+             <Link to="/learn" style={{ fontSize: '0.875rem', color: 'rgba(234,241,255,0.7)', textDecoration: 'none' }}>Learn</Link>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
              <div style={{ fontWeight: 700, marginBottom: '0.5rem' }}>Legal</div>
@@ -256,8 +258,9 @@ export default function Landing() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
              <div style={{ fontWeight: 700, marginBottom: '0.5rem' }}>Standards</div>
-             {['AAOIFI', 'DJIM', 'S&P Shariah', 'FTSE Shariah'].map(l => <a key={l} href="#" style={{ fontSize: '0.875rem', color: 'rgba(234,241,255,0.7)', textDecoration: 'none' }}>{l}</a>)}
-             <a href="#" style={{ fontSize: '0.875rem', color: 'rgba(234,241,255,0.7)', textDecoration: 'none', marginTop: '0.5rem' }}>About our methodology →</a>
+             <a href="https://aaoifi.com" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.875rem', color: 'rgba(234,241,255,0.7)', textDecoration: 'none' }}>AAOIFI</a>
+             <a href="https://www.spglobal.com/spdji/en/index-family/shariah/" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.875rem', color: 'rgba(234,241,255,0.7)', textDecoration: 'none' }}>S&P Shariah</a>
+             <a href="https://www.ftserussell.com/products/indices/ftse-shariah" target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.875rem', color: 'rgba(234,241,255,0.7)', textDecoration: 'none' }}>FTSE Shariah</a>
           </div>
         </div>
       </footer>

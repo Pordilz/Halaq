@@ -105,3 +105,13 @@
     display: block;
   }
 }
+
+.stock-row-card__screen-cta {
+  font-size: var(--text-micro);
+  font-weight: var(--font-weight-heading);
+  color: var(--color-primary);
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-full);
+  background: rgba(26, 107, 71, 0.08);
+  white-space: nowrap;
+}

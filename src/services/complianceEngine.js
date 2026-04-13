@@ -27,12 +27,12 @@ const HARAM_INDUSTRIES = [
   'tobacco',
   // Adult entertainment
   'adult entertainment',
-  // Weapons of mass destruction
-  'aerospace & defense',  // flagged as cautionary — needs manual review
 ];
 
 const HARAM_SECTORS = [
-  'financial services',
+  // Removed 'financial services' — too broad. Granular industries (banks, insurance)
+  // already handle the actual haram sub-sectors. Many fintech/payment companies
+  // fall under this sector but are not riba-based.
 ];
 
 /**
@@ -224,15 +224,16 @@ export function screenFinancialRatios({
  * @param {number} dividendReceived — in currency
  * @returns {{ amount: number, description: string }}
  */
-export function calculatePurification(haramRevenuePercent, dividendReceived) {
+export function calculatePurification(haramRevenuePercent, dividendReceived, currency = 'USD') {
   const amount = haramRevenuePercent * dividendReceived;
+  const symbol = currency === 'ZAR' ? 'R' : currency === 'GBP' ? '£' : '$';
 
   return {
     amount: Math.round(amount * 100) / 100, // round to 2 decimals
     percent: haramRevenuePercent,
     percentDisplay: (haramRevenuePercent * 100).toFixed(2) + '%',
     description: amount > 0
-      ? `Donate R${amount.toFixed(2)} to charity from this dividend`
+      ? `Donate ${symbol}${amount.toFixed(2)} to charity from this dividend`
       : 'No purification required — no haram income detected',
   };
 }

@@ -21,11 +21,9 @@ export default function StockDetail() {
   const [stock, setStock] = useState(null)
   const [error, setError] = useState(null)
 
-  // Mock checking profile tier (0: Free, 1: Pro, 2: Scholar)
-  // Implementing Monetization Feature Gate
+  // Monetization Feature Gate
   const isPremium = profile?.subscription_tier === 'pro' || profile?.subscription_tier === 'scholar' || profile?.subscription_tier === 'admin'
-  // Temporarily force premium to true for demo if no profile (you can adjust this later)
-  const isPro = profile ? isPremium : true;
+  const isPro = isPremium;
 
   useEffect(() => {
     async function loadData() {
@@ -44,8 +42,11 @@ export default function StockDetail() {
           sector: complianceResult.sector,
           exchange: complianceResult.exchange || 'US',
           price: formattedPrice,
-          change: 'N/A', // Yahoo api proxy doesn't always provide simple change string
+          change: data.profile.regularMarketChangePercent
+            ? `${data.profile.regularMarketChangePercent >= 0 ? '+' : ''}${data.profile.regularMarketChangePercent.toFixed(2)}%`
+            : null,
           compliance: complianceResult.status,
+          statusReason: complianceResult.statusReason,
           methodology: 'AAOIFI Standard',
           ratios: complianceResult.financialScreen.ratios.map(r => ({
              name: r.name,
@@ -57,7 +58,10 @@ export default function StockDetail() {
              desc: r.description
           })),
           businessActivity: complianceResult.businessScreen.detail,
-          purificationRate: complianceResult.purificationNote ? 'Check Report' : '0'
+          businessScreenStatus: complianceResult.businessScreen.status,
+          businessScreenReason: complianceResult.businessScreen.reason,
+          purificationRate: complianceResult.haramRevenuePercent || 0,
+          dataSources: complianceResult.dataSources,
         })
       } catch (err) {
         setError(err.message)
@@ -117,8 +121,8 @@ export default function StockDetail() {
              <div className="flex-between">
                <div className="ticker-badge">{stock.ticker}</div>
                <div className="text-right">
-                 <div className="text-h3 font-tabular">{stock.price}</div>
-                 <div className="text-tertiary font-subheading text-body-sm">{stock.change}</div>
+                  <div className="text-h3 font-tabular">{stock.price}</div>
+                  {stock.change && <div className="text-tertiary font-subheading text-body-sm">{stock.change}</div>}
                </div>
              </div>
              
@@ -166,11 +170,11 @@ export default function StockDetail() {
                <div className="premium-gate-overlay glass-panel-dark">
                   <MaterialIcon name="lock" fill className="text-primary mb-4" size={48} />
                   <h3 className="text-h2 mb-2 text-center">Premium Feature</h3>
-                  <p className="text-on-surface-variant text-center max-w-md mb-6">
-                    See exactly why {stock.ticker} passed or failed. Pro users get full transparency into financial ratios, debt calculations, and business activity screens.
-                  </p>
-                  <button className="btn btn-primary" onClick={() => navigate('/upgrade')}>
-                    Upgrade to Pro — $9/mo
+                   <p className="text-on-surface-variant text-center max-w-md mb-6">
+                     See exactly why {stock.ticker} passed or failed. Pro users get full transparency into financial ratios, debt calculations, and business activity screens.
+                   </p>
+                   <button className="btn btn-primary" onClick={() => navigate('/profile')}>
+                     Upgrade to Pro
                   </button>
                </div>
              )}
@@ -186,32 +190,34 @@ export default function StockDetail() {
              </div>
 
              {/* Business Tab */}
-             <div className={`tab-pane ${activeTab === 'business' ? 'active' : ''}`}>
-               <h3 className="text-h3 mb-4">Business Activity Screen</h3>
-               <div className="card-standard p-6">
-                 <div className="flex-row gap-3 mb-4 pb-4 border-b border-outline-variant-15">
-                   <div className="bg-tertiary-fixed text-tertiary p-2 rounded-full">
-                     <MaterialIcon name="check" fill size={20} />
-                   </div>
-                   <div>
-                     <div className="font-heading text-body-lg">Core Business is Halal</div>
-                     <div className="text-on-surface-variant text-body-sm">Passed qualitative screen</div>
-                   </div>
-                 </div>
-                 <p className="text-on-surface-variant leading-relaxed">
-                   {stock.businessActivity}
-                 </p>
-               </div>
-             </div>
+              <div className={`tab-pane ${activeTab === 'business' ? 'active' : ''}`}>
+                <h3 className="text-h3 mb-4">Business Activity Screen</h3>
+                <div className="card-standard p-6">
+                  <div className="flex-row gap-3 mb-4 pb-4 border-b border-outline-variant-15">
+                    <div className={`p-2 rounded-full ${stock.businessScreenStatus === 'PASS' ? 'bg-tertiary-fixed text-tertiary' : stock.businessScreenStatus === 'FAIL' ? 'bg-error-container text-error' : 'bg-caution-container text-on-caution-container'}`}>
+                      <MaterialIcon name={stock.businessScreenStatus === 'PASS' ? 'check' : stock.businessScreenStatus === 'FAIL' ? 'close' : 'help'} fill size={20} />
+                    </div>
+                    <div>
+                      <div className="font-heading text-body-lg">
+                        {stock.businessScreenStatus === 'PASS' ? 'Core Business is Permissible' : stock.businessScreenStatus === 'FAIL' ? 'Core Business is Non-Permissible' : 'Business Requires Further Review'}
+                      </div>
+                      <div className="text-on-surface-variant text-body-sm">{stock.businessScreenReason}</div>
+                    </div>
+                  </div>
+                  <p className="text-on-surface-variant leading-relaxed">
+                    {stock.businessActivity}
+                  </p>
+                </div>
+              </div>
 
              {/* Purification Tab */}
              <div className={`tab-pane ${activeTab === 'purification' ? 'active' : ''}`}>
                <h3 className="text-h3 mb-4">Dividend Purification</h3>
-               <div className="card-standard p-6">
-                 <div className="flex-between mb-2">
-                   <span className="text-on-surface-variant font-heading">Purification Rate</span>
-                   <span className="text-h2 font-tabular">{(parseFloat(stock.purificationRate) * 100).toFixed(1)}%</span>
-                 </div>
+                <div className="card-standard p-6">
+                  <div className="flex-between mb-2">
+                    <span className="text-on-surface-variant font-heading">Purification Rate</span>
+                    <span className="text-h2 font-tabular">{typeof stock.purificationRate === 'number' ? `${(stock.purificationRate * 100).toFixed(1)}%` : '0.0%'}</span>
+                  </div>
                  <p className="text-on-surface-variant text-body-sm mt-4">
                    You must donate this percentage of any dividend income received from {stock.ticker} to charity to purify the impermissible portion of their revenue. Do not purify capital gains.
                  </p>
@@ -222,9 +228,14 @@ export default function StockDetail() {
              <div className={`tab-pane ${activeTab === 'overview' ? 'active' : ''}`}>
                 <div className="card-standard p-6 mb-6">
                   <h3 className="text-h3 mb-4">Summary</h3>
-                  <p className="text-on-surface-variant">
-                    {stock.name} is currently classified as <strong>{stock.compliance.replace('_', '-')}</strong> based on the latest quarterly financial statements ending September 2023.
-                  </p>
+                   <p className="text-on-surface-variant">
+                     {stock.name} is currently classified as <strong>{stock.compliance.replace('_', '-')}</strong> based on the latest available financial statements{stock.dataSources?.balanceSheetPeriod ? ` (${stock.dataSources.balanceSheetPeriod})` : ''}.
+                   </p>
+                   {stock.statusReason && (
+                     <p className="text-on-surface-variant text-body-sm mt-2" style={{ opacity: 0.8 }}>
+                       {stock.statusReason}
+                     </p>
+                   )}
                   
                   {!isPro && (
                      <div className="mt-4 p-4 bg-primary-fixed/20 rounded-xl border border-primary/20 flex-row gap-3">

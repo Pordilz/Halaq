@@ -119,7 +119,7 @@ export default function Profile() {
             <section className="settings-section">
               <h3 className="section-title">Account</h3>
               <div className="card-standard p-1 flex-column">
-                <button className="settings-link-btn" onClick={() => alert('Manage Billing - Integration Pending')}>
+                <button className="settings-link-btn" onClick={() => {}} disabled style={{ opacity: 0.5, cursor: 'not-allowed' }} title="Coming soon — billing integration in progress">
                    <div className="flex-row gap-3">
                      <MaterialIcon name="payment" size={20} className="text-outline" />
                      <span>Manage Subscription & Billing</span>
@@ -141,7 +141,7 @@ export default function Profile() {
               <h3 className="section-title">About Halaq</h3>
               <div className="card-standard p-6">
                 <p className="text-on-surface-variant text-body-sm mb-4">
-                  Version 1.0.0 (Refined Conviction)
+                  Version 1.0 Beta
                 </p>
                 <div className="flex gap-4">
                   <a href="#" className="text-primary font-heading text-body-sm">Terms of Use</a>

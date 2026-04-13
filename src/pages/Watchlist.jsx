@@ -85,7 +85,7 @@ export default function Watchlist() {
                        </span>
                        <span className="flex-row gap-1 text-body-sm text-on-surface-variant">
                          <span className="w-3 h-3 rounded-full bg-error"></span>
-                         {complianceBreakdown.nonCompliant} Haram
+                         {complianceBreakdown.nonCompliant} Non-Compliant
                        </span>
                     </div>
                  </div>

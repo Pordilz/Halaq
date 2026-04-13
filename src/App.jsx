@@ -11,6 +11,7 @@ import Profile from './pages/Profile'
 import Batch from './pages/Batch'
 import ETF from './pages/ETF'
 import Chat from './pages/Chat'
+import NotFound from './pages/NotFound'
 import { ProtectedRoute } from './components/ProtectedRoute'
 
 export default function App() {
@@ -54,6 +55,9 @@ export default function App() {
             <Chat />
           </ProtectedRoute>
         } />
+
+        {/* 404 Catch-All */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Layout>
   )

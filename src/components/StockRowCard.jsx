@@ -40,7 +40,11 @@ export default function StockRowCard({
       
       <div className="stock-row-card__actions">
         <div className="stock-row-card__badge-wrapper">
-          <ComplianceBadge status={status} size="sm" />
+          {status ? (
+            <ComplianceBadge status={status} size="sm" />
+          ) : (
+            <span className="stock-row-card__screen-cta">Screen →</span>
+          )}
         </div>
         <button 
           className="stock-row-card__bookmark-btn focus-ghost"
