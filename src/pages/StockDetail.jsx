@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useWatchlist } from '../hooks/useWatchlist'
 import { fetchAllScreeningData } from '../services/yahooFinanceApi'
 import { screenStock } from '../services/complianceEngine'
 import MaterialIcon from '../components/MaterialIcon'
@@ -11,11 +12,11 @@ import './StockDetail.css'
 
 export default function StockDetail() {
   const { ticker } = useParams()
-  const { profile } = useAuth()
+  const { user, profile } = useAuth()
   const navigate = useNavigate()
+  const { isInWatchlist, toggle: toggleWatchlist } = useWatchlist(user)
   
   const [activeTab, setActiveTab] = useState('ratios')
-  const [inWatchlist, setInWatchlist] = useState(false)
   const [loading, setLoading] = useState(true)
 
   const [stock, setStock] = useState(null)
@@ -258,10 +259,10 @@ export default function StockDetail() {
              
              <button 
                className="btn w-full mb-3 btn-secondary"
-               onClick={() => setInWatchlist(!inWatchlist)}
+               onClick={() => toggleWatchlist({ ticker: stock.ticker, name: stock.name, sector: stock.sector, exchange: stock.exchange })}
              >
-               <MaterialIcon name={inWatchlist ? "bookmark" : "bookmark_add"} fill={inWatchlist} />
-               {inWatchlist ? 'Saved to Watchlist' : 'Add to Watchlist'}
+               <MaterialIcon name={isInWatchlist(stock.ticker) ? "bookmark" : "bookmark_add"} fill={isInWatchlist(stock.ticker)} />
+               {isInWatchlist(stock.ticker) ? 'Saved to Watchlist' : 'Add to Watchlist'}
              </button>
              
              <button className="btn w-full btn-secondary text-primary" style={{ background: 'transparent', boxShadow: 'none' }}>
@@ -276,10 +277,10 @@ export default function StockDetail() {
       <div className="mobile-detail-footer mobile-only glass-panel">
          <button 
            className="btn btn-secondary flex-1"
-           onClick={() => setInWatchlist(!inWatchlist)}
+           onClick={() => toggleWatchlist({ ticker: stock.ticker, name: stock.name, sector: stock.sector, exchange: stock.exchange })}
          >
-           <MaterialIcon name={inWatchlist ? "bookmark" : "bookmark_add"} fill={inWatchlist} />
-           {inWatchlist ? 'Saved' : 'Watchlist'}
+           <MaterialIcon name={isInWatchlist(stock.ticker) ? "bookmark" : "bookmark_add"} fill={isInWatchlist(stock.ticker)} />
+           {isInWatchlist(stock.ticker) ? 'Saved' : 'Watchlist'}
          </button>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useWatchlist } from '../hooks/useWatchlist'
 import MaterialIcon from '../components/MaterialIcon'
 import StockRowCard from '../components/StockRowCard'
 import SetupFlow from '../components/SetupFlow'
@@ -17,8 +18,8 @@ export default function Screener() {
   const [activeFilters, setActiveFilters] = useState([])
   const [showFilterDropdown, setShowFilterDropdown] = useState(false)
   const availableFilters = ['JSE', 'NASDAQ', 'NYSE', 'Compliant Only']
-  const [watchlistTickers, setWatchlistTickers] = useState(new Set())
   const { user } = useAuth()
+  const { isInWatchlist, toggle: toggleWatchlist } = useWatchlist(user)
   const navigate = useNavigate()
   const searchTimeout = useRef(null)
 
@@ -80,16 +81,6 @@ export default function Screener() {
     // We cannot filter by Compliant Only yet because status is UNKNOWN until clicked
     return pass;
   })
-
-  const toggleWatchlist = (ticker) => {
-    const next = new Set(watchlistTickers)
-    if (next.has(ticker)) {
-      next.delete(ticker)
-    } else {
-      next.add(ticker)
-    }
-    setWatchlistTickers(next)
-  }
 
   const navigateToStock = (ticker) => {
     navigate(`/stock/${ticker}`)
@@ -181,8 +172,8 @@ export default function Screener() {
                    <StockRowCard 
                      key={stock.ticker}
                      {...stock}
-                     inWatchlist={watchlistTickers.has(stock.ticker)}
-                     onToggleWatchlist={() => toggleWatchlist(stock.ticker)}
+                     inWatchlist={isInWatchlist(stock.ticker)}
+                     onToggleWatchlist={() => toggleWatchlist(stock)}
                      onClick={() => navigateToStock(stock.ticker)}
                    />
                 ))}
@@ -207,8 +198,8 @@ export default function Screener() {
                      <StockRowCard 
                        key={stock.ticker}
                        {...stock}
-                       inWatchlist={watchlistTickers.has(stock.ticker)}
-                       onToggleWatchlist={() => toggleWatchlist(stock.ticker)}
+                       inWatchlist={isInWatchlist(stock.ticker)}
+                       onToggleWatchlist={() => toggleWatchlist(stock)}
                        onClick={() => navigateToStock(stock.ticker)}
                      />
                   ))

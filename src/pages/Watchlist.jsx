@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useWatchlist } from '../hooks/useWatchlist'
 import MaterialIcon from '../components/MaterialIcon'
 import StockRowCard from '../components/StockRowCard'
 import './Watchlist.css'
@@ -8,24 +9,7 @@ import './Watchlist.css'
 export default function Watchlist() {
   const { user } = useAuth()
   const navigate = useNavigate()
-  
-  const [loading, setLoading] = useState(true)
-  
-  // Mock data for demo
-  const [watchlist, setWatchlist] = useState([
-    { ticker: 'AAPL', name: 'Apple Inc.', sector: 'Technology', exchange: 'NASDAQ', status: 'COMPLIANT', marketCap: '$2.8T' },
-    { ticker: 'TSLA', name: 'Tesla Inc.', sector: 'Consumer Cyclical', exchange: 'NASDAQ', status: 'DOUBTFUL', marketCap: '$600B' }
-  ])
-
-  useEffect(() => {
-    // Simulate data fetch
-    const timer = setTimeout(() => setLoading(false), 500)
-    return () => clearTimeout(timer)
-  }, [])
-
-  const removeFromWatchlist = (ticker) => {
-    setWatchlist(watchlist.filter(s => s.ticker !== ticker))
-  }
+  const { watchlist, loading, removeFromWatchlist } = useWatchlist(user)
 
   const navigateToStock = (ticker) => {
     navigate(`/stock/${ticker}`)

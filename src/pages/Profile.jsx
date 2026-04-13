@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '../lib/supabase'
 import MaterialIcon from '../components/MaterialIcon'
 import './Profile.css'
 
@@ -106,7 +107,13 @@ export default function Profile() {
                     <input 
                       type="checkbox" 
                       checked={notifications} 
-                      onChange={() => setNotifications(!notifications)} 
+                      onChange={async () => {
+                        const nextVal = !notifications;
+                        setNotifications(nextVal);
+                        if (user && supabase.isConfigured) {
+                          await supabase.from('profiles').update({ alerts_enabled: nextVal }).eq('id', user.id);
+                        }
+                      }} 
                       className="sr-only"
                     />
                     <div className="toggle-slider"></div>
