@@ -115,7 +115,7 @@ export default function OnboardingCarousel({ onBack }) {
           {currentSlide === 1 && (
             <div className="slide-illustration flex-column items-center w-full slide-anim-container" style={{ padding: '0 40px' }}>
               <div className="w-full flex-between" style={{ padding: '0 20px' }}>
-                <div className="bg-surface-lowest p-7 rounded-[2rem] shadow-standard tilt-left w-64 gentle-sway-icon">
+                <div className="glass-white p-7 rounded-[2rem] shadow-floating tilt-left w-64 gentle-sway-icon">
                   <div className="flex-column gap-2 items-start">
                     <div className="bg-primary-fixed/40 text-primary font-extrabold text-sm px-2 py-1 rounded-lg tabular-nums text-center w-12">AAPL</div>
                     <div className="text-sm font-bold text-on-surface">Apple Inc.</div>
@@ -125,7 +125,7 @@ export default function OnboardingCarousel({ onBack }) {
                   </div>
                 </div>
                 
-                <div className="bg-surface-lowest p-7 rounded-[2rem] shadow-standard tilt-right w-64 mt-16 delay-100">
+                <div className="glass-white p-7 rounded-[2rem] shadow-floating tilt-right w-64 mt-16 delay-100">
                   <div className="flex-column gap-2 items-start">
                     <div className="bg-primary-fixed/40 text-primary font-extrabold text-sm px-2 py-1 rounded-lg tabular-nums text-center w-12">TSLA</div>
                     <div className="text-sm font-bold text-on-surface">Tesla Inc.</div>
@@ -228,7 +228,7 @@ export default function OnboardingCarousel({ onBack }) {
         <div className={`carousel-slide ${!isMobile ? 'slide-content' : 'mobile-slide'} ${currentSlide === 1 ? 'active' : ''}`} style={isMobile ? { backgroundColor: 'var(--color-surface-container-low)' } : {}}>
            {isMobile && (
              <div className="mobile-illustration-block grid grid-cols-2 gap-4 w-full">
-                <div className="bg-surface-lowest p-5 rounded-[1.5rem] shadow-standard tilt-left gentle-sway-icon">
+                <div className="glass-white p-5 rounded-[1.5rem] shadow-floating tilt-left gentle-sway-icon">
                   <div className="flex-column gap-2 items-start">
                     <div className="bg-primary-fixed/40 text-primary font-extrabold text-sm px-2 py-1 rounded-lg tabular-nums text-center w-12">AAPL</div>
                     <div className="text-[13px] font-bold text-on-surface">Apple Inc.</div>
@@ -237,7 +237,7 @@ export default function OnboardingCarousel({ onBack }) {
                     </div>
                   </div>
                 </div>
-                <div className="bg-surface-lowest p-5 rounded-[1.5rem] shadow-standard tilt-right mt-8 delay-100">
+                <div className="glass-white p-5 rounded-[1.5rem] shadow-floating tilt-right mt-8 delay-100">
                   <div className="flex-column gap-2 items-start">
                     <div className="bg-primary-fixed/40 text-primary font-extrabold text-sm px-2 py-1 rounded-lg tabular-nums text-center w-12">TSLA</div>
                     <div className="text-[13px] font-bold text-on-surface">Tesla Inc.</div>
