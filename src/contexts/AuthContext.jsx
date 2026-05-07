@@ -3,22 +3,35 @@ import { supabase } from '../lib/supabase'
 
 const AuthContext = createContext({})
 
+// Hard ceiling for the initial "restoring session" loader. If Supabase is
+// unreachable, mis-configured, or the network drops, we still hand control
+// back to the app rather than stranding the user on the loader forever.
+const SESSION_RESOLVE_TIMEOUT_MS = 4000
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  // Profile fetch is best-effort; failures must never block auth resolution.
   const fetchProfile = useCallback(async (userId) => {
     if (!userId || !supabase.isConfigured) {
       setProfile(null)
       return
     }
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
-    setProfile(data || null)
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single()
+      setProfile(data || null)
+    } catch (err) {
+      if (typeof console !== 'undefined') {
+        console.warn('[Halaq] Could not load profile:', err?.message || err)
+      }
+      setProfile(null)
+    }
   }, [])
 
   const refreshProfile = useCallback(async () => {
@@ -27,29 +40,62 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     let active = true
+    let resolved = false
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!active) return
-      const currentUser = session?.user ?? null
-      setUser(currentUser)
-      if (currentUser) await fetchProfile(currentUser.id)
-      setLoading(false)
-    })
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (!active) return
-      const currentUser = session?.user ?? null
-      setUser(currentUser)
-      if (currentUser) {
-        await fetchProfile(currentUser.id)
-      } else {
-        setProfile(null)
+    const resolve = () => {
+      if (!resolved && active) {
+        resolved = true
+        setLoading(false)
       }
-    })
+    }
+
+    // Safety net: if Supabase never replies, release the loader anyway.
+    const timer = setTimeout(resolve, SESSION_RESOLVE_TIMEOUT_MS)
+
+    ;(async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!active) return
+        const currentUser = session?.user ?? null
+        setUser(currentUser)
+        // Don't await — profile fetch must not block UI hydration.
+        if (currentUser) fetchProfile(currentUser.id)
+      } catch (err) {
+        if (typeof console !== 'undefined') {
+          console.warn('[Halaq] getSession failed:', err?.message || err)
+        }
+      } finally {
+        clearTimeout(timer)
+        resolve()
+      }
+    })()
+
+    let subscription
+    try {
+      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (!active) return
+        const currentUser = session?.user ?? null
+        setUser(currentUser)
+        if (currentUser) {
+          fetchProfile(currentUser.id)
+        } else {
+          setProfile(null)
+        }
+        // First auth-state event also unlocks the loader (covers the case
+        // where getSession() returned but a refresh-token kicks in late).
+        resolve()
+      })
+      subscription = data?.subscription
+    } catch (err) {
+      if (typeof console !== 'undefined') {
+        console.warn('[Halaq] onAuthStateChange failed:', err?.message || err)
+      }
+    }
 
     return () => {
       active = false
-      subscription.unsubscribe()
+      clearTimeout(timer)
+      try { subscription?.unsubscribe?.() } catch {}
     }
   }, [fetchProfile])
 
@@ -78,11 +124,6 @@ export const AuthProvider = ({ children }) => {
       redirectTo: `${window.location.origin}/login`,
     })
 
-  /**
-   * OAuth login — supports 'google' and 'apple'. Redirects the browser to the
-   * provider, then back to /home. Requires the provider to be enabled in
-   * Supabase → Authentication → Providers.
-   */
   const signInWithProvider = (provider) =>
     supabase.auth.signInWithOAuth({
       provider,
@@ -101,6 +142,7 @@ export const AuthProvider = ({ children }) => {
         isScholar,
         canSearch,
         loading,
+        configured: !!supabase.isConfigured,
         signUp,
         signIn,
         signOut,
