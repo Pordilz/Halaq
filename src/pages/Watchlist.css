@@ -1,5 +1,5 @@
 /* =============================================
-   WATCHLIST PAGE CSS
+   WATCHLIST PAGE
    ============================================= */
 
 .watchlist-layout {
@@ -8,20 +8,23 @@
   gap: var(--space-6);
 }
 
+/* ---------- Summary strip ---------- */
 .summary-strip {
-  padding: var(--space-5);
+  padding: var(--space-5) var(--space-6);
 }
 
 .summary-stats {
   display: flex;
   align-items: center;
-  gap: var(--space-6);
+  gap: var(--space-5);
   margin-bottom: var(--space-4);
+  flex-wrap: wrap;
 }
 
 .stat-box {
   display: flex;
   flex-direction: column;
+  gap: 4px;
 }
 
 .stat-value {
@@ -29,6 +32,7 @@
   font-weight: var(--font-weight-display);
   font-variant-numeric: tabular-nums;
   line-height: 1;
+  letter-spacing: -0.02em;
 }
 
 .stat-label {
@@ -36,13 +40,35 @@
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--color-outline);
-  margin-top: 4px;
+  font-weight: var(--font-weight-heading);
 }
 
 .stat-divider {
   width: 1px;
-  height: 40px;
-  background-color: var(--color-surface-container-high);
+  height: 2.5rem;
+  background-color: var(--color-outline-variant-15);
+}
+
+.stat-legend {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.stat-legend__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--text-body-sm);
+  color: var(--color-on-surface-variant);
+  font-weight: var(--font-weight-label);
+}
+
+.stat-legend__dot {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
 }
 
 .stacked-bar {
@@ -52,26 +78,40 @@
   border-radius: var(--radius-full);
   overflow: hidden;
   gap: 2px;
+  background-color: var(--color-surface-container-high);
 }
 
 .stacked-bar > div {
   height: 100%;
-  transition: width var(--transition-fast);
+  transition: width 400ms ease-out;
 }
 
-.stock-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4); /* Decoupled elements so they are not clustered */
+/* ---------- List ---------- */
+.watchlist-list {
+  background-color: var(--color-surface-container-lowest);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-standard);
+  overflow: hidden;
 }
 
+.watchlist-list > * + * {
+  border-top: 1px solid var(--color-outline-variant-15);
+}
+
+/* ---------- Empty state ---------- */
 .empty-watchlist {
-  min-height: 300px;
+  min-height: 320px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--space-8);
+  padding: var(--space-10) var(--space-6);
+  text-align: center;
+  gap: var(--space-3);
+}
+
+.empty-watchlist .btn {
+  margin-top: var(--space-4);
 }
 
 @media (min-width: 1024px) {
@@ -79,12 +119,14 @@
     flex-direction: row;
     align-items: flex-start;
   }
-  
+
   .watchlist-main {
     flex: 1;
+    min-width: 0;
   }
-  
+
   .watchlist-sidebar {
     width: 320px;
+    flex-shrink: 0;
   }
 }

@@ -1,24 +1,29 @@
-import React from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import MaterialIcon from './MaterialIcon'
+import AppLoader from './AppLoader'
 
-// Prevents non-authenticated users from accessing protected pages
-export function ProtectedRoute({ children }) {
-  const { user, loading } = useAuth()
+export function ProtectedRoute({ children, requireTier }) {
+  const { user, loading, isPro, isScholar } = useAuth()
+  const location = useLocation()
 
   if (loading) {
+    return <AppLoader label="Verifying your session…" />
+  }
+
+  if (!user) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh', color: 'var(--color-primary)' }}>
-        <MaterialIcon name="refresh" className="spinner text-primary" size={32} />
-      </div>
+      <Navigate
+        to={`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`}
+        replace
+      />
     )
   }
 
-  const location = useLocation()
-
-  if (!user) {
-    return <Navigate to={`/signup?redirect=${location.pathname}`} replace />
+  if (requireTier === 'scholar' && !isScholar) {
+    return <Navigate to="/upgrade?tier=scholar" replace />
+  }
+  if (requireTier === 'pro' && !isPro) {
+    return <Navigate to="/upgrade?tier=pro" replace />
   }
 
   return children

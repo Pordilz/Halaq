@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /profile
+Disallow: /watchlist
+Disallow: /batch
+Disallow: /etf
+Disallow: /chat
+
+Sitemap: https://halaq.app/sitemap.xml

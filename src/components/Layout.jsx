@@ -1,96 +1,121 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import MaterialIcon from './MaterialIcon'
+import Logo from './Logo'
 import DisclaimerNotice from './DisclaimerNotice'
 import './Layout.css'
-import { useState, useEffect } from 'react'
+
+const NAV_ITEMS = [
+  { to: '/home', label: 'Home', icon: 'space_dashboard' },
+  { to: '/screener', label: 'Screener', icon: 'search' },
+  { to: '/watchlist', label: 'Watchlist', icon: 'bookmarks' },
+  { to: '/learn', label: 'Learn', icon: 'school' },
+]
+
+const PREMIUM_TOOLS = [
+  { to: '/batch', label: 'Batch', icon: 'layers' },
+  { to: '/etf', label: 'ETF X-Ray', icon: 'monitoring' },
+  { to: '/chat', label: 'AI Chat', icon: 'forum' },
+]
 
 export default function Layout({ children }) {
   const location = useLocation()
   const { user, profile } = useAuth()
   const navigate = useNavigate()
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
-  const [topbarQuery, setTopbarQuery] = useState('')
+  const [notifOpen, setNotifOpen] = useState(false)
+  const notifRef = useRef(null)
 
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768)
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
-
-  // Hide shell elements completely on auth/onboarding screens
+  // Hide shell completely on landing/auth pages
   const isAuthPage = ['/', '/login', '/signup'].includes(location.pathname)
+
+  // Close notifications dropdown on outside click / Escape
+  useEffect(() => {
+    if (!notifOpen) return
+    const onDocClick = (e) => {
+      if (!notifRef.current?.contains(e.target)) setNotifOpen(false)
+    }
+    const onKey = (e) => { if (e.key === 'Escape') setNotifOpen(false) }
+    document.addEventListener('mousedown', onDocClick)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDocClick)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [notifOpen])
 
   if (isAuthPage) {
     return <main className="main-auth">{children}</main>
   }
 
-  const navItems = [
-    { to: '/screener', label: 'Screener', icon: 'search' },
-    { to: '/watchlist', label: 'Watchlist', icon: 'bookmarks' },
-    { to: '/learn', label: 'Learn', icon: 'school' },
-    { to: '/profile', label: 'Profile', icon: 'person' },
-  ]
-  
-  // Conditionally add monetized features (from implementation plan decisions)
-  const premiumTools = [
-    { to: '/batch', label: 'Batch', icon: 'layers' },
-    { to: '/etf', label: 'ETF X-Ray', icon: 'monitoring' },
-    { to: '/chat', label: 'AI Chat', icon: 'message' },
-  ]
+  const userInitials = (profile?.full_name || user?.email || 'H')
+    .charAt(0)
+    .toUpperCase()
 
-  const userInitials = profile?.email ? profile.email.charAt(0).toUpperCase() : (user?.email?.charAt(0).toUpperCase() || 'U')
+  const homePath = user ? '/home' : '/'
 
   return (
     <div className="layout">
-      {/* =========================================
-          MOBILE SHELL
-      ========================================= */}
+      <a href="#main-content" className="skip-link">Skip to main content</a>
+
+      {/* ---------- Mobile header ---------- */}
       <header className="mobile-header glass-panel">
-        <Link to="/screener" className="logo">
-          <img src="/favicon.svg" alt="Halaq Logo" className="logo-icon" style={{ width: 20, height: 20 }} />
+        <Link to={homePath} className="logo" aria-label="Halaq home">
+          <Logo size={22} color="var(--color-primary)" title="" />
           <span className="logo-text">Halaq</span>
         </Link>
         <div className="mobile-header-actions">
-          <button className="icon-btn focus-ghost" onClick={() => navigate('/screener')}>
-            <MaterialIcon name="search" outline className="text-primary" />
-          </button>
+          {user ? (
+            <Link to="/profile" className="avatar-chip focus-ghost" aria-label="Profile">
+              {userInitials}
+            </Link>
+          ) : (
+            <Link to="/login" className="btn btn-secondary topbar-login">Log in</Link>
+          )}
         </div>
       </header>
 
-      {/* =========================================
-          DESKTOP SHELL
-      ========================================= */}
-      <aside className="desktop-sidebar">
+      {/* ---------- Desktop sidebar ---------- */}
+      <aside className="desktop-sidebar" aria-label="Primary navigation">
         <div className="sidebar-logo-area">
-          <Link to="/screener" className="logo">
-            <img src="/favicon.svg" alt="Halaq Logo" className="logo-icon" style={{ width: 28, height: 28 }} />
+          <Link to={homePath} className="logo" aria-label="Halaq home">
+            <Logo size={28} color="var(--color-primary)" title="" />
             <span className="logo-text">Halaq</span>
           </Link>
         </div>
-        
+
         <nav className="desktop-nav">
-          {navItems.map(item => {
-            const active = location.pathname.startsWith(item.to)
+          {NAV_ITEMS.map(item => {
+            const active = location.pathname === item.to || location.pathname.startsWith(item.to + '/')
             return (
-              <Link key={item.to} to={item.to} className={`nav-item ${active ? 'active' : ''}`}>
+              <Link
+                key={item.to}
+                to={item.to}
+                className={`nav-item ${active ? 'active' : ''}`}
+                aria-current={active ? 'page' : undefined}
+              >
                 {active && <div className="nav-indicator" />}
-                <MaterialIcon name={item.icon} fill={active} size={24} className="nav-icon" />
+                <MaterialIcon name={item.icon} fill={active} size={22} className="nav-icon" />
                 <span className="nav-label">{item.label}</span>
               </Link>
             )
           })}
-          
+
           {user && (
             <>
               <div className="nav-divider" />
-              <div className="nav-section-title">Premium Tools</div>
-              {premiumTools.map(item => {
+              <div className="nav-section-title">Premium tools</div>
+              {PREMIUM_TOOLS.map(item => {
                 const active = location.pathname.startsWith(item.to)
                 return (
-                  <Link key={item.to} to={item.to} className={`nav-item ${active ? 'active' : ''}`}>
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    className={`nav-item ${active ? 'active' : ''}`}
+                    aria-current={active ? 'page' : undefined}
+                  >
                     {active && <div className="nav-indicator" />}
-                    <MaterialIcon name={item.icon} fill={active} size={24} className="nav-icon" />
+                    <MaterialIcon name={item.icon} fill={active} size={22} className="nav-icon" />
                     <span className="nav-label">{item.label}</span>
                   </Link>
                 )
@@ -104,68 +129,97 @@ export default function Layout({ children }) {
         </div>
       </aside>
 
+      {/* ---------- Desktop topbar (no global search) ---------- */}
       <header className="desktop-topbar glass-panel">
-        <div className="topbar-search">
-          <MaterialIcon name="search" outline size={20} className="text-outline" />
-          <input
-            type="text"
-            placeholder="Search by name or ticker..."
-            className="topbar-search-input focus-ghost"
-            value={topbarQuery}
-            onChange={(e) => setTopbarQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && topbarQuery.trim()) {
-                navigate(`/screener?q=${encodeURIComponent(topbarQuery.trim())}`)
-                setTopbarQuery('')
-              }
-            }}
-          />
+        <div className="topbar-context">
+          <span className="topbar-eyebrow">Halaq</span>
+          <span className="topbar-page">{topbarTitle(location.pathname)}</span>
         </div>
-        <div className="topbar-actions">
-          <button className="icon-btn focus-ghost">
+        <div className="topbar-actions" ref={notifRef}>
+          <button
+            type="button"
+            className="icon-btn focus-ghost"
+            aria-label="Notifications"
+            aria-expanded={notifOpen}
+            onClick={() => setNotifOpen(o => !o)}
+          >
             <MaterialIcon name="notifications" outline className="text-on-surface-variant" />
           </button>
+          {notifOpen && (
+            <div className="notif-popover" role="dialog" aria-label="Notifications">
+              <div className="notif-popover__header">
+                <span>Notifications</span>
+              </div>
+              <div className="notif-popover__empty">
+                <MaterialIcon name="notifications_off" size={24} className="text-outline" />
+                <p>No new alerts.</p>
+                <p className="notif-popover__hint">
+                  Compliance change alerts will appear here once you enable them in{' '}
+                  <Link to="/profile" className="text-primary">profile settings</Link>.
+                </p>
+              </div>
+            </div>
+          )}
           {user ? (
-            <Link to="/profile" className="avatar-chip focus-ghost">
+            <Link to="/profile" className="avatar-chip focus-ghost" aria-label="Profile">
               {userInitials}
             </Link>
           ) : (
-            <Link to="/login" className="btn btn-secondary" style={{ minHeight: '32px', height: '40px' }}>Log In</Link>
+            <Link to="/login" className="btn btn-secondary topbar-login">
+              Log in
+            </Link>
           )}
         </div>
       </header>
 
-      {/* =========================================
-          MAIN CONTENT AREA
-      ========================================= */}
-      <main className="main-content">
+      <main id="main-content" className="main-content" tabIndex={-1}>
         {children}
       </main>
 
-      {/* =========================================
-          MOBILE BOTTOM NAV & DISCLAIMER
-      ========================================= */}
+      {/* ---------- Mobile bottom nav ---------- */}
       {!location.pathname.startsWith('/stock/') && (
         <div className="mobile-safe-area">
-          <div className="mobile-disclaimer-wrapper">
-            <DisclaimerNotice compact />
-          </div>
-          
-          <nav className="mobile-bottom-nav glass-panel">
-            {navItems.map(item => {
-              const active = location.pathname.startsWith(item.to)
+          <nav className="mobile-bottom-nav glass-panel" aria-label="Primary navigation">
+            {NAV_ITEMS.map(item => {
+              const active = location.pathname === item.to || location.pathname.startsWith(item.to + '/')
               return (
-                <Link key={item.to} to={item.to} className={`mobile-nav-item ${active ? 'active' : ''}`}>
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className={`mobile-nav-item ${active ? 'active' : ''}`}
+                  aria-current={active ? 'page' : undefined}
+                >
                   {active && <div className="mobile-nav-indicator" />}
-                  <MaterialIcon name={item.icon} fill={active} size={24} className="mobile-nav-icon" />
+                  <MaterialIcon name={item.icon} fill={active} size={22} className="mobile-nav-icon" />
                   <span className="mobile-nav-label">{item.label}</span>
                 </Link>
               )
             })}
+            <Link
+              to="/profile"
+              className={`mobile-nav-item ${location.pathname.startsWith('/profile') ? 'active' : ''}`}
+              aria-current={location.pathname.startsWith('/profile') ? 'page' : undefined}
+            >
+              <MaterialIcon name="person" fill={location.pathname.startsWith('/profile')} size={22} className="mobile-nav-icon" />
+              <span className="mobile-nav-label">Profile</span>
+            </Link>
           </nav>
         </div>
       )}
-
     </div>
   )
+}
+
+function topbarTitle(pathname) {
+  if (pathname.startsWith('/home')) return 'Home'
+  if (pathname.startsWith('/screener')) return 'Screener'
+  if (pathname.startsWith('/watchlist')) return 'Watchlist'
+  if (pathname.startsWith('/learn')) return 'Learn'
+  if (pathname.startsWith('/profile')) return 'Profile'
+  if (pathname.startsWith('/upgrade')) return 'Plans'
+  if (pathname.startsWith('/batch')) return 'Batch'
+  if (pathname.startsWith('/etf')) return 'ETF X-Ray'
+  if (pathname.startsWith('/chat')) return 'AI Chat'
+  if (pathname.startsWith('/stock/')) return 'Stock report'
+  return ''
 }

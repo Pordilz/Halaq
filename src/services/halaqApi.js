@@ -1,36 +1,41 @@
-const API_BASE = '/api';
+import { supabase } from '../lib/supabase'
+
+const API_BASE = '/api'
 
 async function authHeaders() {
-  const { data: { session } } = await import('../lib/supabase.js').then(m => m.supabase.auth.getSession());
-  return {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${session?.access_token}`
-  };
+  const headers = { 'Content-Type': 'application/json' }
+  if (supabase?.auth?.getSession) {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.access_token) {
+      headers.Authorization = `Bearer ${session.access_token}`
+    }
+  }
+  return headers
+}
+
+async function postJson(path, body) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: await authHeaders(),
+    body: JSON.stringify(body || {}),
+  })
+  if (!res.ok) {
+    let msg = `Request failed (${res.status})`
+    try {
+      const data = await res.json()
+      msg = data.error || msg
+    } catch {}
+    throw new Error(msg)
+  }
+  return res.json()
 }
 
 export async function createCheckoutSession(tier) {
-  const res = await fetch(`${API_BASE}/lemonsqueezy/create-checkout`, {
-    method: 'POST',
-    headers: await authHeaders(),
-    body: JSON.stringify({ tier })
-  });
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error || 'Failed to create checkout URL');
-  }
-  const { url } = await res.json();
-  window.location.href = url;
+  const { url } = await postJson('/lemonsqueezy/create-checkout', { tier })
+  if (url) window.location.href = url
 }
 
 export async function openBillingPortal() {
-  const res = await fetch(`${API_BASE}/lemonsqueezy/create-portal`, {
-    method: 'POST',
-    headers: await authHeaders()
-  });
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error || 'Failed to open billing portal');
-  }
-  const { url } = await res.json();
-  window.location.href = url;
+  const { url } = await postJson('/lemonsqueezy/create-portal')
+  if (url) window.location.href = url
 }

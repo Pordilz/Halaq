@@ -1,0 +1,21 @@
+{
+  "name": "Halaq — Shariah Stock Screener",
+  "short_name": "Halaq",
+  "description": "Screen any stock for Shariah compliance in seconds.",
+  "start_url": "/screener",
+  "display": "standalone",
+  "background_color": "#f8f9fb",
+  "theme_color": "#1a6b47",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

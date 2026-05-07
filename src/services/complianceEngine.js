@@ -1,129 +1,182 @@
 /**
- * Shariah Compliance Engine
- * Implements AAOIFI-standard screening: business activity + 4 financial ratios + purification.
- * All functions are pure — no side effects, easy to test.
+ * Halaq Shariah compliance engine.
+ *
+ * Implements the qualitative business-activity screen and the quantitative
+ * financial-ratio screen on top of normalised profile + balance-sheet + income
+ * data, plus a purification calculator. Pure functions, easy to unit-test.
+ *
+ * Methodologies supported (thresholds vary slightly between scholars):
+ *   - AAOIFI (default)
+ *   - DJIM   (Dow Jones Islamic Market)
+ *   - SP     (S&P Global Shariah)
+ *   - FTSE   (FTSE Shariah)
+ *
+ * Disclaimer: this is screening guidance, not a fatwa. Consult a qualified
+ * scholar for personal rulings.
  */
 
 // ============================================================
-// 1. BUSINESS ACTIVITY SCREEN (Qualitative)
+// 0. CONSTANTS
+// ============================================================
+
+export const METHODOLOGY_KEYS = ['AAOIFI', 'DJIM', 'SP', 'FTSE']
+
+const METHODOLOGIES = {
+  AAOIFI: {
+    label: 'AAOIFI',
+    description: 'Accounting & Auditing Organization for Islamic Financial Institutions',
+    thresholds: {
+      leverage: 0.33,        // total debt / market cap
+      liquidity: 0.33,       // (cash + interest-bearing securities) / market cap
+      receivables: 0.49,     // accounts receivable / market cap
+      haramRevenue: 0.05,    // non-permissible revenue / total revenue
+    },
+    leverageDenominator: 'marketCap',
+    liquidityDenominator: 'marketCap',
+    receivablesDenominator: 'marketCap',
+  },
+  DJIM: {
+    label: 'Dow Jones Islamic Market',
+    description: 'Dow Jones Islamic Market Index methodology',
+    thresholds: {
+      leverage: 0.33,
+      liquidity: 0.33,
+      receivables: 0.33,
+      haramRevenue: 0.05,
+    },
+    leverageDenominator: 'marketCap',
+    liquidityDenominator: 'marketCap',
+    receivablesDenominator: 'marketCap',
+  },
+  SP: {
+    label: 'S&P Shariah',
+    description: 'S&P Dow Jones Islamic Market indices',
+    thresholds: {
+      leverage: 0.33,
+      liquidity: 0.33,
+      receivables: 0.49,
+      haramRevenue: 0.05,
+    },
+    leverageDenominator: 'marketCap',
+    liquidityDenominator: 'marketCap',
+    receivablesDenominator: 'marketCap',
+  },
+  FTSE: {
+    label: 'FTSE Shariah',
+    description: 'FTSE Shariah Global Equity Index',
+    thresholds: {
+      leverage: 0.3333,      // 33.33% of total assets (not market cap)
+      liquidity: 0.3333,     // 33.33% of total assets
+      receivables: 0.50,     // 50% of total assets
+      haramRevenue: 0.05,
+    },
+    leverageDenominator: 'totalAssets',
+    liquidityDenominator: 'totalAssets',
+    receivablesDenominator: 'totalAssets',
+  },
+}
+
+export function getMethodology(key) {
+  return METHODOLOGIES[key] || METHODOLOGIES.AAOIFI
+}
+
+// ============================================================
+// 1. BUSINESS ACTIVITY SCREEN
 // ============================================================
 
 /**
- * Industries that are categorically haram
+ * Industries that are categorically haram. Match is case-insensitive and
+ * uses substring containment in either direction so "Banks—Diversified"
+ * still matches "Banks".
  */
 const HARAM_INDUSTRIES = [
   // Alcohol
-  'beverages—brewers', 'beverages—wineries & distilleries', 'beverages - brewers',
+  'breweries', 'wineries', 'distilleries', 'beverages—brewers',
+  'beverages—wineries & distilleries', 'beverages - brewers',
   'beverages - wineries & distilleries',
-  // Banking & Insurance (conventional / riba-based)
+  // Conventional banking & insurance (riba-based)
   'banks—diversified', 'banks—regional', 'banks - diversified', 'banks - regional',
+  'savings & cooperative banks',
   'insurance—diversified', 'insurance—life', 'insurance—property & casualty',
   'insurance—reinsurance', 'insurance—specialty', 'insurance - diversified',
   'insurance - life', 'insurance - property & casualty', 'insurance - reinsurance',
-  'insurance - specialty', 'mortgage finance', 'credit services',
+  'insurance - specialty', 'insurance brokers',
+  'mortgage finance', 'credit services', 'consumer finance', 'capital markets',
   // Gambling
   'gambling', 'casinos & gaming', 'resorts & casinos',
   // Tobacco
   'tobacco',
   // Adult entertainment
   'adult entertainment',
-];
-
-const HARAM_SECTORS = [
-  // Removed 'financial services' — too broad. Granular industries (banks, insurance)
-  // already handle the actual haram sub-sectors. Many fintech/payment companies
-  // fall under this sector but are not riba-based.
-];
+  // Pork & non-halal meat
+  'pork production',
+]
 
 /**
- * Industries that are permissible with caution (<5% haram revenue rule applies)
+ * Industries that are conditionally permissible — pass only if non-permissible
+ * income < 5%. The financial ratio screen handles the actual gate.
  */
 const CAUTIONARY_INDUSTRIES = [
-  'lodging', 'resorts & casinos', 'restaurants', 'hotels',
-  'entertainment', 'media—diversified', 'broadcasting',
-  'media - diversified', 'department stores', 'discount stores',
-  'grocery stores', 'specialty retail',
-  'aerospace & defense',
-];
+  'lodging', 'restaurants', 'hotels',
+  'entertainment', 'media—diversified', 'media - diversified', 'broadcasting',
+  'department stores', 'discount stores', 'grocery stores', 'specialty retail',
+  'aerospace & defense', 'travel services', 'leisure',
+]
 
-const CAUTIONARY_SECTORS = [
-  'communication services',
-];
+const CAUTIONARY_SECTORS = ['communication services']
 
-/**
- * Screen a company's business activity
- * @param {object} profile — { sector, industry, name }
- * @returns {{ pass: boolean, status: 'PASS'|'FAIL'|'CAUTION', reason: string }}
- */
+function tokenIncludes(haystack, needle) {
+  if (!haystack || !needle) return false
+  return haystack.includes(needle) || needle.includes(haystack)
+}
+
 export function screenBusinessActivity(profile) {
-  const sector = (profile.sector || '').toLowerCase().trim();
-  const industry = (profile.industry || '').toLowerCase().trim();
+  const sector = (profile.sector || '').toLowerCase().trim()
+  const industry = (profile.industry || '').toLowerCase().trim()
 
   if (!sector && !industry) {
     return {
       pass: false,
       status: 'DOUBTFUL',
       reason: 'Missing business activity information',
-      detail: 'Cannot determine Shariah compliance because the sector and industry are not provided in the data source. This often occurs for ETFs, mutual funds, or newly listed entities.',
-    };
+      detail:
+        'Cannot determine Shariah compliance because the sector and industry are not provided in the data source. This often occurs for ETFs, mutual funds, or newly listed entities.',
+    }
   }
 
-  // Check haram industries first
-  if (HARAM_INDUSTRIES.some(h => (industry && h.includes(industry)) || (industry && industry.includes(h)))) {
+  if (HARAM_INDUSTRIES.some(h => tokenIncludes(industry, h))) {
     return {
       pass: false,
       status: 'FAIL',
       reason: `Primary business is non-permissible: ${profile.industry}`,
       detail: `The "${profile.industry}" industry involves activities prohibited under Shariah law.`,
-    };
+    }
   }
 
-  // Check haram sectors
-  if (HARAM_SECTORS.some(s => (sector && s.includes(sector)) || (sector && sector.includes(s)))) {
-    return {
-      pass: false,
-      status: 'FAIL',
-      reason: `Sector is non-permissible: ${profile.sector}`,
-      detail: `The "${profile.sector}" sector primarily involves riba-based (interest) transactions.`,
-    };
-  }
-
-  // Check cautionary industries
   if (
-    CAUTIONARY_INDUSTRIES.some(c => (industry && c.includes(industry)) || (industry && industry.includes(c))) ||
-    CAUTIONARY_SECTORS.some(c => (sector && c.includes(sector)) || (sector && sector.includes(c)))
+    CAUTIONARY_INDUSTRIES.some(c => tokenIncludes(industry, c)) ||
+    CAUTIONARY_SECTORS.some(c => tokenIncludes(sector, c))
   ) {
     return {
       pass: true,
       status: 'CAUTION',
-      reason: `Mixed business — requires <5% haram revenue check`,
-      detail: `The "${profile.industry}" industry may include non-permissible revenue streams. The haram income ratio test will determine final compliance.`,
-    };
+      reason: 'Mixed business — requires <5% haram revenue check',
+      detail: `The "${profile.industry || profile.sector}" industry may include non-permissible revenue streams. The haram income ratio test will determine final compliance.`,
+    }
   }
 
-  // Otherwise it's clearly permissible
   return {
     pass: true,
     status: 'PASS',
     reason: `Permissible business activity: ${profile.industry || profile.sector}`,
     detail: `The "${profile.industry || profile.sector}" industry does not involve prohibited activities.`,
-  };
+  }
 }
 
-
 // ============================================================
-// 2. FINANCIAL RATIO SCREEN (Quantitative)
+// 2. FINANCIAL RATIO SCREEN
 // ============================================================
 
-/**
- * Calculate a single financial ratio test
- * @param {string} name — human-readable name
- * @param {number} numerator
- * @param {number} denominator
- * @param {number} threshold — as decimal, e.g. 0.33 for 33%
- * @param {string} description
- * @returns {object} ratio result
- */
 function calculateRatio(name, numerator, denominator, threshold, description) {
   if (!denominator || denominator <= 0) {
     return {
@@ -131,193 +184,185 @@ function calculateRatio(name, numerator, denominator, threshold, description) {
       pass: false,
       ratio: null,
       threshold,
-      thresholdPercent: (threshold * 100).toFixed(0) + '%',
+      thresholdPercent: (threshold * 100).toFixed(2) + '%',
       ratioPercent: 'N/A',
       numerator,
       denominator,
       description,
-      error: 'Denominator is zero or unavailable',
-    };
+      error: 'Denominator unavailable',
+    }
   }
 
-  const ratio = numerator / denominator;
-  const pass = ratio < threshold;
-
+  const ratio = numerator / denominator
   return {
     name,
-    pass,
+    pass: ratio < threshold,
     ratio,
     threshold,
-    thresholdPercent: (threshold * 100).toFixed(0) + '%',
+    thresholdPercent: (threshold * 100).toFixed(2) + '%',
     ratioPercent: (ratio * 100).toFixed(2) + '%',
     numerator,
     denominator,
     description,
     error: null,
-  };
+  }
 }
 
-/**
- * Run all 4 AAOIFI financial ratio tests
- * @param {object} params
- * @param {number} params.totalDebt
- * @param {number} params.marketCap
- * @param {number} params.cashAndInterestBearing — cash + short-term interest-bearing investments
- * @param {number} params.receivables — accounts receivable / net receivables
- * @param {number} params.haramRevenue — estimated non-permissible revenue
- * @param {number} params.totalRevenue
- * @returns {object} { ratios: [], allPass: boolean }
- */
 export function screenFinancialRatios({
   totalDebt,
   marketCap,
+  totalAssets,
   cashAndInterestBearing,
   receivables,
   haramRevenue = 0,
   totalRevenue,
   haramDescription = 'Non-permissible Revenue ÷ Total Revenue must be < 5%',
+  methodology = 'AAOIFI',
 }) {
+  const cfg = getMethodology(methodology)
+
+  const denominators = {
+    marketCap,
+    totalAssets,
+  }
+
+  const leverageDenom = denominators[cfg.leverageDenominator] ?? marketCap
+  const liquidityDenom = denominators[cfg.liquidityDenominator] ?? marketCap
+  const receivablesDenom = denominators[cfg.receivablesDenominator] ?? marketCap
+
+  const denomLabel = (key) =>
+    key === 'totalAssets' ? 'Total Assets' : 'Market Cap'
+
   const ratios = [
     calculateRatio(
       'Leverage Ratio',
       totalDebt,
-      marketCap,
-      0.33,
-      'Total Debt ÷ Market Cap must be < 33%'
+      leverageDenom,
+      cfg.thresholds.leverage,
+      `Total Debt ÷ ${denomLabel(cfg.leverageDenominator)} must be < ${(cfg.thresholds.leverage * 100).toFixed(2)}%`
     ),
     calculateRatio(
       'Liquidity Ratio',
       cashAndInterestBearing,
-      marketCap,
-      0.33,
-      '(Cash + Interest-bearing Securities) ÷ Market Cap must be < 33%'
+      liquidityDenom,
+      cfg.thresholds.liquidity,
+      `(Cash + Interest-bearing Securities) ÷ ${denomLabel(cfg.liquidityDenominator)} must be < ${(cfg.thresholds.liquidity * 100).toFixed(2)}%`
     ),
     calculateRatio(
       'Receivables Ratio',
       receivables,
-      marketCap,
-      0.49,
-      'Accounts Receivable ÷ Market Cap must be < 49%'
+      receivablesDenom,
+      cfg.thresholds.receivables,
+      `Accounts Receivable ÷ ${denomLabel(cfg.receivablesDenominator)} must be < ${(cfg.thresholds.receivables * 100).toFixed(2)}%`
     ),
     calculateRatio(
       'Haram Income Ratio',
       haramRevenue,
       totalRevenue,
-      0.05,
+      cfg.thresholds.haramRevenue,
       haramDescription
     ),
-  ];
+  ]
 
-  const allPass = ratios.every(r => r.pass);
-
-  return { ratios, allPass };
+  return { ratios, allPass: ratios.every(r => r.pass), methodology: cfg.label }
 }
 
-
 // ============================================================
-// 3. PURIFICATION CALCULATION
+// 3. PURIFICATION
 // ============================================================
 
-/**
- * Calculate the purification (cleansing) amount on dividends
- * @param {number} haramRevenuePercent — e.g. 0.02 for 2%
- * @param {number} dividendReceived — in currency
- * @returns {{ amount: number, description: string }}
- */
+const CURRENCY_SYMBOLS = {
+  USD: '$', GBP: '£', EUR: '€', ZAR: 'R',
+  JPY: '¥', CAD: '$', AUD: '$', INR: '₹',
+  CHF: 'Fr', CNY: '¥', SGD: 'S$', HKD: 'HK$',
+  AED: 'د.إ', SAR: 'ر.س', PKR: '₨',
+}
+
+export function getCurrencySymbol(currency = 'USD') {
+  return CURRENCY_SYMBOLS[currency] || `${currency} `
+}
+
 export function calculatePurification(haramRevenuePercent, dividendReceived, currency = 'USD') {
-  const amount = haramRevenuePercent * dividendReceived;
-  const symbol = currency === 'ZAR' ? 'R' : currency === 'GBP' ? '£' : '$';
+  const amount = (haramRevenuePercent || 0) * (dividendReceived || 0)
+  const symbol = getCurrencySymbol(currency)
 
   return {
-    amount: Math.round(amount * 100) / 100, // round to 2 decimals
+    amount: Math.round(amount * 100) / 100,
     percent: haramRevenuePercent,
-    percentDisplay: (haramRevenuePercent * 100).toFixed(2) + '%',
-    description: amount > 0
-      ? `Donate ${symbol}${amount.toFixed(2)} to charity from this dividend`
-      : 'No purification required — no haram income detected',
-  };
+    percentDisplay: ((haramRevenuePercent || 0) * 100).toFixed(2) + '%',
+    description:
+      amount > 0
+        ? `Donate ${symbol}${amount.toFixed(2)} to charity from this dividend`
+        : 'No purification required — no haram income detected',
+  }
 }
 
-
 // ============================================================
-// 4. OVERALL COMPLIANCE VERDICT
+// 4. OVERALL VERDICT
 // ============================================================
 
-/**
- * @typedef {'COMPLIANT' | 'NON_COMPLIANT' | 'DOUBTFUL'} ComplianceStatus
- */
+export function screenStock(profile, balanceSheet, income, options = {}) {
+  const methodology = options.methodology && METHODOLOGIES[options.methodology]
+    ? options.methodology
+    : 'AAOIFI'
 
-/**
- * Run the full AAOIFI compliance screening on a stock
- * @param {object} profile — from getCompanyProfile
- * @param {object} balanceSheet — from getBalanceSheet
- * @param {object} income — from getIncomeStatement
- * @returns {object} Full compliance result
- */
-export function screenStock(profile, balanceSheet, income) {
-  // 1. Business Activity Screen
-  const businessScreen = screenBusinessActivity(profile);
+  const businessScreen = screenBusinessActivity(profile)
 
-  // 2. Financial Ratios
-  // Both interest INCOME (riba earned) and interest EXPENSE (riba paid) 
+  // Both interest INCOME (riba earned) and interest EXPENSE (riba paid)
   // are considered non-permissible under AAOIFI standards.
-  // We sum them for the most conservative (accurate) estimate.
-  const interestIncome = Math.abs(income.interestIncome || 0);
-  const interestExpense = Math.abs(income.interestExpense || 0);
-  const estimatedHaramRevenue = interestIncome + interestExpense;
+  const interestIncome = Math.abs(income.interestIncome || 0)
+  const interestExpense = Math.abs(income.interestExpense || 0)
+  const estimatedHaramRevenue = interestIncome + interestExpense
 
-  // Build a dynamic description based on data confidence
-  const dataSource = income.interestDataSource || 'unknown';
-  let haramDescription = 'Non-permissible Revenue ÷ Total Revenue must be < 5%';
+  const dataSource = income.interestDataSource || 'unknown'
+  let haramDescription = 'Non-permissible Revenue ÷ Total Revenue must be < 5%'
   if (dataSource === 'explicit') {
-    haramDescription = 'Interest Income + Interest Expense ÷ Total Revenue must be < 5% (from reported financial data)';
+    haramDescription = 'Interest Income + Interest Expense ÷ Total Revenue must be < 5% (from reported financial data)'
   } else if (dataSource === 'estimated') {
-    haramDescription = 'Non-operating Income ÷ Total Revenue must be < 5% (estimated — explicit interest data unavailable)';
+    haramDescription = 'Non-operating Income ÷ Total Revenue must be < 5% (estimated — explicit interest data unavailable)'
   } else if (dataSource === 'debt-derived') {
-    haramDescription = 'Estimated Interest (Total Debt × 5%) ÷ Total Revenue must be < 5% (derived from debt — no interest data available)';
+    haramDescription = 'Estimated Interest (Total Debt × 5%) ÷ Total Revenue must be < 5% (derived from debt — no interest data available)'
   }
 
   const financialScreen = screenFinancialRatios({
     totalDebt: balanceSheet.totalDebt,
     marketCap: profile.marketCap,
+    totalAssets: balanceSheet.totalAssets,
     cashAndInterestBearing: balanceSheet.cashAndShortTermInvestments,
     receivables: balanceSheet.netReceivables,
     haramRevenue: estimatedHaramRevenue,
     totalRevenue: income.revenue,
     haramDescription,
-  });
+    methodology,
+  })
 
-  // 3. Determine overall status
-  let status = 'COMPLIANT';
-  let statusReason = 'All screening criteria passed';
+  let status = 'COMPLIANT'
+  let statusReason = 'All screening criteria passed'
 
   if (businessScreen.status === 'DOUBTFUL') {
-    status = 'DOUBTFUL';
-    statusReason = businessScreen.reason;
+    status = 'DOUBTFUL'
+    statusReason = businessScreen.reason
   } else if (!businessScreen.pass) {
-    status = 'NON_COMPLIANT';
-    statusReason = businessScreen.reason;
+    status = 'NON_COMPLIANT'
+    statusReason = businessScreen.reason
   } else if (!financialScreen.allPass) {
-    status = 'NON_COMPLIANT';
-    const failedRatios = financialScreen.ratios.filter(r => !r.pass);
-    
-    // Check if the failure is purely because data was missing (e.g. market cap = 0)
-    const hasRealFailures = failedRatios.some(r => !r.error);
-    
+    const failedRatios = financialScreen.ratios.filter(r => !r.pass)
+    const hasRealFailures = failedRatios.some(r => !r.error)
+
     if (!hasRealFailures) {
-      status = 'DOUBTFUL';
-      statusReason = `Cannot verify compliance due to missing financial data for ${failedRatios.length} ratio(s).`;
+      status = 'DOUBTFUL'
+      statusReason = `Cannot verify compliance due to missing financial data for ${failedRatios.length} ratio(s).`
     } else {
-      statusReason = `Failed ${failedRatios.length} financial ratio(s): ${failedRatios.map(r => r.name).join(', ')}`;
+      status = 'NON_COMPLIANT'
+      statusReason = `Failed ${failedRatios.length} financial ratio(s): ${failedRatios.map(r => r.name).join(', ')}`
     }
   } else if (businessScreen.status === 'CAUTION') {
-    status = 'DOUBTFUL';
-    statusReason = 'Business activity requires further review — passes financial screens';
+    status = 'DOUBTFUL'
+    statusReason = 'Business activity requires further review — passes financial screens'
   }
 
-  // 4. Purification info
-  const haramIncomeRatio = financialScreen.ratios.find(r => r.name === 'Haram Income Ratio');
-  const haramPercent = haramIncomeRatio?.ratio || 0;
+  const haramIncomeRatio = financialScreen.ratios.find(r => r.name === 'Haram Income Ratio')
+  const haramPercent = haramIncomeRatio?.ratio || 0
 
   return {
     ticker: profile.ticker,
@@ -328,6 +373,9 @@ export function screenStock(profile, balanceSheet, income) {
     marketCap: profile.marketCap,
     currency: profile.currency,
 
+    methodology: financialScreen.methodology,
+    methodologyKey: methodology,
+
     status,
     statusReason,
 
@@ -335,15 +383,18 @@ export function screenStock(profile, balanceSheet, income) {
     financialScreen,
 
     haramRevenuePercent: haramPercent,
-    purificationNote: haramPercent > 0
-      ? `${(haramPercent * 100).toFixed(2)}% of dividends should be donated to charity`
-      : null,
+    purificationNote:
+      haramPercent > 0
+        ? `${(haramPercent * 100).toFixed(2)}% of dividends should be donated to charity`
+        : null,
 
     dataSources: {
       balanceSheetPeriod: balanceSheet.period,
       incomeStatementPeriod: income.period,
+      interestDataSource: dataSource,
     },
 
-    disclaimer: 'This tool provides a screening framework based on AAOIFI standards. It is not a fatwa. For certainty on specific investments, consult a qualified Islamic finance scholar.',
-  };
+    disclaimer:
+      'This tool provides a screening framework based on AAOIFI and major scholarly standards. It is not a fatwa. For certainty on specific investments, consult a qualified Islamic finance scholar.',
+  }
 }

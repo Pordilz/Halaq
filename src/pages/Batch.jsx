@@ -1,64 +1,120 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import MaterialIcon from '../components/MaterialIcon'
 import { fetchAllScreeningData } from '../services/yahooFinanceApi'
 import { screenStock } from '../services/complianceEngine'
 import ComplianceBadge from '../components/ComplianceBadge'
+import useDocumentTitle from '../hooks/useDocumentTitle'
 import './Batch.css'
+
+const MAX_TICKERS = 20
 
 export default function Batch() {
   const { isPro } = useAuth()
+  const navigate = useNavigate()
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState([])
+  const [progress, setProgress] = useState({ done: 0, total: 0 })
+
+  useDocumentTitle('Batch screening', 'Screen up to 20 stocks at once for Shariah compliance.')
 
   async function handleBatch(e) {
     e.preventDefault()
     if (!input.trim()) return
 
-    const tickers = input.split(/[\s,]+/).map(t => t.trim().toUpperCase()).filter(Boolean)
+    const tickers = Array.from(new Set(
+      input.split(/[\s,]+/).map(t => t.trim().toUpperCase()).filter(Boolean)
+    )).slice(0, MAX_TICKERS)
     if (tickers.length === 0) return
 
-    // Limit to 20
-    const limitedTickers = tickers.slice(0, 20)
-
     setLoading(true)
-    const newResults = []
+    setResults([])
+    setProgress({ done: 0, total: tickers.length })
 
-    for (const t of limitedTickers) {
-      try {
-        const data = await fetchAllScreeningData(t)
-        const result = screenStock(data.profile, data.balanceSheet, data.income)
-        newResults.push(result)
-      } catch (err) {
-        newResults.push({ ticker: t, error: true, statusReason: 'Data not found or error fetching data' })
-      }
+    // Run in parallel chunks of 4 to keep Yahoo Finance happy
+    const chunkSize = 4
+    const collected = []
+    for (let i = 0; i < tickers.length; i += chunkSize) {
+      const chunk = tickers.slice(i, i + chunkSize)
+      const settled = await Promise.allSettled(
+        chunk.map(async (t) => {
+          const data = await fetchAllScreeningData(t)
+          return screenStock(data.profile, data.balanceSheet, data.income)
+        })
+      )
+      settled.forEach((res, idx) => {
+        if (res.status === 'fulfilled') {
+          collected.push(res.value)
+        } else {
+          collected.push({
+            ticker: chunk[idx],
+            error: true,
+            statusReason: res.reason?.message || 'Could not fetch data',
+          })
+        }
+      })
+      setResults([...collected])
+      setProgress({ done: collected.length, total: tickers.length })
     }
 
-    setResults(newResults)
     setLoading(false)
   }
 
   if (!isPro) {
     return (
-      <div className="container animate-entrance" style={{ paddingTop: '5rem', paddingBottom: 'var(--space-12)' }}>
+      <div className="container animate-entrance" style={{ paddingTop: '4rem', paddingBottom: 'var(--space-12)' }}>
         <div className="max-w-xl mx-auto">
-          <div className="card-standard text-center flex-col items-center">
-            <div className="w-16 h-16 rounded-full bg-primary-container/30 text-primary flex items-center justify-center mb-6">
+          <div
+            className="card-standard"
+            style={{
+              padding: '3rem 2rem',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              textAlign: 'center',
+              gap: '1.25rem',
+            }}
+          >
+            <div
+              style={{
+                width: '4rem',
+                height: '4rem',
+                borderRadius: '9999px',
+                background: 'rgba(26, 107, 71, 0.10)',
+                color: 'var(--color-primary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
               <MaterialIcon name="layers" size={32} />
             </div>
-            
-            <div className="bg-primary px-3 py-1 rounded-full text-on-primary text-micro font-bold uppercase tracking-widest mb-4">
-              Requires Upgrade
-            </div>
-            
-            <h1 className="text-h1 mb-4">Batch Screening</h1>
-            <p className="text-on-surface-variant text-body-lg mb-8">
-              Analyze up to 20 portfolios at once. Batch screening is exclusively available to Pro and Scholar members.
+
+            <span
+              style={{
+                background: 'var(--color-primary)',
+                color: 'var(--color-white)',
+                padding: '0.375rem 0.875rem',
+                borderRadius: '9999px',
+                fontSize: 'var(--text-micro)',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                lineHeight: 1,
+              }}
+            >
+              Pro feature
+            </span>
+
+            <h1 className="text-h1">Batch screening</h1>
+            <p className="text-on-surface-variant text-body-lg" style={{ maxWidth: '32rem' }}>
+              Analyse up to {MAX_TICKERS} tickers at once. Batch screening is available to Pro and Scholar members.
             </p>
-            <div className="flex gap-4 w-full justify-center">
-              <button className="btn btn-primary">Upgrade Plan</button>
-            </div>
+            <button type="button" className="btn btn-primary btn--lg" onClick={() => navigate('/upgrade?tier=pro')}>
+              Upgrade to Pro
+            </button>
           </div>
         </div>
       </div>
@@ -82,7 +138,16 @@ export default function Batch() {
             rows={4}
           />
           <button type="submit" className="btn btn-primary" disabled={loading || !input.trim()}>
-            {loading ? <><MaterialIcon name="refresh" className="spinner" size={18}/> Screening...</> : <><MaterialIcon name="search" size={18} /> Run Batch Screen</>}
+            {loading ? (
+              <>
+                <MaterialIcon name="refresh" className="spinner" size={18}/>
+                Screening {progress.done}/{progress.total}…
+              </>
+            ) : (
+              <>
+                <MaterialIcon name="search" size={18} /> Run batch screen
+              </>
+            )}
           </button>
         </form>
 
@@ -117,8 +182,8 @@ export default function Batch() {
 
                     const getRatioValue = (name) => {
                       const ratio = r.financialScreen.ratios.find(rate => rate.name.includes(name));
-                      if (!ratio) return 'N/A';
-                      return `${(ratio.value * 100).toFixed(1)}%`;
+                      if (!ratio || ratio.error || ratio.ratio == null) return 'N/A';
+                      return `${(ratio.ratio * 100).toFixed(1)}%`;
                     }
 
                     return (
