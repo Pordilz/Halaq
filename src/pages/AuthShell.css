@@ -405,6 +405,35 @@
   font-weight: 500;
 }
 
+.auth-shell__notice {
+  background-color: var(--color-caution-container);
+  color: var(--color-on-caution-container);
+  border-radius: var(--radius-xl);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: var(--text-body-sm);
+  margin-top: var(--space-2);
+}
+
+.auth-shell__notice p { margin: 0; }
+
+.auth-shell__notice-action {
+  align-self: flex-start;
+  border: none;
+  background: var(--color-on-caution-container);
+  color: var(--color-caution-container);
+  font-weight: 700;
+  font-size: var(--text-body-sm);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.auth-shell__notice-action:disabled { opacity: 0.6; cursor: not-allowed; }
+
 .auth-shell__error {
   background-color: var(--color-error-container);
   color: var(--color-on-error-container);

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '../lib/supabase'
 import MaterialIcon from '../components/MaterialIcon'
 import Logo from '../components/Logo'
 import './AuthShell.css'
@@ -12,6 +13,8 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [oauthLoading, setOauthLoading] = useState(null)
   const [error, setError] = useState(null)
+  const [needsConfirmation, setNeedsConfirmation] = useState(false)
+  const [resendStatus, setResendStatus] = useState(null) // null | 'sending' | 'sent'
   const [view, setView] = useState('login') // 'login' | 'forgot' | 'forgot-success'
   const [resetEmail, setResetEmail] = useState('')
 
@@ -23,18 +26,44 @@ export default function Login() {
     e.preventDefault()
     setLoading(true)
     setError(null)
+    setNeedsConfirmation(false)
+    setResendStatus(null)
     const { error } = await signIn(email.trim(), password)
     if (error) {
-      const msg = /invalid login/i.test(error.message)
-        ? 'Incorrect email or password. Please try again.'
-        : error.message
-      setError(msg)
+      // Map common auth errors to friendly text + actionable UI
+      if (/email not confirmed/i.test(error.message)) {
+        setNeedsConfirmation(true)
+        setError("Your email isn't confirmed yet. Check your inbox or resend the link below.")
+      } else if (/invalid login|invalid credentials/i.test(error.message)) {
+        setError('Incorrect email or password. Please try again.')
+      } else {
+        setError(error.message)
+      }
       setLoading(false)
       return
     }
     const params = new URLSearchParams(location.search)
     const redirect = params.get('redirect') || '/home'
     navigate(redirect)
+  }
+
+  async function resendConfirmation() {
+    if (!email.trim()) return
+    setResendStatus('sending')
+    const appOrigin =
+      (typeof import.meta !== 'undefined' && import.meta.env?.VITE_APP_URL) ||
+      window.location.origin
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email.trim(),
+      options: { emailRedirectTo: `${appOrigin}/home` },
+    })
+    if (error) {
+      setError(error.message || 'Could not resend confirmation email.')
+      setResendStatus(null)
+      return
+    }
+    setResendStatus('sent')
   }
 
   async function handleOAuth(provider) {
@@ -177,6 +206,26 @@ export default function Login() {
               {error && (
                 <div className="auth-shell__error" role="alert">
                   <MaterialIcon name="error_outline" size={18} /> {error}
+                </div>
+              )}
+
+              {needsConfirmation && (
+                <div className="auth-shell__notice" role="status">
+                  <p>
+                    Didn't get the email? Check your spam folder, or resend it.
+                  </p>
+                  <button
+                    type="button"
+                    className="auth-shell__notice-action"
+                    onClick={resendConfirmation}
+                    disabled={resendStatus === 'sending' || resendStatus === 'sent'}
+                  >
+                    {resendStatus === 'sending'
+                      ? 'Sending…'
+                      : resendStatus === 'sent'
+                        ? 'Email sent ✓'
+                        : 'Resend confirmation email'}
+                  </button>
                 </div>
               )}
 

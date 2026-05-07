@@ -57,15 +57,14 @@ export default function Signup() {
     setLoading(true)
     setError(null)
 
-    // Cheap pre-flight uniqueness check so the user gets a friendly error
-    // before we hit the auth endpoint and burn a verification email.
+    // Username availability check — uses a public RPC that bypasses
+    // profile RLS and returns just a boolean.
     if (supabase.isConfigured) {
-      const { data: existing } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('username', cleanUsername)
-        .maybeSingle()
-      if (existing) {
+      const { data: taken, error: rpcError } = await supabase.rpc(
+        'is_username_taken',
+        { p_username: cleanUsername }
+      )
+      if (!rpcError && taken === true) {
         setUsernameError('That username is taken — try another.')
         setLoading(false)
         return
@@ -76,16 +75,34 @@ export default function Signup() {
       username: cleanUsername,
     })
     if (error) {
-      setError(error.message)
+      // Common cases: existing email, weak password, network
+      const friendly = /already registered|already exists/i.test(error.message)
+        ? 'That email is already registered. Try signing in instead.'
+        : error.message
+      setError(friendly)
       setLoading(false)
       return
     }
-    setLoading(false)
-    if (!data?.session) {
-      setEmailVerifyNotice(true)
+
+    // Supabase's anti-enumeration response: when the email exists, it returns
+    // a fake user with identities=[] and no session. Detect it and route the
+    // user to login instead of stranding them on a "check your email" screen.
+    const identities = data?.user?.identities
+    const looksLikeRepeatedSignup =
+      data?.user && Array.isArray(identities) && identities.length === 0
+    if (looksLikeRepeatedSignup) {
+      setLoading(false)
+      setError('That email is already registered. Try signing in instead.')
       return
     }
-    navigate('/home', { replace: true })
+
+    setLoading(false)
+    if (data?.session) {
+      navigate('/home', { replace: true })
+      return
+    }
+    // Genuine new signup, awaiting email confirmation
+    setEmailVerifyNotice(true)
   }
 
   async function handleOAuth(provider) {
