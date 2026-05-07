@@ -12,9 +12,9 @@ import useDocumentTitle from '../hooks/useDocumentTitle'
 import './StockDetail.css'
 
 const STATUS_TONE = {
-  COMPLIANT: { className: 'status-banner--compliant', icon: 'check_circle', label: 'COMPLIANT' },
-  NON_COMPLIANT: { className: 'status-banner--non', icon: 'cancel', label: 'NON-COMPLIANT' },
-  DOUBTFUL: { className: 'status-banner--doubtful', icon: 'help', label: 'DOUBTFUL' },
+  COMPLIANT: { className: 'sd-banner--compliant', icon: 'check_circle', label: 'COMPLIANT' },
+  NON_COMPLIANT: { className: 'sd-banner--non', icon: 'cancel', label: 'NON-COMPLIANT' },
+  DOUBTFUL: { className: 'sd-banner--doubtful', icon: 'help', label: 'DOUBTFUL' },
 }
 
 const TABS = [
