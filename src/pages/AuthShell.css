@@ -367,6 +367,44 @@
   padding: 0;
 }
 
+.auth-shell__input-with-prefix {
+  position: relative;
+}
+
+.auth-shell__input-prefix {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-outline);
+  font-weight: 600;
+  pointer-events: none;
+  font-size: var(--text-body-lg);
+}
+
+.auth-shell__input--prefixed {
+  padding-left: 2.25rem;
+}
+
+.auth-shell__input.is-invalid {
+  border-color: var(--color-error);
+  background-color: rgba(254, 226, 226, 0.4);
+}
+
+.auth-shell__field-error {
+  margin-top: 0.25rem;
+  font-size: var(--text-micro);
+  font-weight: 600;
+  color: var(--color-error);
+}
+
+.auth-shell__field-hint {
+  margin-top: 0.25rem;
+  font-size: var(--text-micro);
+  color: var(--color-on-surface-variant);
+  font-weight: 500;
+}
+
 .auth-shell__error {
   background-color: var(--color-error-container);
   color: var(--color-on-error-container);

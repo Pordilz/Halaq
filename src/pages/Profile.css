@@ -283,6 +283,97 @@
   font-size: var(--text-body-sm);
 }
 
+/* Username editor */
+.username-editor {
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.username-editor__head {
+  margin-bottom: var(--space-2);
+}
+
+.username-editor__row {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-3);
+}
+
+.username-editor__input-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.username-editor__prefix {
+  position: absolute;
+  left: 0.875rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-outline);
+  font-weight: 600;
+  pointer-events: none;
+  font-size: 1rem;
+}
+
+.username-editor__input {
+  width: 100%;
+  height: 3rem;
+  padding: 0 1rem 0 2rem;
+  background-color: var(--color-surface-container);
+  border: 1px solid transparent;
+  border-radius: var(--radius-xl);
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-on-surface);
+  transition: all var(--transition-fast);
+  letter-spacing: 0.01em;
+}
+
+.username-editor__input:focus {
+  outline: none;
+  background-color: var(--color-surface-container-lowest);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(26, 107, 71, 0.10);
+}
+
+.username-editor__input.is-invalid {
+  border-color: var(--color-error);
+  background-color: rgba(254, 226, 226, 0.4);
+}
+
+.username-editor__save {
+  height: 3rem;
+  min-height: 3rem;
+  padding: 0 1.25rem;
+  border-radius: var(--radius-xl);
+}
+
+.username-editor__error {
+  margin: 0;
+  font-size: var(--text-micro);
+  font-weight: 600;
+  color: var(--color-error);
+}
+
+.username-editor__success {
+  margin: 0;
+  font-size: var(--text-micro);
+  font-weight: 600;
+  color: var(--color-tertiary);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+@media (max-width: 480px) {
+  .username-editor__row { flex-direction: column; align-items: stretch; }
+  .username-editor__save { width: 100%; }
+}
+
 /* Methodology card */
 .methodology-card {
   background-color: var(--color-surface-container-lowest);

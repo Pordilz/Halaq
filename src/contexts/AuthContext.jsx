@@ -105,12 +105,17 @@ export const AuthProvider = ({ children }) => {
   const dailyCount = profile?.daily_search_count || 0
   const canSearch = isPro || dailyCount < 5
 
-  const signUp = (email, password) =>
+  /**
+   * Sign up with optional metadata (e.g. { username }). The Supabase trigger
+   * `handle_new_user` reads these into the public.profiles row on insert.
+   */
+  const signUp = (email, password, metadata) =>
     supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/home`,
+        data: metadata && typeof metadata === 'object' ? metadata : undefined,
       },
     })
 

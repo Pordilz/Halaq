@@ -3,6 +3,8 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import MaterialIcon from '../components/MaterialIcon'
 import Logo from '../components/Logo'
+import { supabase } from '../lib/supabase'
+import { normalizeUsername, validateUsername, USERNAME_MAX } from '../lib/username'
 import './AuthShell.css'
 
 function passwordStrength(pw) {
@@ -20,7 +22,8 @@ function passwordStrength(pw) {
 export default function Signup() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [fullName, setFullName] = useState('')
+  const [username, setUsername] = useState('')
+  const [usernameError, setUsernameError] = useState(null)
   const [showPassword, setShowPassword] = useState(false)
   const [agreed, setAgreed] = useState(false)
   const [showAgreedError, setShowAgreedError] = useState(false)
@@ -41,13 +44,37 @@ export default function Signup() {
       setShowAgreedError(true)
       return
     }
+    const usernameProblem = validateUsername(username)
+    if (usernameProblem) {
+      setUsernameError(usernameProblem)
+      return
+    }
     if (password.length < 8) {
       setError('Password must be at least 8 characters.')
       return
     }
+    const cleanUsername = normalizeUsername(username)
     setLoading(true)
     setError(null)
-    const { data, error } = await signUp(email.trim(), password)
+
+    // Cheap pre-flight uniqueness check so the user gets a friendly error
+    // before we hit the auth endpoint and burn a verification email.
+    if (supabase.isConfigured) {
+      const { data: existing } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', cleanUsername)
+        .maybeSingle()
+      if (existing) {
+        setUsernameError('That username is taken — try another.')
+        setLoading(false)
+        return
+      }
+    }
+
+    const { data, error } = await signUp(email.trim(), password, {
+      username: cleanUsername,
+    })
     if (error) {
       setError(error.message)
       setLoading(false)
@@ -167,17 +194,35 @@ export default function Signup() {
                 </div>
               )}
 
-              <label className="auth-shell__label" htmlFor="signup-name">Full name</label>
-              <input
-                id="signup-name"
-                type="text"
-                autoComplete="name"
-                className="auth-shell__input"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Your name"
-                required
-              />
+              <label className="auth-shell__label" htmlFor="signup-username">Username</label>
+              <div className="auth-shell__input-with-prefix">
+                <span className="auth-shell__input-prefix" aria-hidden="true">@</span>
+                <input
+                  id="signup-username"
+                  type="text"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  autoComplete="username"
+                  spellCheck="false"
+                  className={`auth-shell__input auth-shell__input--prefixed ${usernameError ? 'is-invalid' : ''}`}
+                  value={username}
+                  onChange={(e) => {
+                    setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))
+                    if (usernameError) setUsernameError(null)
+                  }}
+                  placeholder="halal_investor"
+                  maxLength={USERNAME_MAX}
+                  pattern="[a-z0-9_]{3,20}"
+                  required
+                />
+              </div>
+              {usernameError ? (
+                <p className="auth-shell__field-error">{usernameError}</p>
+              ) : (
+                <p className="auth-shell__field-hint">
+                  Public handle — letters, numbers and underscores. 3–{USERNAME_MAX} chars.
+                </p>
+              )}
 
               <label className="auth-shell__label" htmlFor="signup-email">Email address</label>
               <input

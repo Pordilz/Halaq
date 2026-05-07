@@ -48,7 +48,7 @@ export default function Layout({ children }) {
     return <main className="main-auth">{children}</main>
   }
 
-  const userInitials = (profile?.full_name || user?.email || 'H')
+  const userInitials = (profile?.username || profile?.full_name || user?.email || 'H')
     .charAt(0)
     .toUpperCase()
 

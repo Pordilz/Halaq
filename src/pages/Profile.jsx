@@ -4,6 +4,13 @@ import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { openBillingPortal } from '../services/halaqApi'
 import MaterialIcon from '../components/MaterialIcon'
+import {
+  displayName,
+  displayInitials,
+  normalizeUsername,
+  validateUsername,
+  USERNAME_MAX,
+} from '../lib/username'
 import './Profile.css'
 
 const METHODOLOGY_OPTIONS = [
@@ -24,10 +31,17 @@ export default function Profile() {
   const [billingError, setBillingError] = useState(null)
   const [confirmSignout, setConfirmSignout] = useState(false)
 
+  // Username editor state
+  const [usernameDraft, setUsernameDraft] = useState(profile?.username || '')
+  const [usernameSaving, setUsernameSaving] = useState(false)
+  const [usernameError, setUsernameError] = useState(null)
+  const [usernameSavedAt, setUsernameSavedAt] = useState(null)
+
   useEffect(() => {
     if (profile) {
       setNotifications(!!profile.alerts_enabled)
       if (profile.methodology) setMethodology(profile.methodology)
+      setUsernameDraft(profile.username || '')
     }
   }, [profile])
 
@@ -43,9 +57,44 @@ export default function Profile() {
     navigate('/')
   }
 
-  const initials = (profile?.full_name || user?.email || 'U').charAt(0).toUpperCase()
-  const fullName = profile?.full_name || user?.email?.split('@')[0] || 'Halaq Investor'
+  const initials = displayInitials(profile, user)
+  const headline = displayName(profile, user)
   const email = profile?.email || user?.email
+  const usernameDirty = normalizeUsername(usernameDraft) !== (profile?.username || null)
+
+  async function saveUsername(e) {
+    e.preventDefault()
+    if (!user) return
+    setUsernameError(null)
+    setUsernameSavedAt(null)
+
+    const value = normalizeUsername(usernameDraft)
+    // Allow clearing the username (set null)
+    if (value !== null) {
+      const problem = validateUsername(value)
+      if (problem) { setUsernameError(problem); return }
+    }
+    if (value === (profile?.username || null)) return
+
+    setUsernameSaving(true)
+    if (supabase.isConfigured) {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ username: value })
+        .eq('id', user.id)
+      if (error) {
+        const friendly = /duplicate|unique/i.test(error.message)
+          ? 'That username is taken — try another.'
+          : error.message
+        setUsernameError(friendly)
+        setUsernameSaving(false)
+        return
+      }
+      await refreshProfile()
+    }
+    setUsernameSaving(false)
+    setUsernameSavedAt(Date.now())
+  }
 
   async function toggleAlerts() {
     if (!user) return
@@ -100,7 +149,9 @@ export default function Profile() {
         <div className="profile-sidebar">
           <div className="user-card card-standard">
             <div className="user-avatar" aria-hidden>{initials}</div>
-            <h2 className="text-h2 mt-4 truncate" title={fullName}>{fullName}</h2>
+            <h2 className="text-h2 mt-4 truncate" title={headline}>
+              {profile?.username ? `@${headline}` : headline}
+            </h2>
             <p className="text-on-surface-variant text-body-sm truncate" title={email}>{email}</p>
 
             <div className="tier-badge mt-4">
@@ -117,6 +168,61 @@ export default function Profile() {
         </div>
 
         <div className="profile-main">
+
+          <section className="settings-section">
+            <h3 className="section-title">Public username</h3>
+            <div className="settings-card">
+              <form className="username-editor" onSubmit={saveUsername}>
+                <div className="username-editor__head">
+                  <div>
+                    <div className="settings-label">Display handle</div>
+                    <div className="settings-desc">
+                      Shown on your home screen instead of your email. Letters,
+                      numbers and underscores. 3–{USERNAME_MAX} chars.
+                    </div>
+                  </div>
+                </div>
+                <div className="username-editor__row">
+                  <div className="username-editor__input-wrap">
+                    <span className="username-editor__prefix" aria-hidden="true">@</span>
+                    <input
+                      type="text"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck="false"
+                      maxLength={USERNAME_MAX}
+                      pattern="[a-z0-9_]{3,20}"
+                      className={`username-editor__input ${usernameError ? 'is-invalid' : ''}`}
+                      value={usernameDraft}
+                      onChange={(e) => {
+                        setUsernameDraft(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))
+                        if (usernameError) setUsernameError(null)
+                        if (usernameSavedAt) setUsernameSavedAt(null)
+                      }}
+                      placeholder={profile?.username || 'choose_a_handle'}
+                      aria-label="Username"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="btn btn-primary username-editor__save"
+                    disabled={usernameSaving || !usernameDirty}
+                  >
+                    {usernameSaving
+                      ? <MaterialIcon name="refresh" className="spinner" size={18} />
+                      : 'Save'}
+                  </button>
+                </div>
+                {usernameError ? (
+                  <p className="username-editor__error">{usernameError}</p>
+                ) : usernameSavedAt ? (
+                  <p className="username-editor__success">
+                    <MaterialIcon name="check_circle" fill size={14} /> Username updated.
+                  </p>
+                ) : null}
+              </form>
+            </div>
+          </section>
 
           <section className="settings-section">
             <h3 className="section-title">Screening preferences</h3>

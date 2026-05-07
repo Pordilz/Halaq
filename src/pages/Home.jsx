@@ -6,6 +6,7 @@ import MaterialIcon from '../components/MaterialIcon'
 import ComplianceBadge from '../components/ComplianceBadge'
 import useDocumentTitle from '../hooks/useDocumentTitle'
 import { getCurrencySymbol } from '../services/complianceEngine'
+import { displayFirstToken } from '../lib/username'
 import './Home.css'
 
 const formatPrice = (price, currency) => {
@@ -81,7 +82,7 @@ export default function Home() {
     return 'Good evening'
   }, [])
 
-  const firstName = profile?.full_name?.split(' ')[0] || (user?.email?.split('@')[0] ?? 'there')
+  const firstName = displayFirstToken(profile, user)
 
   return (
     <div className="home-page container animate-entrance">
