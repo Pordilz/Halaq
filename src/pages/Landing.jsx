@@ -118,7 +118,7 @@ export default function Landing() {
         </div>
 
         <div className="landing-hero__art">
-          <HeroPhoneMockup width={320} height={540} />
+          <HeroPhoneMockup width={320} height={560} />
         </div>
       </section>
 

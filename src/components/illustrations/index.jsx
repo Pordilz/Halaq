@@ -126,39 +126,38 @@ export function PortfolioIllustration({ size = 280 }) {
 }
 
 /* Hero — phone with screening list */
-export function HeroPhoneMockup({ width = 320, height = 540 }) {
+export function HeroPhoneMockup({ width = 320, height = 560 }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       width={width}
       height={height}
-      viewBox="0 0 320 540"
+      viewBox="0 0 320 560"
       fill="none"
       role="img"
       aria-label="Halaq mobile preview"
+      style={{ overflow: 'visible', display: 'block' }}
     >
       <defs>
-        <linearGradient id="phone-glass" x1="0" x2="1" y1="0" y2="1">
-          <stop offset="0%" stopColor="#0f1a27" stopOpacity="0.10" />
-          <stop offset="100%" stopColor="#0f1a27" stopOpacity="0.04" />
-        </linearGradient>
-        <filter id="phone-shadow" x="-20%" y="-10%" width="140%" height="125%">
-          <feDropShadow dx="0" dy="20" stdDeviation="20" floodColor="#0f1a27" floodOpacity="0.18" />
+        {/* Tight, soft shadow that hugs the phone — no spreading halo */}
+        <filter id="phone-shadow" x="-10%" y="-5%" width="120%" height="115%">
+          <feDropShadow dx="0" dy="12" stdDeviation="10" floodColor="#0f1a27" floodOpacity="0.14" />
         </filter>
       </defs>
 
-      {/* Phone body */}
+      {/* Phone body — drawn entirely inside a clipped rounded shape so no
+          background leaks past the frame. */}
       <g filter="url(#phone-shadow)">
-        <rect x="6" y="6" width="308" height="528" rx="48" fill="#0f1a27" />
-        <rect x="14" y="14" width="292" height="512" rx="42" fill="#f8f9fb" />
-        {/* Notch */}
-        <rect x="116" y="20" width="88" height="22" rx="11" fill="#0f1a27" />
+        <rect x="10" y="10" width="300" height="540" rx="46" fill="#0f1a27" />
       </g>
+      <rect x="18" y="18" width="284" height="524" rx="40" fill="#f8f9fb" />
+      {/* Notch */}
+      <rect x="120" y="24" width="80" height="22" rx="11" fill="#0f1a27" />
 
       {/* Status bar */}
-      <g transform="translate(0 54)">
-        <text x="32" y="18" fontFamily="Manrope, sans-serif" fontWeight="700" fontSize="13" fill="#0f1a27">9:41</text>
-        <g transform="translate(238 6)" fill="#0f1a27">
+      <g transform="translate(0 60)">
+        <text x="36" y="16" fontFamily="Manrope, sans-serif" fontWeight="700" fontSize="12" fill="#0f1a27">9:41</text>
+        <g transform="translate(232 4)" fill="#0f1a27">
           <rect width="18" height="11" rx="2" />
           <rect x="22" width="14" height="11" rx="2" />
           <rect x="42" width="22" height="11" rx="3" />
@@ -166,44 +165,50 @@ export function HeroPhoneMockup({ width = 320, height = 540 }) {
       </g>
 
       {/* App header */}
-      <g transform="translate(28 86)">
+      <g transform="translate(34 96)">
         <text x="0" y="20" fontFamily="Manrope, sans-serif" fontWeight="800" fontSize="22" fill="#0f1a27" letterSpacing="-0.02em">Find halal stocks</text>
         <text x="0" y="42" fontFamily="Manrope, sans-serif" fontWeight="500" fontSize="12" fill="#3a4a5c">AAOIFI methodology</text>
       </g>
 
       {/* Search bar */}
-      <g transform="translate(28 144)">
-        <rect width="264" height="44" rx="14" fill="#ffffff" stroke="#0f1a27" strokeOpacity="0.08" />
-        <circle cx="22" cy="22" r="6" stroke="#627080" strokeWidth="2" />
-        <line x1="27" y1="27" x2="32" y2="32" stroke="#627080" strokeWidth="2" strokeLinecap="round" />
-        <text x="46" y="27" fontFamily="Manrope, sans-serif" fontWeight="500" fontSize="13" fill="#627080">Search by name or ticker…</text>
+      <g transform="translate(34 152)">
+        <rect width="252" height="42" rx="14" fill="#ffffff" stroke="#0f1a27" strokeOpacity="0.08" />
+        <circle cx="22" cy="21" r="6" stroke="#627080" strokeWidth="2" />
+        <line x1="27" y1="26" x2="32" y2="31" stroke="#627080" strokeWidth="2" strokeLinecap="round" />
+        <text x="44" y="26" fontFamily="Manrope, sans-serif" fontWeight="500" fontSize="12" fill="#627080">Search by name or ticker…</text>
       </g>
 
       {/* Result rows */}
       {[
-        { y: 210, t: 'AAPL', n: 'Apple Inc.', s: 'NASDAQ', state: 'compliant' },
-        { y: 280, t: 'MSFT', n: 'Microsoft Corp.', s: 'NASDAQ', state: 'compliant' },
-        { y: 350, t: 'TSLA', n: 'Tesla Inc.', s: 'NASDAQ', state: 'doubtful' },
-        { y: 420, t: 'JPM', n: 'JPMorgan Chase', s: 'NYSE', state: 'noncompliant' },
+        { y: 218, t: 'AAPL', n: 'Apple Inc.',     s: 'NASDAQ', state: 'compliant' },
+        { y: 286, t: 'MSFT', n: 'Microsoft Corp.', s: 'NASDAQ', state: 'compliant' },
+        { y: 354, t: 'TSLA', n: 'Tesla Inc.',     s: 'NASDAQ', state: 'doubtful' },
+        { y: 422, t: 'JPM',  n: 'JPMorgan Chase', s: 'NYSE',   state: 'noncompliant' },
       ].map((row) => {
-        const colors = {
-          compliant: { bg: '#90f5be', dot: '#006837', label: 'COMPLIANT', text: '#002715' },
-          doubtful: { bg: '#fef3c7', dot: '#92400e', label: 'DOUBTFUL', text: '#78350f' },
-          noncompliant: { bg: '#fee2e2', dot: '#b91c1c', label: 'NON-COMPLIANT', text: '#7f1d1d' },
+        const palette = {
+          compliant:    { bg: '#90f5be', dot: '#006837', label: 'COMPLIANT',     text: '#002715', width: 92 },
+          doubtful:     { bg: '#fef3c7', dot: '#92400e', label: 'DOUBTFUL',      text: '#78350f', width: 80 },
+          noncompliant: { bg: '#fee2e2', dot: '#b91c1c', label: 'NON-COMPLIANT', text: '#7f1d1d', width: 110 },
         }[row.state]
+        // Right-align the pill against the row; right padding = 12px.
+        const ROW_WIDTH = 252
+        const PILL_RIGHT_PAD = 12
+        const pillX = ROW_WIDTH - PILL_RIGHT_PAD - palette.width
         return (
-          <g key={row.t} transform={`translate(28 ${row.y})`}>
-            <rect width="264" height="56" rx="16" fill="#ffffff" stroke="#0f1a27" strokeOpacity="0.05" />
+          <g key={row.t} transform={`translate(34 ${row.y})`}>
+            <rect width={ROW_WIDTH} height="56" rx="16" fill="#ffffff" stroke="#0f1a27" strokeOpacity="0.05" />
             {/* ticker badge */}
-            <rect x="12" y="14" width="58" height="28" rx="8" fill="#a3f0ca" fillOpacity="0.5" />
-            <text x="41" y="33" textAnchor="middle" fontFamily="Manrope, sans-serif" fontWeight="800" fontSize="12" fill="#0d5233">{row.t}</text>
+            <rect x="12" y="14" width="56" height="28" rx="8" fill="#a3f0ca" fillOpacity="0.5" />
+            <text x="40" y="33" textAnchor="middle" fontFamily="Manrope, sans-serif" fontWeight="800" fontSize="12" fill="#0d5233">{row.t}</text>
             {/* name */}
-            <text x="84" y="24" fontFamily="Manrope, sans-serif" fontWeight="700" fontSize="12" fill="#0f1a27">{row.n}</text>
-            <text x="84" y="40" fontFamily="Manrope, sans-serif" fontWeight="600" fontSize="9" fill="#627080" letterSpacing="0.04em">{row.s}</text>
-            {/* status pill */}
-            <rect x="160" y="16" width={row.state === 'noncompliant' ? '92' : '76'} height="24" rx="12" fill={colors.bg} />
-            <circle cx="174" cy="28" r="5" fill={colors.dot} />
-            <text x={row.state === 'noncompliant' ? 248 : 232} y="32" textAnchor="end" fontFamily="Manrope, sans-serif" fontWeight="800" fontSize="9" fill={colors.text} letterSpacing="0.04em">{colors.label}</text>
+            <text x="80" y="24" fontFamily="Manrope, sans-serif" fontWeight="700" fontSize="12" fill="#0f1a27">{row.n}</text>
+            <text x="80" y="40" fontFamily="Manrope, sans-serif" fontWeight="600" fontSize="9" fill="#627080" letterSpacing="0.04em">{row.s}</text>
+            {/* status pill — pill is one group with dot and text laid out left-to-right with proper padding */}
+            <g transform={`translate(${pillX} 16)`}>
+              <rect width={palette.width} height="24" rx="12" fill={palette.bg} />
+              <circle cx="13" cy="12" r="4" fill={palette.dot} />
+              <text x="22" y="16" fontFamily="Manrope, sans-serif" fontWeight="800" fontSize="8.5" fill={palette.text} letterSpacing="0.06em">{palette.label}</text>
+            </g>
           </g>
         )
       })}

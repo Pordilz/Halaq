@@ -105,6 +105,14 @@ export const AuthProvider = ({ children }) => {
   const dailyCount = profile?.daily_search_count || 0
   const canSearch = isPro || dailyCount < 5
 
+  // Canonical app origin for emails / OAuth redirects. Falls back to the
+  // browser's current origin in development. Setting VITE_APP_URL in Vercel
+  // ensures email confirmation links are always pointed at the production
+  // host even if Supabase Site URL drifts.
+  const appOrigin =
+    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_APP_URL) ||
+    (typeof window !== 'undefined' ? window.location.origin : '')
+
   /**
    * Sign up with optional metadata (e.g. { username }). The Supabase trigger
    * `handle_new_user` reads these into the public.profiles row on insert.
@@ -114,7 +122,7 @@ export const AuthProvider = ({ children }) => {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/home`,
+        emailRedirectTo: `${appOrigin}/home`,
         data: metadata && typeof metadata === 'object' ? metadata : undefined,
       },
     })
@@ -126,14 +134,14 @@ export const AuthProvider = ({ children }) => {
 
   const sendPasswordReset = (email) =>
     supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/login`,
+      redirectTo: `${appOrigin}/login`,
     })
 
   const signInWithProvider = (provider) =>
     supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${window.location.origin}/home`,
+        redirectTo: `${appOrigin}/home`,
       },
     })
 
