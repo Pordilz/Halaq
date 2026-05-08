@@ -32,9 +32,11 @@ export default async function handler(req, res) {
         }
       },
       productOptions: {
-        redirectUrl: `${process.env.VITE_APP_URL || 'http://localhost:3000'}/settings?upgrade=success`,
+        // /profile is the actual account/billing page in the SPA. Historically
+        // we sent users to /settings, which 404'd because no such route exists.
+        redirectUrl: `${process.env.VITE_APP_URL || 'http://localhost:3000'}/profile?upgrade=success`,
         receiptButtonText: 'Return to Halaq',
-        receiptLinkUrl: `${process.env.VITE_APP_URL || 'http://localhost:3000'}/settings`
+        receiptLinkUrl: `${process.env.VITE_APP_URL || 'http://localhost:3000'}/profile`
       }
     });
 

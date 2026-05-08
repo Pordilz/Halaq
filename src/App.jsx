@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import Layout from './components/Layout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import RedirectIfAuthed from './components/RedirectIfAuthed'
@@ -116,10 +116,22 @@ export default function App() {
               }
             />
 
+            {/* Legacy redirect: Lemon Squeezy receipts and old checkout
+                sessions point at /settings. Forward to /profile and preserve
+                any query (e.g. ?upgrade=success) so the success banner shows. */}
+            <Route path="/settings" element={<SettingsRedirect />} />
+            <Route path="/settings/*" element={<SettingsRedirect />} />
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
       </Layout>
     </ErrorBoundary>
   )
+}
+
+// Forward /settings → /profile, preserving query string (?upgrade=success).
+function SettingsRedirect() {
+  const { search } = useLocation()
+  return <Navigate to={`/profile${search}`} replace />
 }
