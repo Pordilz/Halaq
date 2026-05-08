@@ -29,6 +29,9 @@ function setLocalWatchlist(items) {
 export function useWatchlist(user) {
   const [watchlist, setWatchlist] = useState([])
   const [loading, setLoading] = useState(true)
+  // Surfaced to consumers so a silently-rolled-back add/remove doesn't
+  // look like a stuck button. Cleared automatically on the next mutation.
+  const [error, setError] = useState(null)
   const watchlistRef = useRef(watchlist)
 
   useEffect(() => {
@@ -83,6 +86,7 @@ export function useWatchlist(user) {
 
   const addToWatchlist = useCallback(async (stock) => {
     if (!stock?.ticker) return
+    setError(null)
     const item = {
       ticker: stock.ticker,
       name: stock.name || stock.ticker,
@@ -100,7 +104,7 @@ export function useWatchlist(user) {
     })
 
     if (user && supabase.isConfigured) {
-      const { error } = await supabase.from('watchlist').insert({
+      const { error: insertError } = await supabase.from('watchlist').insert({
         user_id: user.id,
         ticker: item.ticker,
         name: item.name,
@@ -108,13 +112,15 @@ export function useWatchlist(user) {
         exchange: item.exchange,
         status: item.status,
       })
-      if (error) {
-        // Roll back on persistence failure
+      if (insertError) {
+        // Roll back on persistence failure AND surface the reason so the
+        // caller can show a toast — silent rollback looked like a bug.
         setWatchlist(prev => {
           const next = prev.filter(w => w.ticker !== item.ticker)
           setLocalWatchlist(next)
           return next
         })
+        setError(`Couldn't save ${item.ticker} to your watchlist: ${insertError.message}`)
       }
     }
   }, [user])
@@ -148,6 +154,7 @@ export function useWatchlist(user) {
 
   const removeFromWatchlist = useCallback(async (ticker) => {
     if (!ticker) return
+    setError(null)
     const previous = watchlistRef.current
     setWatchlist(prev => {
       const next = prev.filter(w => w.ticker !== ticker)
@@ -156,14 +163,15 @@ export function useWatchlist(user) {
     })
 
     if (user && supabase.isConfigured) {
-      const { error } = await supabase
+      const { error: deleteError } = await supabase
         .from('watchlist')
         .delete()
         .eq('user_id', user.id)
         .eq('ticker', ticker)
-      if (error) {
+      if (deleteError) {
         setWatchlist(previous)
         setLocalWatchlist(previous)
+        setError(`Couldn't remove ${ticker} from your watchlist: ${deleteError.message}`)
       }
     }
   }, [user])
@@ -187,6 +195,8 @@ export function useWatchlist(user) {
     updateStatus,
     toggle,
     loading,
+    error,
+    clearError: () => setError(null),
     refetch: fetchWatchlist,
   }
 }

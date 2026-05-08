@@ -138,10 +138,14 @@ export async function fetchScreeningPayload(rawTicker) {
     interestDataSource: dataSource,
   };
 
-  const cash =
+  // `||` binds looser than `+`, so the previous form `(a + b) || totalCash`
+  // would silently fall through to financialData.totalCash whenever both
+  // line items were 0 — and totalCash already *includes* short-term
+  // investments, so the liquidity ratio would be inflated.
+  const cashFromLines =
     num(latestFinancials.cashAndCashEquivalents) +
-      num(latestFinancials.otherShortTermInvestments) ||
-    num(financialData.totalCash);
+    num(latestFinancials.otherShortTermInvestments);
+  const cash = cashFromLines > 0 ? cashFromLines : num(financialData.totalCash);
 
   const shortTermDebt = num(latestFinancials.currentDebt) || 0;
   const longTermDebt = num(latestFinancials.longTermDebt) || 0;

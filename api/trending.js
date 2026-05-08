@@ -15,8 +15,9 @@ const ROSTER = [
   'BRK-B', 'JPM', 'V', 'WMT', 'XOM', 'UNH', 'JNJ', 'PG',
   'MA', 'HD', 'COST', 'NFLX', 'ORCL', 'PEP', 'CRM', 'KO',
   'CVX', 'BAC', 'ADBE', 'AMD', 'PFE', 'TMO',
-  // JSE blue chips
-  'NPN.JO', 'PRX.JO', 'BHG.JO', 'AGL.JO', 'BIL.JO', 'SOL.JO',
+  // JSE blue chips. NB: BIL.JO (BHP Billiton) was delisted in 2022 when
+  // BHP unified its DLC — removed.
+  'NPN.JO', 'PRX.JO', 'BHG.JO', 'AGL.JO', 'SOL.JO',
   'SBK.JO', 'FSR.JO', 'NED.JO', 'CPI.JO', 'MTN.JO', 'VOD.JO',
   'SHP.JO', 'MRP.JO', 'WHL.JO', 'CFR.JO',
 ]
@@ -46,27 +47,44 @@ export default async function handler(req, res) {
     return res.status(200).json({ page, size, items: [], hasMore: false })
   }
 
-  try {
-    const quotes = await yahoo.quote(slice, { fields: ['regularMarketPrice', 'regularMarketChangePercent', 'longName', 'shortName', 'currency', 'exchange', 'fullExchangeName'] }, { validateResult: false })
-    const list = Array.isArray(quotes) ? quotes : [quotes]
-    const items = list.map(q => ({
-      ticker: q.symbol,
-      name: q.longName || q.shortName || q.symbol,
-      currency: q.currency || 'USD',
-      exchange: q.fullExchangeName || q.exchange || '',
-      regularMarketPrice: num(q.regularMarketPrice),
-      regularMarketChangePercent: num(q.regularMarketChangePercent),
-    }))
-    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300')
-    return res.status(200).json({
-      page,
-      size,
-      items,
-      hasMore: start + size < ROSTER.length,
-      totalRoster: ROSTER.length,
-    })
-  } catch (err) {
-    console.error('[trending] error:', err.message)
-    return res.status(503).json({ error: 'Trending unavailable' })
+  // One bad symbol used to poison the entire request (yahoo.quote()
+  // batched all tickers; if any failed validation the call rejected).
+  // Run per-ticker via allSettled so a single delisted/typo ticker can
+  // never empty the trending list.
+  const settled = await Promise.allSettled(
+    slice.map((symbol) =>
+      yahoo.quote(
+        symbol,
+        { fields: ['regularMarketPrice', 'regularMarketChangePercent', 'longName', 'shortName', 'currency', 'exchange', 'fullExchangeName'] },
+        { validateResult: false }
+      )
+    )
+  )
+
+  const items = []
+  for (let i = 0; i < settled.length; i++) {
+    const r = settled[i]
+    if (r.status === 'fulfilled' && r.value) {
+      const q = r.value
+      items.push({
+        ticker: q.symbol || slice[i],
+        name: q.longName || q.shortName || q.symbol || slice[i],
+        currency: q.currency || 'USD',
+        exchange: q.fullExchangeName || q.exchange || '',
+        regularMarketPrice: num(q.regularMarketPrice),
+        regularMarketChangePercent: num(q.regularMarketChangePercent),
+      })
+    } else if (r.status === 'rejected') {
+      console.warn('[trending] skipping', slice[i], '—', r.reason?.message || r.reason)
+    }
   }
+
+  res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300')
+  return res.status(200).json({
+    page,
+    size,
+    items,
+    hasMore: start + size < ROSTER.length,
+    totalRoster: ROSTER.length,
+  })
 }

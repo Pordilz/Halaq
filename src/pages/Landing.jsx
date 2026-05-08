@@ -229,10 +229,10 @@ export default function Landing() {
           </div>
           <div className="landing-footer__col">
             <strong>Legal</strong>
-            <a href="/legal/privacy">Privacy policy</a>
-            <a href="/legal/terms">Terms of use</a>
-            <a href="/legal/disclaimer">Disclaimer</a>
-            <a href="/legal/data-sources">Data sources</a>
+            <Link to="/legal/privacy">Privacy policy</Link>
+            <Link to="/legal/terms">Terms of use</Link>
+            <Link to="/legal/disclaimer">Disclaimer</Link>
+            <Link to="/legal/data-sources">Data sources</Link>
           </div>
           <div className="landing-footer__col">
             <strong>Standards</strong>

@@ -15,9 +15,12 @@ export default function Watchlist() {
 
   const navigateToStock = (ticker) => navigate(`/stock/${ticker}`)
 
+  // Match Home's definition: a watchlist row that hasn't been screened yet
+  // (status === null) counts as "doubtful" until proven otherwise. Without
+  // this, Home and Watchlist totals would disagree for the same data.
   const breakdown = {
     compliant: watchlist.filter(s => s.status === 'COMPLIANT').length,
-    doubtful: watchlist.filter(s => s.status === 'DOUBTFUL').length,
+    doubtful: watchlist.filter(s => s.status === 'DOUBTFUL' || !s.status).length,
     nonCompliant: watchlist.filter(s => s.status === 'NON_COMPLIANT').length,
   }
   const total = watchlist.length

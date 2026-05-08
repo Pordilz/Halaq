@@ -9,11 +9,17 @@ export const config = {
 
 // Server-side: prefer SUPABASE_URL, fall back to VITE_SUPABASE_URL since
 // they almost always point at the same project. The service role key is
-// required — without it the admin client can't write to RLS-protected tables.
-const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'http://localhost:54321',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || 'anon-key-placeholder'
-);
+// required — without it the admin client can't write to RLS-protected tables
+// AND the new profiles_lock_billing_fields trigger refuses any non-service
+// role write to billing columns. We refuse to even start if it's missing.
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseAdmin = supabaseUrl && supabaseServiceRoleKey
+  ? createClient(supabaseUrl, supabaseServiceRoleKey)
+  : null;
+
+const debug = !!process.env.WEBHOOK_DEBUG;
+const log = (...args) => { if (debug) console.log(...args); };
 
 // We need to parse raw body manually if bodyParser is false
 async function getRawBody(req) {
@@ -29,15 +35,23 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Refuse to process if Supabase admin couldn't be constructed — without
+  // the service role key the trigger blocks every billing-field write, so
+  // we'd just rack up Lemon Squeezy retries with no chance of succeeding.
+  if (!supabaseAdmin) {
+    console.error('[WEBHOOK ERROR] SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY missing');
+    return res.status(503).send('Service not configured');
+  }
+
   const rawBody = await getRawBody(req);
 
-  console.log('--- [WEBHOOK] Received Lemon Squeezy Event ---');
+  log('--- [WEBHOOK] Received Lemon Squeezy Event ---');
   const secret = process.env.LEMON_SQUEEZY_WEBHOOK_SECRET;
   const signature = req.headers['x-signature'];
 
   if (!secret) {
     console.error('[WEBHOOK ERROR] LEMON_SQUEEZY_WEBHOOK_SECRET env var is missing');
-    return res.status(500).send('Webhook secret not configured');
+    return res.status(503).send('Webhook secret not configured');
   }
   if (!signature) {
     console.error('[WEBHOOK ERROR] Missing x-signature header');
@@ -64,7 +78,7 @@ export default async function handler(req, res) {
   const eventName = payload?.meta?.event_name;
   const customData = payload?.meta?.custom_data;
   const subId = payload?.data?.id;
-  console.log(`[WEBHOOK EVENT] ${eventName}`);
+  log(`[WEBHOOK EVENT] ${eventName}`);
 
   // Resolve user via custom_data first; if absent (e.g. portal-driven cancel)
   // fall back to looking up the existing profile by stored subscription id.
@@ -77,7 +91,7 @@ export default async function handler(req, res) {
       .maybeSingle();
     if (data?.id) userId = data.id;
   }
-  console.log(`[WEBHOOK USER_ID] ${userId || 'Missing'}`);
+  log(`[WEBHOOK USER_ID] ${userId || 'Missing'}`);
 
   if (!userId) {
     console.warn('[WEBHOOK SKIP] No user resolvable for event; ignoring.');
@@ -102,7 +116,7 @@ export default async function handler(req, res) {
     const isActive = status === 'active' || status === 'on_trial';
     const newTier = isActive ? (tierMap[sub.variant_id] || 'free') : 'free';
 
-    console.log(`[WEBHOOK DB] Updating profile ${userId} to tier: ${newTier} (status: ${status})`);
+    log(`[WEBHOOK DB] Updating profile ${userId} to tier: ${newTier} (status: ${status})`);
     const { error } = await supabaseAdmin.from('profiles').update({
       subscription_tier: newTier,
       stripe_subscription_id: subId,
@@ -115,9 +129,9 @@ export default async function handler(req, res) {
       // Reply 500 so Lemon Squeezy retries the webhook.
       return res.status(500).json({ error: 'Database update failed' });
     }
-    console.log('[WEBHOOK SUCCESS] Profile updated.');
+    log('[WEBHOOK SUCCESS] Profile updated.');
   } else if (eventName === 'subscription_cancelled' || eventName === 'subscription_expired') {
-    console.log(`[WEBHOOK DB] Cancelling profile ${userId}`);
+    log(`[WEBHOOK DB] Cancelling profile ${userId}`);
     const { error } = await supabaseAdmin.from('profiles').update({
       subscription_tier: 'free',
       subscription_status: eventName === 'subscription_expired' ? 'expired' : 'cancelled',

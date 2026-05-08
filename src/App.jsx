@@ -23,6 +23,7 @@ const Batch = lazy(() => import('./pages/Batch'))
 const ETF = lazy(() => import('./pages/ETF'))
 const Chat = lazy(() => import('./pages/Chat'))
 const Upgrade = lazy(() => import('./pages/Upgrade'))
+const Legal = lazy(() => import('./pages/Legal'))
 
 export default function App() {
   return (
@@ -90,11 +91,14 @@ export default function App() {
               }
             />
 
-            {/* Pro+ tools */}
+            {/* Pro+ tools — gate at the page level (each renders its own
+                paywall card for non-tier users). Bouncing the user to
+                /upgrade with no context is a worse UX than letting them
+                see what the feature is and then upgrading. */}
             <Route
               path="/batch"
               element={
-                <ProtectedRoute requireTier="pro">
+                <ProtectedRoute>
                   <Batch />
                 </ProtectedRoute>
               }
@@ -102,7 +106,7 @@ export default function App() {
             <Route
               path="/etf"
               element={
-                <ProtectedRoute requireTier="scholar">
+                <ProtectedRoute>
                   <ETF />
                 </ProtectedRoute>
               }
@@ -110,11 +114,15 @@ export default function App() {
             <Route
               path="/chat"
               element={
-                <ProtectedRoute requireTier="scholar">
+                <ProtectedRoute>
                   <Chat />
                 </ProtectedRoute>
               }
             />
+
+            {/* Legal pages — required by auth/billing flows. */}
+            <Route path="/legal" element={<Navigate to="/legal/privacy" replace />} />
+            <Route path="/legal/:slug" element={<Legal />} />
 
             {/* Legacy redirect: Lemon Squeezy receipts and old checkout
                 sessions point at /settings. Forward to /profile and preserve

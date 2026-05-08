@@ -134,6 +134,26 @@ export default function Profile() {
     setUsernameSavedAt(Date.now())
   }
 
+  // Persist methodology immediately on change. Optimistic UI with rollback
+  // if the write fails. Free users can't switch off AAOIFI (the <option>s
+  // for the others are `disabled`), so this is reachable only for Pro+.
+  async function changeMethodology(next) {
+    if (!user) return
+    const previous = methodology
+    setMethodology(next)
+    if (!supabase.isConfigured) return
+    const { error } = await supabase
+      .from('profiles')
+      .update({ methodology: next })
+      .eq('id', user.id)
+    if (error) {
+      setMethodology(previous)
+      setBillingError(`Couldn't save methodology: ${error.message}`)
+    } else {
+      await refreshProfile()
+    }
+  }
+
   async function toggleAlerts() {
     if (!user) return
     const next = !notifications
@@ -292,7 +312,7 @@ export default function Profile() {
                 <select
                   className="settings-select"
                   value={methodology}
-                  onChange={(e) => setMethodology(e.target.value)}
+                  onChange={(e) => changeMethodology(e.target.value)}
                   disabled={!isPro && methodology !== 'AAOIFI'}
                 >
                   {METHODOLOGY_OPTIONS.map(opt => (

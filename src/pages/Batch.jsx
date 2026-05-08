@@ -11,7 +11,7 @@ import './Batch.css'
 const MAX_TICKERS = 20
 
 export default function Batch() {
-  const { isPro } = useAuth()
+  const { isPro, profile } = useAuth()
   const navigate = useNavigate()
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -33,6 +33,10 @@ export default function Batch() {
     setResults([])
     setProgress({ done: 0, total: tickers.length })
 
+    // Honor the user's chosen methodology (Pro-only). Free users implicitly
+    // run AAOIFI (the default in screenStock).
+    const methodology = isPro ? profile?.methodology : undefined
+
     // Run in parallel chunks of 4 to keep Yahoo Finance happy
     const chunkSize = 4
     const collected = []
@@ -41,7 +45,7 @@ export default function Batch() {
       const settled = await Promise.allSettled(
         chunk.map(async (t) => {
           const data = await fetchAllScreeningData(t)
-          return screenStock(data.profile, data.balanceSheet, data.income)
+          return screenStock(data.profile, data.balanceSheet, data.income, { methodology })
         })
       )
       settled.forEach((res, idx) => {

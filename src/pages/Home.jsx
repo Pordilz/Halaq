@@ -29,28 +29,43 @@ export default function Home() {
 
   const [quotes, setQuotes] = useState({})
   const [quotesLoading, setQuotesLoading] = useState(false)
+  // 'ok' | 'partial' | 'failed' | null. Drives a banner when Yahoo is
+  // throttling us so users don't think the page is stuck.
+  const [quotesHealth, setQuotesHealth] = useState(null)
 
   const tickers = useMemo(() => watchlist.map(w => w.ticker), [watchlist])
+  const QUOTE_LIMIT = 16
+  const tickersOverLimit = Math.max(0, tickers.length - QUOTE_LIMIT)
 
   // Fetch live quotes for the watchlist
   const fetchQuotes = useCallback(async (signal) => {
     if (tickers.length === 0) {
       setQuotes({})
+      setQuotesHealth(null)
       return
     }
     setQuotesLoading(true)
+    const subset = tickers.slice(0, QUOTE_LIMIT)
     const results = await Promise.allSettled(
-      tickers.slice(0, 16).map(t =>
+      subset.map(t =>
         fetch(`/api/quote/${encodeURIComponent(t)}`, { signal })
           .then(r => (r.ok ? r.json() : null))
       )
     )
     if (signal?.aborted) return
     const map = {}
+    let okCount = 0
     results.forEach((r, i) => {
-      if (r.status === 'fulfilled' && r.value) map[tickers[i]] = r.value
+      if (r.status === 'fulfilled' && r.value) {
+        map[subset[i]] = r.value
+        okCount += 1
+      }
     })
     setQuotes(map)
+    if (subset.length > 0) {
+      const ratio = okCount / subset.length
+      setQuotesHealth(ratio === 1 ? 'ok' : ratio === 0 ? 'failed' : 'partial')
+    }
     setQuotesLoading(false)
   }, [tickers])
 
@@ -125,6 +140,19 @@ export default function Home() {
             </Link>
           )}
         </header>
+
+        {(quotesHealth === 'partial' || quotesHealth === 'failed' || tickersOverLimit > 0) && watchlist.length > 0 && (
+          <div className="home-quote-status" role="status">
+            <MaterialIcon name="info" size={16} />
+            <span>
+              {quotesHealth === 'failed'
+                ? 'Live prices unavailable — Yahoo Finance is rate-limiting us. Try again in a minute.'
+                : quotesHealth === 'partial'
+                  ? "Some live prices couldn't load — Yahoo is throttling us, will retry shortly."
+                  : `Showing live prices for the first ${QUOTE_LIMIT} of ${watchlist.length} watchlist stocks.`}
+            </span>
+          </div>
+        )}
 
         {wlLoading ? (
           <div className="home-grid">

@@ -39,7 +39,7 @@ const formatNumber = (n, currency, compact = true) => {
 
 export default function StockDetail() {
   const { ticker } = useParams()
-  const { user, isPro } = useAuth()
+  const { user, isPro, profile } = useAuth()
   const navigate = useNavigate()
   const { isInWatchlist, toggle, updateStatus } = useWatchlist(user)
 
@@ -60,7 +60,11 @@ export default function StockDetail() {
       try {
         const data = await fetchAllScreeningData(ticker, { signal: controller.signal })
         if (cancelled) return
-        const compliance = screenStock(data.profile, data.balanceSheet, data.income)
+        // Pro+ users get to pick a methodology in Profile. Free users always
+        // get AAOIFI (the default in screenStock when the option is omitted
+        // or unrecognised).
+        const methodology = isPro ? profile?.methodology : undefined
+        const compliance = screenStock(data.profile, data.balanceSheet, data.income, { methodology })
 
         const currency = compliance.currency || 'USD'
         const symbol = getCurrencySymbol(currency)
@@ -117,7 +121,9 @@ export default function StockDetail() {
       controller.abort()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ticker])
+    // Re-screen if methodology changes (Pro switches AAOIFI → DJIM, etc.)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ticker, isPro, profile?.methodology])
 
   if (loading) {
     return (
@@ -153,6 +159,9 @@ export default function StockDetail() {
   const handleShare = async () => {
     const url = `${window.location.origin}/stock/${stock.ticker}`
     const title = `${stock.ticker} — ${stock.name} compliance report`
+    // Always clear any prior toast first so a stale "Link copied" doesn't
+    // hang around when the native share sheet appears.
+    setShareNotice(null)
     try {
       if (navigator.share) {
         await navigator.share({ title, url })
