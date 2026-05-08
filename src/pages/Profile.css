@@ -258,6 +258,17 @@
   color: var(--color-on-tertiary-fixed);
 }
 
+.profile-banner--pending {
+  background-color: var(--color-secondary-container, #e6f0ea);
+  color: var(--color-on-secondary-container, #1a3826);
+}
+
+.profile-banner a {
+  color: inherit;
+  font-weight: var(--font-weight-heading);
+  text-decoration: underline;
+}
+
 .profile-banner--error {
   background-color: var(--color-error-container);
   color: var(--color-on-error-container);

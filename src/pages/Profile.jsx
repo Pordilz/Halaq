@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -37,6 +37,16 @@ export default function Profile() {
   const [usernameError, setUsernameError] = useState(null)
   const [usernameSavedAt, setUsernameSavedAt] = useState(null)
 
+  // Upgrade-confirmation lifecycle. The Lemon Squeezy webhook lands on the
+  // server seconds *after* the user is redirected back here, so we poll
+  // refreshProfile() until tier flips off 'free' (or a 30s budget expires).
+  // 'pending'  → still polling, show "Confirming your upgrade…"
+  // 'success'  → tier flipped, show the green banner
+  // 'timeout'  → polled for 30s, no flip — direct user to email/support
+  // null       → not in an upgrade flow
+  const [upgradeState, setUpgradeState] = useState(null)
+  const pollRef = useRef(null)
+
   useEffect(() => {
     if (profile) {
       setNotifications(!!profile.alerts_enabled)
@@ -45,12 +55,40 @@ export default function Profile() {
     }
   }, [profile])
 
-  // After webhook flips tier=pro, reload the profile
+  // After webhook flips tier=pro, reload the profile. Poll because the
+  // webhook is async — landing here with ?upgrade=success doesn't guarantee
+  // the DB has been written yet.
   useEffect(() => {
-    if (params.get('upgrade') === 'success') {
-      refreshProfile()
+    if (params.get('upgrade') !== 'success') return
+    // If we already know the user is paid, jump straight to success.
+    if (isPro) {
+      setUpgradeState('success')
+      return
     }
-  }, [params, refreshProfile])
+    setUpgradeState('pending')
+    let attempts = 0
+    const MAX_ATTEMPTS = 15 // 15 × 2s = 30s
+    pollRef.current = setInterval(async () => {
+      attempts += 1
+      await refreshProfile()
+      if (attempts >= MAX_ATTEMPTS) {
+        clearInterval(pollRef.current)
+        // Re-check tier via the latest profile (closure capture is stale —
+        // setUpgradeState below reads from latest render via the next effect)
+        setUpgradeState((s) => (s === 'pending' ? 'timeout' : s))
+      }
+    }, 2000)
+    return () => clearInterval(pollRef.current)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params])
+
+  // When tier finally flips, clear the poll and show success.
+  useEffect(() => {
+    if (upgradeState === 'pending' && isPro) {
+      clearInterval(pollRef.current)
+      setUpgradeState('success')
+    }
+  }, [upgradeState, isPro])
 
   const handleSignOut = async () => {
     await signOut()
@@ -138,9 +176,28 @@ export default function Profile() {
         </p>
       </div>
 
-      {params.get('upgrade') === 'success' && (
+      {upgradeState === 'pending' && (
+        <div className="profile-banner profile-banner--pending" role="status" aria-live="polite">
+          <MaterialIcon name="refresh" className="spinner" />
+          <span>
+            Confirming your upgrade — this normally takes a few seconds.
+          </span>
+        </div>
+      )}
+      {upgradeState === 'success' && (
         <div className="profile-banner profile-banner--success" role="status">
-          <MaterialIcon name="check_circle" fill /> Upgrade complete — welcome aboard.
+          <MaterialIcon name="check_circle" fill />
+          <span>Upgrade complete — welcome to {tier === 'scholar' ? 'Scholar' : 'Pro'}.</span>
+        </div>
+      )}
+      {upgradeState === 'timeout' && (
+        <div className="profile-banner profile-banner--error" role="alert">
+          <MaterialIcon name="error_outline" />
+          <span>
+            Payment received but we couldn't confirm your tier yet. Refresh in
+            a minute, or email <a href="mailto:support@halaq.app">support@halaq.app</a>{' '}
+            if it doesn't update.
+          </span>
         </div>
       )}
 

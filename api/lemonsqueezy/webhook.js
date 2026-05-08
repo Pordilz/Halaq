@@ -7,8 +7,11 @@ export const config = {
   },
 };
 
+// Server-side: prefer SUPABASE_URL, fall back to VITE_SUPABASE_URL since
+// they almost always point at the same project. The service role key is
+// required — without it the admin client can't write to RLS-protected tables.
 const supabaseAdmin = createClient(
-  process.env.VITE_SUPABASE_URL || 'http://localhost:54321',
+  process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'http://localhost:54321',
   process.env.SUPABASE_SERVICE_ROLE_KEY || 'anon-key-placeholder'
 );
 
@@ -27,11 +30,15 @@ export default async function handler(req, res) {
   }
 
   const rawBody = await getRawBody(req);
-  
+
   console.log('--- [WEBHOOK] Received Lemon Squeezy Event ---');
   const secret = process.env.LEMON_SQUEEZY_WEBHOOK_SECRET;
   const signature = req.headers['x-signature'];
-  
+
+  if (!secret) {
+    console.error('[WEBHOOK ERROR] LEMON_SQUEEZY_WEBHOOK_SECRET env var is missing');
+    return res.status(500).send('Webhook secret not configured');
+  }
   if (!signature) {
     console.error('[WEBHOOK ERROR] Missing x-signature header');
     return res.status(401).send('Missing signature');
@@ -46,43 +53,78 @@ export default async function handler(req, res) {
     return res.status(401).send('Invalid signature');
   }
 
-  const payload = JSON.parse(rawBody.toString('utf8'));
-  const eventName = payload.meta.event_name;
-  const customData = payload.meta.custom_data;
-  
+  let payload;
+  try {
+    payload = JSON.parse(rawBody.toString('utf8'));
+  } catch (err) {
+    console.error('[WEBHOOK ERROR] Could not parse JSON body:', err.message);
+    return res.status(400).send('Invalid JSON');
+  }
+
+  const eventName = payload?.meta?.event_name;
+  const customData = payload?.meta?.custom_data;
+  const subId = payload?.data?.id;
   console.log(`[WEBHOOK EVENT] ${eventName}`);
-  const userId = customData?.supabase_user_id;
+
+  // Resolve user via custom_data first; if absent (e.g. portal-driven cancel)
+  // fall back to looking up the existing profile by stored subscription id.
+  let userId = customData?.supabase_user_id;
+  if (!userId && subId) {
+    const { data } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('stripe_subscription_id', subId)
+      .maybeSingle();
+    if (data?.id) userId = data.id;
+  }
   console.log(`[WEBHOOK USER_ID] ${userId || 'Missing'}`);
 
-  if (eventName === 'subscription_created' || eventName === 'subscription_updated') {
-    const sub = payload.data.attributes;
-    const status = sub.status; // 'active', 'past_due', 'canceled', etc.
+  if (!userId) {
+    console.warn('[WEBHOOK SKIP] No user resolvable for event; ignoring.');
+    return res.status(200).json({ received: true, ignored: true });
+  }
+
+  // Safe ISO conversion — Lemon Squeezy occasionally returns null for
+  // renews_at on the very first event, which would crash new Date(null).
+  const safeIso = (v) => {
+    if (!v) return null;
+    const d = new Date(v);
+    return Number.isNaN(d.getTime()) ? null : d.toISOString();
+  };
+
+  if (eventName === 'subscription_created' || eventName === 'subscription_updated' || eventName === 'subscription_resumed') {
+    const sub = payload.data.attributes || {};
+    const status = sub.status; // 'active', 'past_due', 'on_trial', 'cancelled', 'expired', etc.
     const tierMap = {
       [process.env.LEMON_PRO_VARIANT_ID]: 'pro',
-      [process.env.LEMON_SCHOLAR_VARIANT_ID]: 'scholar'
+      [process.env.LEMON_SCHOLAR_VARIANT_ID]: 'scholar',
     };
-    const newTier = (status === 'active' || status === 'on_trial') ? (tierMap[sub.variant_id] || 'free') : 'free';
+    const isActive = status === 'active' || status === 'on_trial';
+    const newTier = isActive ? (tierMap[sub.variant_id] || 'free') : 'free';
 
-    if (userId) {
-      console.log(`[WEBHOOK DB] Updating profile ${userId} to tier: ${newTier}`);
-      const { error } = await supabaseAdmin.from('profiles').update({
-        subscription_tier: newTier,
-        stripe_subscription_id: payload.data.id,
-        subscription_status: status,
-        subscription_period_end: new Date(sub.renews_at).toISOString()
-      }).eq('id', userId);
-      
-      if (error) console.error('[WEBHOOK ERROR] Supabase Update Failed:', error);
-      else console.log('[WEBHOOK SUCCESS] Profile updated!');
+    console.log(`[WEBHOOK DB] Updating profile ${userId} to tier: ${newTier} (status: ${status})`);
+    const { error } = await supabaseAdmin.from('profiles').update({
+      subscription_tier: newTier,
+      stripe_subscription_id: subId,
+      subscription_status: status,
+      subscription_period_end: safeIso(sub.renews_at) || safeIso(sub.ends_at),
+    }).eq('id', userId);
+
+    if (error) {
+      console.error('[WEBHOOK ERROR] Supabase update failed:', error);
+      // Reply 500 so Lemon Squeezy retries the webhook.
+      return res.status(500).json({ error: 'Database update failed' });
     }
+    console.log('[WEBHOOK SUCCESS] Profile updated.');
   } else if (eventName === 'subscription_cancelled' || eventName === 'subscription_expired') {
-    if (userId) {
-      console.log(`[WEBHOOK DB] Cancelling profile ${userId}`);
-      await supabaseAdmin.from('profiles').update({
-        subscription_tier: 'free',
-        subscription_status: 'cancelled',
-        stripe_subscription_id: null
-      }).eq('id', userId);
+    console.log(`[WEBHOOK DB] Cancelling profile ${userId}`);
+    const { error } = await supabaseAdmin.from('profiles').update({
+      subscription_tier: 'free',
+      subscription_status: eventName === 'subscription_expired' ? 'expired' : 'cancelled',
+    }).eq('id', userId);
+    if (error) {
+      console.error('[WEBHOOK ERROR] Supabase cancellation update failed:', error);
+      return res.status(500).json({ error: 'Database update failed' });
     }
   }
 
