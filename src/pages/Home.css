@@ -37,11 +37,14 @@
 
 .home-hero__title {
   position: relative;
-  font-size: var(--text-h1);
+  /* Fluid: scales between ~28px on small phones and 40px on desktop so a
+     long username never pushes the heading flush against the card edge. */
+  font-size: clamp(1.75rem, 6.4vw, var(--text-h1));
   font-weight: var(--font-weight-display);
   letter-spacing: -0.025em;
   line-height: 1.15;
   color: var(--color-white);
+  overflow-wrap: anywhere;
 }
 
 .home-hero__sub {
@@ -342,6 +345,8 @@
     margin-right: 0;
     margin-top: 0;
     border-radius: var(--radius-2xl);
-    padding: var(--space-7) var(--space-5);
+    /* Generous horizontal inset so neither the heading nor the eyebrow
+       can ever sit under the corner curve. */
+    padding: var(--space-7) var(--space-6);
   }
 }
