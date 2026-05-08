@@ -29,7 +29,7 @@
 
 .plan-card {
   position: relative;
-  padding: var(--space-7) var(--space-6) var(--space-6);
+  padding: var(--space-8) var(--space-7);
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
@@ -37,22 +37,26 @@
   transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
 }
 
+/* Highlighted card needs extra top padding so the inline ribbon
+   doesn't visually compress the title against it. */
 .plan-card--highlight {
   border-color: var(--color-primary);
   box-shadow: 0 16px 48px rgba(26, 107, 71, 0.18);
+  padding-top: var(--space-9);
 }
 
 .plan-card--focused {
   transform: translateY(-4px);
 }
 
+/* Sits inside the card padding, never crosses the card border. */
 .plan-card__ribbon {
   position: absolute;
-  top: -10px;
-  right: var(--space-6);
+  top: var(--space-5);
+  right: var(--space-7);
   background-color: var(--color-primary);
   color: var(--color-white);
-  padding: 0.3rem 0.875rem;
+  padding: 0.3rem 0.75rem;
   border-radius: var(--radius-full);
   font-size: 0.6875rem;
   font-weight: var(--font-weight-heading);
@@ -109,9 +113,12 @@
   display: flex;
   align-items: flex-start;
   gap: 0.625rem;
+  /* Reserve a tiny right gutter so long bullets like "Email alerts on
+     compliance changes" never run flush against the card edge. */
+  padding-right: 0.25rem;
   font-size: var(--text-body-sm);
   color: var(--color-on-surface);
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 .plan-card__features li .material-symbols-outlined {
