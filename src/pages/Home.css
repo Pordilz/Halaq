@@ -335,9 +335,13 @@
 
 @media (max-width: 767px) {
   .home-hero {
-    margin-left: calc(var(--space-5) * -1);
-    margin-right: calc(var(--space-5) * -1);
+    /* Stay inside the page gutter on mobile and keep the rounded corners
+       — bleeding to the screen edges with border-radius: 0 made the card
+       look like a flat band instead of a hero card. */
+    margin-left: 0;
+    margin-right: 0;
     margin-top: 0;
-    border-radius: 0;
+    border-radius: var(--radius-2xl);
+    padding: var(--space-7) var(--space-5);
   }
 }

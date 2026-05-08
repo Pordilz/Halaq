@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import MaterialIcon from '../components/MaterialIcon'
 import useDocumentTitle from '../hooks/useDocumentTitle'
 import './Learn.css'
@@ -254,6 +254,14 @@ export default function Learn() {
 
 function ArticleView({ article, onBack }) {
   useDocumentTitle(article.title, article.summary)
+
+  // The page reuses the same Learn route, so React Router doesn't reset
+  // scroll between the index and the article. Without this the article
+  // opens at whatever scroll position the index had — usually mid-page.
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'auto' })
+  }, [article.id])
+
   return (
     <div className="learn-page container animate-entrance">
       <button type="button" className="article-back" onClick={onBack}>
