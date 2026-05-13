@@ -430,10 +430,12 @@ export default function Profile() {
               </ol>
 
               <div className="methodology-card__peers">
-                <strong>Peer-reviewed against</strong>
+                <strong>Cross-checked against</strong>
                 <span>
-                  We sanity-check every benchmark verdict against Zoya, Musaffa, Islamicly
-                  and Wahed Invest. Discrepancies are treated as bugs.
+                  Verdicts are validated against the published Shariah index
+                  methodologies (S&amp;P Dow Jones Islamic, FTSE Shariah, MSCI
+                  Islamic) and against AAOIFI's audit framework. Discrepancies
+                  are treated as bugs.
                 </span>
               </div>
 

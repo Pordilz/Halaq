@@ -14,7 +14,10 @@ import './StockDetail.css'
 const STATUS_TONE = {
   COMPLIANT: { className: 'sd-banner--compliant', icon: 'check_circle', label: 'COMPLIANT' },
   NON_COMPLIANT: { className: 'sd-banner--non', icon: 'cancel', label: 'NON-COMPLIANT' },
-  DOUBTFUL: { className: 'sd-banner--doubtful', icon: 'help', label: 'DOUBTFUL' },
+  // Renamed from "DOUBTFUL" — testers found that wording sounded like the
+  // verdict had changed. The state actually means "data gaps prevent a
+  // confident verdict", which "Needs review" communicates clearly.
+  DOUBTFUL: { className: 'sd-banner--doubtful', icon: 'help', label: 'NEEDS REVIEW' },
 }
 
 const TABS = [
@@ -103,6 +106,7 @@ export default function StockDetail() {
           dataSources: compliance.dataSources,
           income: data.income,
           balanceSheet: data.balanceSheet,
+          quoteFetchedAt: Date.now(),
         })
 
         // Sync watchlist compliance status (live counts on Home/Watchlist)
@@ -208,6 +212,9 @@ export default function StockDetail() {
                 {stock.change}
               </div>
             )}
+            {stock.quoteFetchedAt && (
+              <QuoteFreshness fetchedAt={stock.quoteFetchedAt} />
+            )}
           </div>
         )}
       </header>
@@ -220,6 +227,15 @@ export default function StockDetail() {
           <span className="sd-banner__label">{stock.methodology} verdict</span>
           <span className="sd-banner__verdict">{tone.label}</span>
           <span className="sd-banner__reason">{stock.statusReason}</span>
+          {stock.status === 'DOUBTFUL' && (
+            <span className="sd-banner__hint">
+              <MaterialIcon name="info" size={14} />
+              "Needs review" means Halaq could not access enough reliable
+              financial data to give a confident verdict — usually missing
+              balance-sheet line items. It is not a "fail" — verify the
+              missing figures before acting.
+            </span>
+          )}
         </div>
         <div className="sd-banner__actions">
           <button
@@ -313,11 +329,18 @@ function PremiumGate({ navigate, body }) {
 
 function Overview({ stock, isPro, navigate }) {
   const haramPct = (stock.haramRevenuePercent || 0) * 100
+  // Friendly label for the verdict in the summary sentence. Matches what
+  // the banner badge shows so the page reads consistently.
+  const verdictWords = {
+    COMPLIANT: 'compliant',
+    NON_COMPLIANT: 'non-compliant',
+    DOUBTFUL: 'needs review',
+  }[stock.status] || 'pending review'
   return (
     <div className="sd-card">
       <h3 className="sd-card__title">Summary</h3>
       <p className="sd-card__copy">
-        <strong>{stock.name}</strong> is currently classified as <strong>{stock.status.replace('_', '-')}</strong>{' '}
+        <strong>{stock.name}</strong> is currently <strong>{verdictWords}</strong>{' '}
         under {stock.methodology}, based on financials reported{' '}
         {stock.dataSources.balanceSheetPeriod ? `up to ${stock.dataSources.balanceSheetPeriod}` : 'recently'}.
       </p>
@@ -367,6 +390,30 @@ function Overview({ stock, isPro, navigate }) {
       )}
 
       <DisclaimerNotice />
+    </div>
+  )
+}
+
+// Renders a tiny "as of Xs ago" pill under the price. Re-ticks every 15s
+// so the time stays accurate while the user reads the page.
+function QuoteFreshness({ fetchedAt }) {
+  const [, tick] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => tick((t) => t + 1), 15_000)
+    return () => clearInterval(id)
+  }, [])
+  const seconds = Math.max(0, Math.floor((Date.now() - fetchedAt) / 1000))
+  const label =
+    seconds < 5 ? 'just now'
+    : seconds < 60 ? `${seconds}s ago`
+    : seconds < 3600 ? `${Math.floor(seconds / 60)}m ago`
+    : `${Math.floor(seconds / 3600)}h ago`
+  return (
+    <div
+      className="sd-hero__freshness"
+      title="Yahoo Finance quote — refreshes when you reload this page."
+    >
+      Quote {label}
     </div>
   )
 }

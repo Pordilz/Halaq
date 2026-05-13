@@ -1,19 +1,57 @@
+import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useWatchlist } from '../hooks/useWatchlist'
+import { fetchAllScreeningData } from '../services/yahooFinanceApi'
+import { screenStock } from '../services/complianceEngine'
 import MaterialIcon from '../components/MaterialIcon'
 import StockRowCard from '../components/StockRowCard'
 import useDocumentTitle from '../hooks/useDocumentTitle'
 import './Watchlist.css'
 
 export default function Watchlist() {
-  const { user } = useAuth()
+  const { user, isPro, profile } = useAuth()
   const navigate = useNavigate()
-  const { watchlist, loading, removeFromWatchlist } = useWatchlist(user)
+  const { watchlist, loading, removeFromWatchlist, updateStatus } = useWatchlist(user)
 
   useDocumentTitle('Watchlist', 'Your saved Shariah-screened stocks.')
 
   const navigateToStock = (ticker) => navigate(`/stock/${ticker}`)
+
+  // Auto-screen any watchlist entry that lacks a status. This is what the
+  // user expected — adding to watchlist should produce a compliance verdict
+  // automatically, not leave a "Screen →" CTA. We process unstatused tickers
+  // sequentially with a small delay to avoid hammering Yahoo, and bail out
+  // cleanly if the component unmounts mid-flight.
+  const screenedRef = useRef(new Set())
+  useEffect(() => {
+    let cancelled = false
+    const methodology = isPro ? profile?.methodology : undefined
+    const pending = watchlist
+      .filter(s => !s.status && !screenedRef.current.has(s.ticker))
+      .slice(0, 8) // cap so a 100-stock watchlist doesn't fire 100 fetches at once
+    if (pending.length === 0) return
+
+    ;(async () => {
+      for (const stock of pending) {
+        if (cancelled) return
+        screenedRef.current.add(stock.ticker)
+        try {
+          const data = await fetchAllScreeningData(stock.ticker)
+          if (cancelled) return
+          const compliance = screenStock(data.profile, data.balanceSheet, data.income, { methodology })
+          updateStatus(stock.ticker, compliance.status)
+        } catch {
+          // Mark as DOUBTFUL on failure so the "Checking…" pill doesn't hang
+          // forever. The next StockDetail visit will re-screen with full UI.
+          updateStatus(stock.ticker, 'DOUBTFUL')
+        }
+      }
+    })()
+
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchlist.length, isPro, profile?.methodology])
 
   // Match Home's definition: a watchlist row that hasn't been screened yet
   // (status === null) counts as "doubtful" until proven otherwise. Without
@@ -68,7 +106,7 @@ export default function Watchlist() {
                     </span>
                     <span className="stat-legend__item">
                       <span className="stat-legend__dot bg-caution" />
-                      {breakdown.doubtful} Doubtful
+                      {breakdown.doubtful} Needs review
                     </span>
                     <span className="stat-legend__item">
                       <span className="stat-legend__dot bg-error" />

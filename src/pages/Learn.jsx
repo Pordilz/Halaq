@@ -27,13 +27,13 @@ const ARTICLES = [
       },
       {
         h: 'What Halaq does',
-        p: 'Halaq applies the published AAOIFI standard by default — the same framework used by Zoya, Musaffa, Wahed and most major Islamic financial institutions. We surface the verdict, every ratio used to reach it, the methodology being applied, and the reporting period of the underlying financials. The decision to act is yours.',
+        p: 'Halaq applies the published AAOIFI standard by default — the same framework used by most major Islamic financial institutions and Shariah indices. We surface the verdict, every ratio used to reach it, the methodology being applied, and the reporting period of the underlying financials. The decision to act is yours.',
       },
     ],
     sources: [
-      { name: 'AAOIFI Shariah Standard No. 21 — Investment Sukuk', url: 'https://aaoifi.com/shariaa-standards/?lang=en' },
-      { name: 'Zoya — Methodology overview', url: 'https://zoya.finance/methodology' },
-      { name: 'Wahed Invest — Shariah board', url: 'https://wahedinvest.com/shariah-board' },
+      { name: 'AAOIFI — Accounting and Auditing Organization for Islamic Financial Institutions', url: 'https://aaoifi.com/shariaa-standards/?lang=en' },
+      { name: 'IFSB — Islamic Financial Services Board', url: 'https://www.ifsb.org/published.php' },
+      { name: 'ISRA — International Shariah Research Academy', url: 'https://ifikr.isra.my/' },
     ],
   },
   {
@@ -99,9 +99,9 @@ const ARTICLES = [
       },
     ],
     sources: [
-      { name: 'AAOIFI Shariah Standard No. 21', url: 'https://aaoifi.com/shariaa-standards/?lang=en' },
-      { name: 'Zoya — Purification guide', url: 'https://zoya.finance' },
-      { name: 'Mufti Taqi Usmani — Principles of Shariah Governing Islamic Investment Funds', url: 'https://muftitaqiusmani.com' },
+      { name: 'AAOIFI Shariah Standard No. 21 — Investment Sukuk', url: 'https://aaoifi.com/shariaa-standards/?lang=en' },
+      { name: 'Mufti Taqi Usmani — An Introduction to Islamic Finance', url: 'https://muftitaqiusmani.com' },
+      { name: 'IIFA — International Islamic Fiqh Academy resolutions', url: 'https://iifa-aifi.org/en/' },
     ],
   },
   {
@@ -128,8 +128,8 @@ const ARTICLES = [
     ],
     sources: [
       { name: 'AAOIFI Shariah Standard No. 35 — Zakah', url: 'https://aaoifi.com/shariaa-standards/?lang=en' },
-      { name: 'AMJA — Zakat on stocks', url: 'https://www.amjaonline.org' },
-      { name: 'Joe Bradford — Zakat on stocks (overview)', url: 'https://www.joebradford.net' },
+      { name: 'AMJA — Assembly of Muslim Jurists of America (Zakat resolutions)', url: 'https://www.amjaonline.org/fatwa/en/category/zakat/' },
+      { name: 'IIFA — International Islamic Fiqh Academy', url: 'https://iifa-aifi.org/en/' },
     ],
   },
   {
@@ -151,8 +151,9 @@ const ARTICLES = [
       },
     ],
     sources: [
-      { name: 'AAOIFI Shariah Standard No. 21', url: 'https://aaoifi.com/shariaa-standards/?lang=en' },
-      { name: 'Mufti Taqi Usmani — Principles of Islamic Investment', url: 'https://muftitaqiusmani.com' },
+      { name: 'AAOIFI Shariah Standard No. 21 — Investment Sukuk', url: 'https://aaoifi.com/shariaa-standards/?lang=en' },
+      { name: 'Mufti Taqi Usmani — An Introduction to Islamic Finance', url: 'https://muftitaqiusmani.com' },
+      { name: 'IFSB — Islamic Financial Services Board', url: 'https://www.ifsb.org/published.php' },
     ],
   },
   {
@@ -178,9 +179,9 @@ const ARTICLES = [
       },
     ],
     sources: [
-      { name: 'AAOIFI Shariah Standard No. 21', url: 'https://aaoifi.com/shariaa-standards/?lang=en' },
-      { name: 'Musaffa — Methodology', url: 'https://musaffa.com' },
-      { name: 'Islamicly — Stock screening rules', url: 'https://www.islamicly.com' },
+      { name: 'AAOIFI Shariah Standard No. 21 — Investment Sukuk', url: 'https://aaoifi.com/shariaa-standards/?lang=en' },
+      { name: 'S&P Dow Jones Islamic Market Index — methodology', url: 'https://www.spglobal.com/spdji/en/index-family/shariah/' },
+      { name: 'FTSE Shariah Global Equity Index — methodology', url: 'https://www.ftserussell.com/products/indices/ftse-shariah' },
     ],
   },
 ]

@@ -49,7 +49,7 @@ const STEPS = [
 ]
 
 const FEATURES = [
-  { icon: 'verified', t: 'AAOIFI-aligned', s: 'Methodology used by Zoya, Musaffa, Wahed.' },
+  { icon: 'verified', t: 'AAOIFI-aligned', s: 'Same standard major Islamic banks use.' },
   { icon: 'public', t: 'JSE & US markets', s: '10,000+ equities covered today.' },
   { icon: 'volunteer_activism', t: 'Purification math', s: 'Per-dividend haram-revenue %.' },
   { icon: 'lock', t: 'Privacy-first', s: 'No data sold. Ever.' },

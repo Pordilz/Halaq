@@ -32,6 +32,10 @@ export default function Home() {
   // 'ok' | 'partial' | 'failed' | null. Drives a banner when Yahoo is
   // throttling us so users don't think the page is stuck.
   const [quotesHealth, setQuotesHealth] = useState(null)
+  // Wall-clock timestamp of the last successful quote response — shown
+  // to the user as "Updated X seconds ago" so they know how fresh the
+  // price tile data is.
+  const [quotesFetchedAt, setQuotesFetchedAt] = useState(null)
 
   const tickers = useMemo(() => watchlist.map(w => w.ticker), [watchlist])
   const QUOTE_LIMIT = 16
@@ -65,9 +69,29 @@ export default function Home() {
     if (subset.length > 0) {
       const ratio = okCount / subset.length
       setQuotesHealth(ratio === 1 ? 'ok' : ratio === 0 ? 'failed' : 'partial')
+      if (okCount > 0) setQuotesFetchedAt(Date.now())
     }
     setQuotesLoading(false)
   }, [tickers])
+
+  // Force a re-render every 15s so "Updated X ago" stays accurate even
+  // while we're between 60s refreshes. Lightweight — just a tick counter.
+  const [, forceTick] = useState(0)
+  useEffect(() => {
+    if (!quotesFetchedAt) return
+    const id = setInterval(() => forceTick((t) => t + 1), 15_000)
+    return () => clearInterval(id)
+  }, [quotesFetchedAt])
+
+  const relativeUpdated = (() => {
+    if (!quotesFetchedAt) return null
+    const seconds = Math.max(0, Math.floor((Date.now() - quotesFetchedAt) / 1000))
+    if (seconds < 5) return 'just now'
+    if (seconds < 60) return `${seconds}s ago`
+    const minutes = Math.floor(seconds / 60)
+    if (minutes < 60) return `${minutes}m ago`
+    return `${Math.floor(minutes / 60)}h ago`
+  })()
 
   useEffect(() => {
     const controller = new AbortController()
@@ -131,7 +155,9 @@ export default function Home() {
             <p className="home-section__sub">
               {watchlist.length === 0
                 ? 'Save a stock to see live prices here.'
-                : 'Tap a card for the full compliance report.'}
+                : relativeUpdated
+                  ? <>Updated <span className="home-section__live-dot" aria-hidden /> {relativeUpdated} · refreshes every minute</>
+                  : 'Tap a card for the full compliance report.'}
             </p>
           </div>
           {watchlist.length > 0 && (

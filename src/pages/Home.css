@@ -164,6 +164,23 @@
   margin-top: 4px;
 }
 
+.home-section__live-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-tertiary);
+  box-shadow: 0 0 0 0 rgba(0, 128, 69, 0.6);
+  animation: home-live-pulse 1.8s ease-out infinite;
+  vertical-align: 1px;
+  margin: 0 2px;
+}
+
+@keyframes home-live-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 128, 69, 0.5); }
+  60% { box-shadow: 0 0 0 6px rgba(0, 128, 69, 0); }
+}
+
 .home-quote-status {
   display: flex;
   align-items: center;

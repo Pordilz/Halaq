@@ -15,7 +15,7 @@ const SLIDES = [
     title: 'Invest with conviction',
     titleHighlight: 'conviction',
     body:
-      "Screen any stock for Shariah compliance in seconds. Built on AAOIFI methodology — peer-reviewed against Zoya, Musaffa and Wahed.",
+      "Screen any stock for Shariah compliance in seconds. Built on AAOIFI methodology and cross-checked against the major Shariah index frameworks (S&P Dow Jones Islamic, FTSE Shariah, MSCI Islamic).",
     Illustration: ScreeningIllustration,
   },
   {

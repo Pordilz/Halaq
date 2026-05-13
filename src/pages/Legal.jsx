@@ -115,7 +115,7 @@ const DOCS = {
       },
       {
         h: 'Peer review',
-        p: 'We sanity-check verdicts against Zoya, Musaffa, Islamicly, and Wahed Invest where their universes overlap with ours. Material disagreements are treated as bugs and tracked publicly.',
+        p: 'Verdicts are cross-checked against the published Shariah index methodologies (S&P Dow Jones Islamic, FTSE Shariah, MSCI Islamic) and against AAOIFI\'s audit framework. Material disagreements are treated as bugs and tracked publicly.',
       },
       {
         h: 'Update cadence',

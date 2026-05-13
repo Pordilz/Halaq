@@ -40,9 +40,9 @@ export default function StockRowCard({
           {status ? (
             <ComplianceBadge status={status} size="sm" />
           ) : (
-            <span className="stock-row-card__screen-cta">
-              Screen
-              <MaterialIcon name="arrow_forward" size={14} />
+            <span className="stock-row-card__screen-cta" aria-live="polite">
+              <MaterialIcon name="refresh" size={14} className="spinner" />
+              Checking…
             </span>
           )}
         </div>
