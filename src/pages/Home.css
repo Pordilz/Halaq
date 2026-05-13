@@ -44,7 +44,9 @@
   letter-spacing: -0.025em;
   line-height: 1.15;
   color: var(--color-white);
-  overflow-wrap: anywhere;
+  /* break-word only splits a word when there is literally no other choice
+     — `anywhere` would happily split "reyally03" into "reyally0/3" mid-token. */
+  overflow-wrap: break-word;
 }
 
 .home-hero__sub {
@@ -358,7 +360,36 @@
     margin-top: 0;
     border-radius: var(--radius-2xl);
     /* Generous horizontal inset so neither the heading nor the eyebrow
-       can ever sit under the corner curve. */
-    padding: var(--space-7) var(--space-6);
+       can ever sit under the corner curve. Also respect notched-screen
+       safe areas so the text never tucks behind a rounded display corner. */
+    padding-block: var(--space-7);
+    padding-inline: max(var(--space-6), env(safe-area-inset-left, 0px))
+                    max(var(--space-6), env(safe-area-inset-right, 0px));
+  }
+
+  .home-hero__title {
+    /* Word-break only as a last resort — avoids ugly "reyally03," wrapping
+       on its own line. The clamp() above handles real-world long usernames. */
+    overflow-wrap: break-word;
+    word-break: normal;
+    hyphens: none;
+  }
+
+  /* Slightly louder eyebrow so the cap-letter doesn't visually merge with
+     the corner curve. */
+  .home-hero__eyebrow {
+    letter-spacing: 0.16em;
+    margin-bottom: var(--space-3);
+  }
+}
+
+/* Very narrow phones (iPhone SE-class, &lt; 360px viewport) — shave the
+   horizontal padding so action buttons don't wrap awkwardly. */
+@media (max-width: 359px) {
+  .home-hero {
+    padding-inline: var(--space-5);
+  }
+  .home-hero__title {
+    font-size: 1.5rem;
   }
 }

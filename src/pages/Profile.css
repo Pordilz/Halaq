@@ -102,6 +102,23 @@
   align-items: center;
   gap: var(--space-4);
   padding: var(--space-5) var(--space-6);
+  flex-wrap: wrap;
+}
+
+/* Narrow phones: select pops to its own line under the label so neither
+   gets squeezed. */
+@media (max-width: 480px) {
+  .settings-row {
+    flex-direction: column;
+    align-items: stretch;
+    padding: var(--space-4) var(--space-5);
+  }
+  .settings-row .toggle-switch {
+    align-self: flex-end;
+  }
+  .settings-select {
+    width: 100%;
+  }
 }
 
 .settings-info {

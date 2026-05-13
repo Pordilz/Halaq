@@ -198,7 +198,10 @@ export default function Learn() {
   const openArticle = openId ? ARTICLES.find(a => a.id === openId) : null
 
   if (openArticle) {
-    return <ArticleView article={openArticle} onBack={() => setOpenId(null)} />
+    return <ArticleView article={openArticle} onBack={() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+      setOpenId(null)
+    }} />
   }
 
   return (
@@ -231,7 +234,14 @@ export default function Learn() {
             type="button"
             key={a.id}
             className="article-card card-standard"
-            onClick={() => setOpenId(a.id)}
+            onClick={() => {
+              // Reset scroll BEFORE the article mounts so the browser doesn't
+              // paint a single frame with the list's scroll position
+              // applied to the new article — that single frame is what made
+              // articles "open halfway through" visually.
+              window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+              setOpenId(a.id)
+            }}
           >
             <div className="article-icon-wrapper">
               <MaterialIcon name={a.icon} size={22} className="text-primary" />

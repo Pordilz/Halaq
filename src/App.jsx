@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import Layout from './components/Layout'
 import { ProtectedRoute } from './components/ProtectedRoute'
@@ -25,9 +25,23 @@ const Chat = lazy(() => import('./pages/Chat'))
 const Upgrade = lazy(() => import('./pages/Upgrade'))
 const Legal = lazy(() => import('./pages/Legal'))
 
+// Reset window scroll on every route change. The browser's default
+// behavior preserves scroll for SPA navigations, which surfaces as
+// "I clicked an article and it opened halfway down the page". This is
+// the bulletproof fix — runs on every pathname change in one place,
+// no need to remember to scrollTo in every page-level effect.
+function ScrollToTop() {
+  const { pathname } = useLocation()
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [pathname])
+  return null
+}
+
 export default function App() {
   return (
     <ErrorBoundary>
+      <ScrollToTop />
       <Layout>
         <Suspense fallback={<AppLoader />}>
           <Routes>

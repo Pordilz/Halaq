@@ -350,10 +350,7 @@ function Overview({ stock, isPro, navigate }) {
       </div>
 
       {stock.description && (
-        <div className="sd-about">
-          <h4>About {stock.name}</h4>
-          <p>{stock.description}</p>
-        </div>
+        <AboutBlock name={stock.name} description={stock.description} />
       )}
 
       {!isPro && (
@@ -374,13 +371,45 @@ function Overview({ stock, isPro, navigate }) {
   )
 }
 
+function AboutBlock({ name, description }) {
+  const [expanded, setExpanded] = useState(false)
+  // Yahoo descriptions are commonly 1000+ chars and often end mid-sentence
+  // with "...". Collapsed view caps at ~3 lines (CSS line-clamp), so the
+  // cell never visually dominates a mobile screen. Long descriptions get
+  // a Show more / Show less toggle.
+  const LONG_THRESHOLD = 220
+  const isLong = description && description.length > LONG_THRESHOLD
+  return (
+    <div className="sd-about">
+      <h4>About {name}</h4>
+      <p className={isLong && !expanded ? 'sd-about__text sd-about__text--clamp' : 'sd-about__text'}>
+        {description}
+      </p>
+      {isLong && (
+        <button
+          type="button"
+          className="sd-about__toggle"
+          onClick={() => setExpanded((v) => !v)}
+        >
+          {expanded ? 'Show less' : 'Show more'}
+        </button>
+      )}
+    </div>
+  )
+}
+
 function OverviewCell({ tone, icon, label, value }) {
+  // Mobile: icon + label sit on one row at the top so the label never
+  // wraps around an absolutely-positioned icon. Desktop CSS promotes the
+  // icon back to the top-right corner via `display: contents`.
   return (
     <div className={`sd-cell sd-cell--${tone}`}>
-      <div className="sd-cell__icon">
-        <MaterialIcon name={icon} fill size={18} />
+      <div className="sd-cell__head">
+        <div className="sd-cell__icon">
+          <MaterialIcon name={icon} fill size={16} />
+        </div>
+        <span className="sd-cell__label">{label}</span>
       </div>
-      <span className="sd-cell__label">{label}</span>
       <span className="sd-cell__value">{value}</span>
     </div>
   )
