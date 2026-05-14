@@ -37,23 +37,20 @@
   transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
 }
 
-/* Highlighted card needs extra top padding so the inline ribbon
-   doesn't visually compress the title against it. */
 .plan-card--highlight {
   border-color: var(--color-primary);
   box-shadow: 0 16px 48px rgba(26, 107, 71, 0.18);
-  padding-top: var(--space-9);
 }
 
 .plan-card--focused {
   transform: translateY(-4px);
 }
 
-/* Sits inside the card padding, never crosses the card border. */
+/* Ribbon sits at the top of the card in normal flow — not absolutely
+   positioned. This means it can never overlap the title, regardless of
+   what other tokens or padding adjustments happen elsewhere. */
 .plan-card__ribbon {
-  position: absolute;
-  top: var(--space-5);
-  right: var(--space-7);
+  align-self: flex-start;
   background-color: var(--color-primary);
   color: var(--color-white);
   padding: 0.3rem 0.75rem;

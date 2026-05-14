@@ -379,9 +379,11 @@
     margin-top: 0;
     border-radius: var(--radius-2xl);
     /* Generous horizontal inset so neither the heading nor the eyebrow
-       can ever sit under the corner curve. Also respect notched-screen
-       safe areas so the text never tucks behind a rounded display corner. */
-    padding-block: var(--space-7);
+       can ever sit under the corner curve. Bigger bottom padding so the
+       action buttons get breathing room from the rounded corners. Also
+       respects notched-screen safe areas. */
+    padding-top: var(--space-7);
+    padding-bottom: var(--space-8);
     padding-inline: max(var(--space-6), env(safe-area-inset-left, 0px))
                     max(var(--space-6), env(safe-area-inset-right, 0px));
   }
