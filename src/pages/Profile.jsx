@@ -215,7 +215,7 @@ export default function Profile() {
           <MaterialIcon name="error_outline" />
           <span>
             Payment received but we couldn't confirm your tier yet. Refresh in
-            a minute, or email <a href="mailto:support@halaq.app">support@halaq.app</a>{' '}
+            a minute, or email <a href="mailto:qromatech@gmail.com">qromatech@gmail.com</a>{' '}
             if it doesn't update.
           </span>
         </div>
@@ -456,7 +456,7 @@ export default function Profile() {
                 <div className="about-card__links">
                   <a href="/legal/terms">Terms of Use</a>
                   <a href="/legal/privacy">Privacy Policy</a>
-                  <a href="mailto:support@halaq.app">Contact support</a>
+                  <a href="mailto:qromatech@gmail.com">Contact support</a>
                 </div>
               </div>
             </div>

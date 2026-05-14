@@ -34,11 +34,11 @@ const DOCS = {
       },
       {
         h: '5. Your rights',
-        p: 'You can edit your username and notification preferences in /profile. You can cancel your subscription from the Lemon Squeezy customer portal, accessible from the same page. To request export or deletion of your data, email support@halaq.app from the address linked to your account; we honour requests within 30 days.',
+        p: 'You can edit your username and notification preferences in /profile. You can cancel your subscription from the Lemon Squeezy customer portal, accessible from the same page. To request export or deletion of your data, email qromatech@gmail.com from the address linked to your account; we honour requests within 30 days.',
       },
       {
         h: '6. Contact',
-        p: 'Questions about this policy: privacy@halaq.app.',
+        p: 'Questions about this policy: qromatech@gmail.com.',
       },
     ],
   },
@@ -61,7 +61,7 @@ const DOCS = {
       },
       {
         h: '4. Refunds',
-        p: 'New subscribers may request a full refund within 14 days of their first paid period by emailing support@halaq.app. After the 14-day window, refunds are at our discretion.',
+        p: 'New subscribers may request a full refund within 14 days of their first paid period by emailing qromatech@gmail.com. After the 14-day window, refunds are at our discretion.',
       },
       {
         h: '5. Acceptable use',
