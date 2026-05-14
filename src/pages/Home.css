@@ -37,16 +37,18 @@
 
 .home-hero__title {
   position: relative;
-  /* Fluid: scales between ~28px on small phones and 40px on desktop so a
-     long username never pushes the heading flush against the card edge. */
-  font-size: clamp(1.75rem, 6.4vw, var(--text-h1));
+  /* Tighter fluid scale than before. Max bumped down from 2.5rem to 2rem
+     and the vw factor reduced from 6.4 to 4.8 — usernames like
+     "bigmanrey1" no longer dominate the card on mid-size mobile widths. */
+  font-size: clamp(1.5rem, 4.8vw, 2rem);
   font-weight: var(--font-weight-display);
-  letter-spacing: -0.025em;
-  line-height: 1.15;
+  letter-spacing: -0.02em;
+  line-height: 1.18;
   color: var(--color-white);
   /* break-word only splits a word when there is literally no other choice
      — `anywhere` would happily split "reyally03" into "reyally0/3" mid-token. */
   overflow-wrap: break-word;
+  max-width: 28rem;
 }
 
 .home-hero__sub {

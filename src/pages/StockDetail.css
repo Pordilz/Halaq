@@ -407,17 +407,20 @@
 }
 
 .sd-about__text {
+  /* Always start as block so the transition between collapsed/expanded
+     is visually unambiguous. Specificity also wins against `.sd-about p`. */
+  display: block;
   color: var(--color-on-surface);
   line-height: 1.55;
   overflow-wrap: break-word;
+  margin: 0;
 }
 
-/* Collapsed: clamp to 4 lines on mobile, 6 on desktop. Tap "Show more"
-   to expand. Avoids long Yahoo descriptions (often 1000+ chars) eating
-   the entire viewport before the user reaches the upsell. */
+/* Collapsed: clamp to 4 lines on mobile, 6 on desktop. */
 .sd-about__text--clamp {
   display: -webkit-box;
   -webkit-line-clamp: 4;
+  line-clamp: 4;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -425,22 +428,33 @@
 @media (min-width: 768px) {
   .sd-about__text--clamp {
     -webkit-line-clamp: 6;
+    line-clamp: 6;
   }
 }
 
 .sd-about__toggle {
-  margin-top: var(--space-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: var(--space-3);
   background: transparent;
   border: 0;
-  padding: 0;
+  padding: 0.25rem 0;
   font-size: var(--text-body-sm);
   font-weight: var(--font-weight-heading);
   color: var(--color-primary);
   cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .sd-about__toggle:hover {
   text-decoration: underline;
+  opacity: 0.85;
+}
+
+.sd-about__toggle:active {
+  opacity: 0.7;
 }
 
 .sd-about p {

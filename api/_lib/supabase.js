@@ -43,7 +43,7 @@ const DAY_MS = 24 * HOUR_MS;
  * Atomic enough for a single-region deployment; a strict CAS implementation
  * would require an RPC, which is overkill for the current free-tier limit.
  */
-export async function enforceFreeRateLimit({ user, profile, dailyLimit = 5 }) {
+export async function enforceFreeRateLimit({ user, profile, dailyLimit = 50 }) {
   const admin = getSupabaseAdmin();
   if (!admin || !user || !profile) return null;
   if (profile.subscription_tier && profile.subscription_tier !== 'free') {

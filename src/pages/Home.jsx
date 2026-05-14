@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useWatchlist } from '../hooks/useWatchlist'
+import { fetchAllScreeningData } from '../services/yahooFinanceApi'
 import MaterialIcon from '../components/MaterialIcon'
 import ComplianceBadge from '../components/ComplianceBadge'
 import useDocumentTitle from '../hooks/useDocumentTitle'
-import { getCurrencySymbol } from '../services/complianceEngine'
+import { getCurrencySymbol, screenStock } from '../services/complianceEngine'
 import { displayFirstToken } from '../lib/username'
 import './Home.css'
 
@@ -23,7 +24,7 @@ const formatChange = (pct) => {
 export default function Home() {
   const navigate = useNavigate()
   const { user, profile, tier, isPro } = useAuth()
-  const { watchlist, loading: wlLoading } = useWatchlist(user)
+  const { watchlist, loading: wlLoading, updateStatus } = useWatchlist(user)
 
   useDocumentTitle('Home', 'Your halal investing dashboard.')
 
@@ -106,6 +107,37 @@ export default function Home() {
     }, 60_000)
     return () => clearInterval(id)
   }, [fetchQuotes])
+
+  // Auto-screen unstatused watchlist stocks here too, mirroring the
+  // Watchlist page. Without this, the breakdown stats (Compliant / Needs
+  // Review / Non-compliant) showed everything as "Needs Review" whenever
+  // the user landed on Home before visiting Watchlist.
+  const screenedRef = useRef(new Set())
+  useEffect(() => {
+    let cancelled = false
+    const methodology = isPro ? profile?.methodology : undefined
+    const pending = watchlist
+      .filter(s => !s.status && !screenedRef.current.has(s.ticker))
+      .slice(0, 8)
+    if (pending.length === 0) return
+    ;(async () => {
+      for (const stock of pending) {
+        if (cancelled) return
+        screenedRef.current.add(stock.ticker)
+        try {
+          const data = await fetchAllScreeningData(stock.ticker)
+          if (cancelled) return
+          const compliance = screenStock(data.profile, data.balanceSheet, data.income, { methodology })
+          updateStatus(stock.ticker, compliance.status)
+        } catch {
+          // Leave status null so the next visit retries — don't poison the
+          // cache with a fake DOUBTFUL just because Yahoo blipped.
+        }
+      }
+    })()
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [watchlist.length, isPro, profile?.methodology])
 
   const breakdown = useMemo(() => ({
     total: watchlist.length,
@@ -221,7 +253,7 @@ export default function Home() {
             <p className="home-plan-card__copy">
               {isPro
                 ? 'Unlimited screens, batch tools, methodology switching and PDF reports.'
-                : 'Free tier is capped at 5 screens per day. Pro unlocks unlimited and the full ratio breakdown.'}
+                : 'Free tier includes 50 screens per day. Pro unlocks unlimited screens and the full ratio breakdown.'}
             </p>
           </div>
           <button

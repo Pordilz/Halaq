@@ -42,9 +42,9 @@ export default function Watchlist() {
           const compliance = screenStock(data.profile, data.balanceSheet, data.income, { methodology })
           updateStatus(stock.ticker, compliance.status)
         } catch {
-          // Mark as DOUBTFUL on failure so the "Checking…" pill doesn't hang
-          // forever. The next StockDetail visit will re-screen with full UI.
-          updateStatus(stock.ticker, 'DOUBTFUL')
+          // Leave status null so the next visit retries — don't poison the
+          // cache with a fake "needs review" just because Yahoo blipped.
+          // The "Checking…" pill will reappear and try again next mount.
         }
       }
     })()

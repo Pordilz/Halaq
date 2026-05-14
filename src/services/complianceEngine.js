@@ -347,14 +347,24 @@ export function screenStock(profile, balanceSheet, income, options = {}) {
     statusReason = businessScreen.reason
   } else if (!financialScreen.allPass) {
     const failedRatios = financialScreen.ratios.filter(r => !r.pass)
-    const hasRealFailures = failedRatios.some(r => !r.error)
+    const realFailures = failedRatios.filter(r => !r.error)
+    const dataGaps = failedRatios.filter(r => r.error)
 
-    if (!hasRealFailures) {
-      status = 'DOUBTFUL'
-      statusReason = `Cannot verify compliance due to missing financial data for ${failedRatios.length} ratio(s).`
-    } else {
+    if (realFailures.length > 0) {
+      // At least one ratio actually exceeds its threshold — that's a real fail.
       status = 'NON_COMPLIANT'
-      statusReason = `Failed ${failedRatios.length} financial ratio(s): ${failedRatios.map(r => r.name).join(', ')}`
+      statusReason = `Failed ${realFailures.length} financial ratio(s): ${realFailures.map(r => r.name).join(', ')}`
+    } else if (dataGaps.length >= 2) {
+      // Two or more ratios have missing data — too unreliable to call.
+      status = 'DOUBTFUL'
+      statusReason = `Cannot verify ${dataGaps.length} of ${financialScreen.ratios.length} ratios due to missing financial data — verify before acting.`
+    } else {
+      // Only one ratio has a data gap, the rest pass cleanly. Be lenient:
+      // treat as compliant but flag the unverified ratio in the reason.
+      // Most "Needs review" verdicts users were seeing came from this branch
+      // because Yahoo sometimes doesn't expose receivables for big tech.
+      status = 'COMPLIANT'
+      statusReason = `Passes available ratios. The ${dataGaps[0].name} couldn't be computed from current data — verify if it materially affects your decision.`
     }
   } else if (businessScreen.status === 'CAUTION') {
     status = 'DOUBTFUL'

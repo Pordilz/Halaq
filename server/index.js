@@ -186,9 +186,10 @@ app.get('/api/screen/:ticker', optionalAuth, async (req, res) => {
     if (!reset || now.getTime() - reset.getTime() > 24 * 60 * 60 * 1000) {
       count = 0;
     }
-    if (count >= 5) {
+    const FREE_DAILY_LIMIT = 50;
+    if (count >= FREE_DAILY_LIMIT) {
       return res.status(429).json({
-        error: 'Daily screening limit reached (5/5). Upgrade to Pro for unlimited access.',
+        error: `Daily screening limit reached (${FREE_DAILY_LIMIT}/${FREE_DAILY_LIMIT}). Upgrade to Pro for unlimited access.`,
       });
     }
     if (supabaseAdmin) {

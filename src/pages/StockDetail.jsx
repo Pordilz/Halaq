@@ -420,25 +420,32 @@ function QuoteFreshness({ fetchedAt }) {
 
 function AboutBlock({ name, description }) {
   const [expanded, setExpanded] = useState(false)
-  // Yahoo descriptions are commonly 1000+ chars and often end mid-sentence
-  // with "...". Collapsed view caps at ~3 lines (CSS line-clamp), so the
-  // cell never visually dominates a mobile screen. Long descriptions get
-  // a Show more / Show less toggle.
-  const LONG_THRESHOLD = 220
+  // Yahoo descriptions are commonly 1000+ chars. Collapsed view caps at
+  // 4 lines mobile / 6 desktop via CSS line-clamp; the toggle reveals
+  // the rest. Threshold dropped to 140 chars so the button doesn't show
+  // for already-short descriptions where there's nothing to expand.
+  const LONG_THRESHOLD = 140
   const isLong = description && description.length > LONG_THRESHOLD
+  const showClamp = isLong && !expanded
   return (
     <div className="sd-about">
       <h4>About {name}</h4>
-      <p className={isLong && !expanded ? 'sd-about__text sd-about__text--clamp' : 'sd-about__text'}>
+      <p className={showClamp ? 'sd-about__text sd-about__text--clamp' : 'sd-about__text'}>
         {description}
       </p>
       {isLong && (
         <button
           type="button"
           className="sd-about__toggle"
+          aria-expanded={expanded}
           onClick={() => setExpanded((v) => !v)}
         >
           {expanded ? 'Show less' : 'Show more'}
+          <MaterialIcon
+            name={expanded ? 'expand_less' : 'expand_more'}
+            size={16}
+            aria-hidden
+          />
         </button>
       )}
     </div>

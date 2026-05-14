@@ -103,7 +103,11 @@ export const AuthProvider = ({ children }) => {
   const isPro = tier === 'pro' || tier === 'scholar' || tier === 'admin'
   const isScholar = tier === 'scholar' || tier === 'admin'
   const dailyCount = profile?.daily_search_count || 0
-  const canSearch = isPro || dailyCount < 5
+  // Free tier was hard-capped at 5/day, which is too tight for genuine
+  // exploration. Bumped to 50 — generous enough to research a sector,
+  // tight enough to incentivise upgrades for power users.
+  const FREE_DAILY_LIMIT = 50
+  const canSearch = isPro || dailyCount < FREE_DAILY_LIMIT
 
   // Canonical app origin for emails / OAuth redirects. Falls back to the
   // browser's current origin in development. Setting VITE_APP_URL in Vercel

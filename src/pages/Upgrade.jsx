@@ -13,7 +13,7 @@ const PLANS = [
     price: '$0',
     cadence: 'forever',
     features: [
-      '5 stock screens per day',
+      '50 stock screens per day',
       'Basic compliance ruling',
       'Save up to 20 watchlist stocks',
       'AAOIFI methodology',
