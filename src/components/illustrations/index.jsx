@@ -63,17 +63,18 @@ export function RulingIllustration({ size = 280 }) {
         <path d="M26 111l2 2 4-4" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
         <text x="56" y="115" fontFamily="Manrope, sans-serif" fontWeight="700" fontSize="9" fill="#002715" letterSpacing="0.05em">COMPLIANT</text>
       </g>
-      {/* Card 2 — doubtful */}
+      {/* Card 2 — review required (mixed business; the old DOUBTFUL bucket
+          was split into REVIEW_REQUIRED + UNVERIFIED in migration 007) */}
       <g transform="translate(132 92)">
         <rect width="120" height="140" rx="20" fill="#ffffff" />
         <rect x="16" y="20" width="44" height="22" rx="6" fill="#a3f0ca" fillOpacity="0.6" />
         <text x="38" y="35" textAnchor="middle" fontFamily="Manrope, sans-serif" fontWeight="800" fontSize="11" fill="#0d5233">TSLA</text>
         <rect x="16" y="56" width="80" height="8" rx="3" fill="#0f1a27" fillOpacity="0.8" />
         <rect x="16" y="72" width="60" height="6" rx="3" fill="#0f1a27" fillOpacity="0.35" />
-        <rect x="16" y="100" width="80" height="22" rx="11" fill="#fef3c7" />
+        <rect x="16" y="100" width="72" height="22" rx="11" fill="#fef3c7" />
         <circle cx="29" cy="111" r="6" fill="#92400e" />
         <text x="29" y="115" textAnchor="middle" fontFamily="Manrope, sans-serif" fontWeight="800" fontSize="9" fill="#fff">?</text>
-        <text x="56" y="115" fontFamily="Manrope, sans-serif" fontWeight="700" fontSize="9" fill="#78350f" letterSpacing="0.05em">DOUBTFUL</text>
+        <text x="56" y="115" fontFamily="Manrope, sans-serif" fontWeight="700" fontSize="9" fill="#78350f" letterSpacing="0.05em">REVIEW</text>
       </g>
       {/* Stacked bar at bottom */}
       <g transform="translate(40 226)">
@@ -182,12 +183,16 @@ export function HeroPhoneMockup({ width = 320, height = 560 }) {
       {[
         { y: 218, t: 'AAPL', n: 'Apple Inc.',     s: 'NASDAQ', state: 'compliant' },
         { y: 286, t: 'MSFT', n: 'Microsoft Corp.', s: 'NASDAQ', state: 'compliant' },
-        { y: 354, t: 'TSLA', n: 'Tesla Inc.',     s: 'NASDAQ', state: 'doubtful' },
+        { y: 354, t: 'TSLA', n: 'Tesla Inc.',     s: 'NASDAQ', state: 'review' },
         { y: 422, t: 'JPM',  n: 'JPMorgan Chase', s: 'NYSE',   state: 'noncompliant' },
       ].map((row) => {
+        // Palette tracks the 4-status taxonomy from migration 007. The
+        // illustration only needs three of the four — UNVERIFIED is the
+        // transient "we're still fetching" state and isn't useful in a
+        // marketing mockup.
         const palette = {
           compliant:    { bg: '#90f5be', dot: '#006837', label: 'COMPLIANT',     text: '#002715', width: 92 },
-          doubtful:     { bg: '#fef3c7', dot: '#92400e', label: 'DOUBTFUL',      text: '#78350f', width: 80 },
+          review:       { bg: '#fef3c7', dot: '#92400e', label: 'REVIEW',        text: '#78350f', width: 72 },
           noncompliant: { bg: '#fee2e2', dot: '#b91c1c', label: 'NON-COMPLIANT', text: '#7f1d1d', width: 110 },
         }[row.state]
         // Right-align the pill against the row; right padding = 12px.
