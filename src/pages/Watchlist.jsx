@@ -53,12 +53,15 @@ export default function Watchlist() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchlist.length, isPro, profile?.methodology])
 
-  // Match Home's definition: a watchlist row that hasn't been screened yet
-  // (status === null) counts as "doubtful" until proven otherwise. Without
-  // this, Home and Watchlist totals would disagree for the same data.
+  // Status taxonomy after migration 007 splits the old DOUBTFUL bucket
+  // into REVIEW_REQUIRED (genuine mixed-business judgement call) and
+  // UNVERIFIED (data-gap, resolvable via the Verify flow). null status
+  // means "screening in progress" — still rolls into unverified so the
+  // count reflects everything that needs attention.
   const breakdown = {
     compliant: watchlist.filter(s => s.status === 'COMPLIANT').length,
-    doubtful: watchlist.filter(s => s.status === 'DOUBTFUL' || !s.status).length,
+    review: watchlist.filter(s => s.status === 'REVIEW_REQUIRED').length,
+    unverified: watchlist.filter(s => s.status === 'UNVERIFIED' || s.status === 'DOUBTFUL' || !s.status).length,
     nonCompliant: watchlist.filter(s => s.status === 'NON_COMPLIANT').length,
   }
   const total = watchlist.length
@@ -106,7 +109,11 @@ export default function Watchlist() {
                     </span>
                     <span className="stat-legend__item">
                       <span className="stat-legend__dot bg-caution" />
-                      {breakdown.doubtful} Needs review
+                      {breakdown.review} Review required
+                    </span>
+                    <span className="stat-legend__item">
+                      <span className="stat-legend__dot bg-surface-container-highest" />
+                      {breakdown.unverified} Unverified
                     </span>
                     <span className="stat-legend__item">
                       <span className="stat-legend__dot bg-error" />
@@ -114,10 +121,11 @@ export default function Watchlist() {
                     </span>
                   </div>
                 </div>
-                {total > 0 && (breakdown.compliant + breakdown.doubtful + breakdown.nonCompliant) > 0 && (
+                {total > 0 && (breakdown.compliant + breakdown.review + breakdown.unverified + breakdown.nonCompliant) > 0 && (
                   <div className="stacked-bar">
                     <div style={{ width: `${(breakdown.compliant / total) * 100}%` }} className="bg-tertiary" />
-                    <div style={{ width: `${(breakdown.doubtful / total) * 100}%` }} className="bg-caution" />
+                    <div style={{ width: `${(breakdown.review / total) * 100}%` }} className="bg-caution" />
+                    <div style={{ width: `${(breakdown.unverified / total) * 100}%` }} className="bg-surface-container-highest" />
                     <div style={{ width: `${(breakdown.nonCompliant / total) * 100}%` }} className="bg-error" />
                   </div>
                 )}
