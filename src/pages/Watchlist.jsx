@@ -1,9 +1,10 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useWatchlist } from '../hooks/useWatchlist'
 import { fetchAllScreeningData } from '../services/yahooFinanceApi'
 import { screenStock } from '../services/complianceEngine'
+import { supabase } from '../lib/supabase'
 import MaterialIcon from '../components/MaterialIcon'
 import StockRowCard from '../components/StockRowCard'
 import useDocumentTitle from '../hooks/useDocumentTitle'
@@ -14,9 +15,53 @@ export default function Watchlist() {
   const navigate = useNavigate()
   const { watchlist, loading, removeFromWatchlist, updateStatus } = useWatchlist(user)
 
+  // Track which tickers have an in-flight Verify request so the row can
+  // show "Verifying…" and disable repeat clicks. Also collect any error
+  // (e.g. rate limit hit) so we can show it inline on that row.
+  const [verifyingTickers, setVerifyingTickers] = useState(() => new Set())
+  const [verifyError, setVerifyError] = useState(null)
+
   useDocumentTitle('Watchlist', 'Your saved Shariah-screened stocks.')
 
   const navigateToStock = (ticker) => navigate(`/stock/${ticker}`)
+
+  async function handleVerify(ticker) {
+    if (!user || verifyingTickers.has(ticker)) return
+    setVerifyError(null)
+    setVerifyingTickers(prev => {
+      const next = new Set(prev)
+      next.add(ticker)
+      return next
+    })
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      if (!token) {
+        setVerifyError({ ticker, message: 'Sign in expired — please log in again.' })
+        return
+      }
+      const res = await fetch(`/api/verify-screen/${encodeURIComponent(ticker)}`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${token}` },
+      })
+      const body = await res.json().catch(() => null)
+      if (!res.ok) {
+        setVerifyError({ ticker, message: body?.error || `Verification failed (${res.status})` })
+        return
+      }
+      // The server already persisted the new status to Supabase. Mirror it
+      // into local state so the UI updates without waiting for a refetch.
+      if (body?.status) updateStatus(ticker, body.status)
+    } catch (err) {
+      setVerifyError({ ticker, message: err?.message || 'Network error during verification.' })
+    } finally {
+      setVerifyingTickers(prev => {
+        const next = new Set(prev)
+        next.delete(ticker)
+        return next
+      })
+    }
+  }
 
   // Auto-screen any watchlist entry that lacks a status. This is what the
   // user expected — adding to watchlist should produce a compliance verdict
@@ -133,18 +178,27 @@ export default function Watchlist() {
 
               <div className="watchlist-list">
                 {watchlist.map(stock => (
-                  <StockRowCard
-                    key={stock.ticker}
-                    {...stock}
-                    // Watchlist genuinely auto-screens null-status rows, so
-                    // show the "Checking…" spinner. Other pages (Screener
-                    // search) pass screening={false} so they get the
-                    // "Tap to screen" affordance instead.
-                    screening={!stock.status}
-                    inWatchlist={true}
-                    onToggleWatchlist={() => removeFromWatchlist(stock.ticker)}
-                    onClick={() => navigateToStock(stock.ticker)}
-                  />
+                  <div key={stock.ticker}>
+                    <StockRowCard
+                      {...stock}
+                      // Watchlist genuinely auto-screens null-status rows, so
+                      // show the "Checking…" spinner. Other pages (Screener
+                      // search) pass screening={false} so they get the
+                      // "Tap to screen" affordance instead.
+                      screening={!stock.status}
+                      verifying={verifyingTickers.has(stock.ticker)}
+                      onVerify={() => handleVerify(stock.ticker)}
+                      inWatchlist={true}
+                      onToggleWatchlist={() => removeFromWatchlist(stock.ticker)}
+                      onClick={() => navigateToStock(stock.ticker)}
+                    />
+                    {verifyError?.ticker === stock.ticker && (
+                      <div className="watchlist-verify-error" role="alert">
+                        <MaterialIcon name="error" size={14} />
+                        {verifyError.message}
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             </>

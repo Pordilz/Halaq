@@ -10,6 +10,7 @@ import crypto from 'crypto';
 import { lemonSqueezySetup, createCheckout, getSubscription } from '@lemonsqueezy/lemonsqueezy.js';
 import { createClient } from '@supabase/supabase-js';
 import { fetchScreeningPayload, isValidTicker, normalizeYahooError } from '../api/_lib/yahoo.js';
+import { buildVerifiedScreening } from '../api/_lib/verify-screen.js';
 
 const app = express();
 const PORT = process.env.PORT || 3005;
@@ -211,6 +212,89 @@ app.get('/api/screen/:ticker', optionalAuth, async (req, res) => {
     const status = err.statusCode || 400;
     console.error(`[Halaq API] Error screening ${ticker}:`, err.message);
     res.status(status).json({ error: normalizeYahooError(err.message) });
+  }
+});
+
+// ---- Verify (heavy multi-source re-screen for a watchlist ticker) ----
+app.post('/api/verify-screen/:ticker', requireAuth, async (req, res) => {
+  const ticker = String(req.params.ticker || '').toUpperCase();
+  if (!isValidTicker(ticker)) {
+    return res.status(400).json({ error: 'Invalid ticker format' });
+  }
+
+  // Watchlist gate — verify is for stocks the user is tracking. Without
+  // this, an authenticated user could pin our cost surface to arbitrary
+  // tickers by hammering the verify endpoint.
+  if (!supabaseAdmin) {
+    return res.status(503).json({ error: 'Verification service unavailable.' });
+  }
+  const { data: watchRow, error: watchErr } = await supabaseAdmin
+    .from('watchlist')
+    .select('id')
+    .eq('user_id', req.user.id)
+    .eq('ticker', ticker)
+    .maybeSingle();
+  if (watchErr) {
+    console.error(`[verify-screen] watchlist lookup failed for ${ticker}:`, watchErr);
+    return res.status(500).json({ error: 'Could not verify watchlist membership.' });
+  }
+  if (!watchRow) {
+    return res.status(403).json({
+      error: 'Add this stock to your watchlist before verifying.',
+    });
+  }
+
+  // Share the daily-screen pool — verify is a heavier screen, same
+  // operation class for billing purposes.
+  if (req.profile?.subscription_tier === 'free') {
+    const now = new Date();
+    const reset = req.profile.daily_search_reset_at
+      ? new Date(req.profile.daily_search_reset_at)
+      : null;
+    let count = req.profile.daily_search_count || 0;
+    if (!reset || now.getTime() - reset.getTime() > 24 * 60 * 60 * 1000) {
+      count = 0;
+    }
+    const FREE_DAILY_LIMIT = 50;
+    if (count >= FREE_DAILY_LIMIT) {
+      return res.status(429).json({
+        error: `Daily screening limit reached (${FREE_DAILY_LIMIT}/${FREE_DAILY_LIMIT}). Upgrade to Pro for unlimited access.`,
+      });
+    }
+    supabaseAdmin
+      .from('profiles')
+      .update({
+        daily_search_count: count + 1,
+        daily_search_reset_at: count === 0 ? now.toISOString() : req.profile.daily_search_reset_at,
+      })
+      .eq('id', req.user.id)
+      .then(() => {});
+  }
+
+  const isPro = req.profile?.subscription_tier && req.profile.subscription_tier !== 'free';
+  const methodology = isPro && req.profile?.methodology ? req.profile.methodology : 'AAOIFI';
+
+  try {
+    const result = await buildVerifiedScreening(ticker, methodology);
+
+    // Persist; non-fatal on failure (user still sees the verdict).
+    supabaseAdmin
+      .from('watchlist')
+      .update({
+        status: result.status,
+        confidence: result.confidence,
+        data_sources_used: result.verification,
+        screened_at: result.verification?.verifiedAt || new Date().toISOString(),
+      })
+      .eq('user_id', req.user.id)
+      .eq('ticker', ticker)
+      .then(() => {});
+
+    res.setHeader('Cache-Control', 'no-store');
+    res.json(result);
+  } catch (err) {
+    console.error(`[verify-screen] error for ${ticker}:`, err.message || err);
+    res.status(err.statusCode || 500).json({ error: normalizeYahooError(err.message || 'Verification failed') });
   }
 });
 
