@@ -65,6 +65,11 @@ export function useWatchlist(user) {
           sector: row.sector || '',
           exchange: row.exchange || '',
           status: row.status || null,
+          // Verification metadata (migration 007 + verify-screen endpoint).
+          // Null on legacy rows or rows the user hasn't verified yet.
+          confidence: row.confidence || null,
+          dataSourcesUsed: row.data_sources_used || null,
+          screenedAt: row.screened_at || null,
           marketCap: null,
           addedAt: row.added_at,
         }))
@@ -152,6 +157,33 @@ export function useWatchlist(user) {
     }
   }, [user])
 
+  /**
+   * Apply a verify-screen response to local state. The server has already
+   * persisted status + confidence + data_sources_used + screened_at to
+   * the watchlist row, so this is a pure local merge — no DB write.
+   * Used by the Verify button on Watchlist and StockDetail.
+   */
+  const applyVerification = useCallback((ticker, result) => {
+    if (!ticker || !result?.status) return
+    setWatchlist(prev => {
+      let mutated = false
+      const next = prev.map(w => {
+        if (w.ticker !== ticker) return w
+        mutated = true
+        return {
+          ...w,
+          status: result.status,
+          confidence: result.confidence || w.confidence || null,
+          dataSourcesUsed: result.verification || w.dataSourcesUsed || null,
+          screenedAt: result.verification?.verifiedAt || new Date().toISOString(),
+        }
+      })
+      if (!mutated) return prev
+      setLocalWatchlist(next)
+      return next
+    })
+  }, [])
+
   const removeFromWatchlist = useCallback(async (ticker) => {
     if (!ticker) return
     setError(null)
@@ -193,6 +225,7 @@ export function useWatchlist(user) {
     addToWatchlist,
     removeFromWatchlist,
     updateStatus,
+    applyVerification,
     toggle,
     loading,
     error,

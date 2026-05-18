@@ -13,7 +13,7 @@ import './Watchlist.css'
 export default function Watchlist() {
   const { user, isPro, profile } = useAuth()
   const navigate = useNavigate()
-  const { watchlist, loading, removeFromWatchlist, updateStatus } = useWatchlist(user)
+  const { watchlist, loading, removeFromWatchlist, updateStatus, applyVerification } = useWatchlist(user)
 
   // Track which tickers have an in-flight Verify request so the row can
   // show "Verifying…" and disable repeat clicks. Also collect any error
@@ -49,9 +49,10 @@ export default function Watchlist() {
         setVerifyError({ ticker, message: body?.error || `Verification failed (${res.status})` })
         return
       }
-      // The server already persisted the new status to Supabase. Mirror it
-      // into local state so the UI updates without waiting for a refetch.
-      if (body?.status) updateStatus(ticker, body.status)
+      // The server already persisted status + confidence + data_sources_used
+      // + screened_at to Supabase. Mirror them into local state so the UI
+      // updates without waiting for a refetch.
+      if (body?.status) applyVerification(ticker, body)
     } catch (err) {
       setVerifyError({ ticker, message: err?.message || 'Network error during verification.' })
     } finally {
