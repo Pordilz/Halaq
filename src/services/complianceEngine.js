@@ -336,12 +336,28 @@ export function screenStock(profile, balanceSheet, income, options = {}) {
     methodology,
   })
 
+  // Status taxonomy (post-migration 007):
+  //   COMPLIANT       — passes both screens with available data
+  //   NON_COMPLIANT   — real threshold violation OR haram business activity
+  //   REVIEW_REQUIRED — mixed-business CAUTION; passes financial screens but
+  //                     the revenue mix needs human judgement
+  //   UNVERIFIED      — data gaps prevent a confident verdict; the Verify
+  //                     flow can re-fetch against SEC EDGAR to resolve
+  //
+  // The old conflated DOUBTFUL bucket is split into REVIEW_REQUIRED vs
+  // UNVERIFIED so the UI can show users which need human attention and
+  // which are auto-resolvable. confidence is a separate axis: it stays
+  // MEDIUM for single-source (Yahoo only) verdicts and gets bumped to
+  // HIGH in Phase 3 when EDGAR cross-verifies the key fields.
   let status = 'COMPLIANT'
   let statusReason = 'All screening criteria passed'
+  let confidence = 'MEDIUM'
 
   if (businessScreen.status === 'DOUBTFUL') {
-    status = 'DOUBTFUL'
+    // Missing sector/industry — can't classify the business at all.
+    status = 'UNVERIFIED'
     statusReason = businessScreen.reason
+    confidence = 'LOW'
   } else if (!businessScreen.pass) {
     status = 'NON_COMPLIANT'
     statusReason = businessScreen.reason
@@ -351,24 +367,30 @@ export function screenStock(profile, balanceSheet, income, options = {}) {
     const dataGaps = failedRatios.filter(r => r.error)
 
     if (realFailures.length > 0) {
-      // At least one ratio actually exceeds its threshold — that's a real fail.
       status = 'NON_COMPLIANT'
       statusReason = `Failed ${realFailures.length} financial ratio(s): ${realFailures.map(r => r.name).join(', ')}`
     } else if (dataGaps.length >= 2) {
       // Two or more ratios have missing data — too unreliable to call.
-      status = 'DOUBTFUL'
-      statusReason = `Cannot verify ${dataGaps.length} of ${financialScreen.ratios.length} ratios due to missing financial data — verify before acting.`
+      // Verify flow (Phase 3) can resolve via SEC EDGAR for US tickers.
+      status = 'UNVERIFIED'
+      confidence = 'LOW'
+      statusReason = `Cannot verify ${dataGaps.length} of ${financialScreen.ratios.length} ratios due to missing financial data — tap Verify to re-fetch.`
     } else {
-      // Only one ratio has a data gap, the rest pass cleanly. Be lenient:
-      // treat as compliant but flag the unverified ratio in the reason.
-      // Most "Needs review" verdicts users were seeing came from this branch
-      // because Yahoo sometimes doesn't expose receivables for big tech.
+      // Single data gap, rest pass. Preserve the lenient COMPLIANT verdict
+      // introduced by commit 12a7528 (prevents false Needs-Review noise),
+      // but lower confidence so the UI can prompt verification for users
+      // who want certainty.
       status = 'COMPLIANT'
-      statusReason = `Passes available ratios. The ${dataGaps[0].name} couldn't be computed from current data — verify if it materially affects your decision.`
+      confidence = 'LOW'
+      statusReason = `Passes available ratios. The ${dataGaps[0].name} couldn't be computed from current data — tap Verify to confirm.`
     }
   } else if (businessScreen.status === 'CAUTION') {
-    status = 'DOUBTFUL'
-    statusReason = 'Business activity requires further review — passes financial screens'
+    // Mixed business activity (hotels, media, etc.) — passes the quantitative
+    // screens but requires human judgement of revenue mix. This is the
+    // *only* path to REVIEW_REQUIRED, so users see a small number of items
+    // that genuinely need their attention rather than a noisy bucket.
+    status = 'REVIEW_REQUIRED'
+    statusReason = 'Business activity is mixed — passes financial screens but the revenue mix requires human review.'
   }
 
   const haramIncomeRatio = financialScreen.ratios.find(r => r.name === 'Haram Income Ratio')
@@ -388,6 +410,7 @@ export function screenStock(profile, balanceSheet, income, options = {}) {
 
     status,
     statusReason,
+    confidence,
 
     businessScreen,
     financialScreen,

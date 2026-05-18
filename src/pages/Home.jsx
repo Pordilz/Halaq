@@ -131,7 +131,9 @@ export default function Home() {
           updateStatus(stock.ticker, compliance.status)
         } catch {
           // Leave status null so the next visit retries — don't poison the
-          // cache with a fake DOUBTFUL just because Yahoo blipped.
+          // cache with a fake UNVERIFIED just because Yahoo blipped. The
+          // null rows are already counted in the unverified bucket on the
+          // stat tiles, so users still see them as needing attention.
         }
       }
     })()
@@ -139,10 +141,17 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [watchlist.length, isPro, profile?.methodology])
 
+  // Status taxonomy after migration 007 splits the old DOUBTFUL bucket:
+  //   review     — REVIEW_REQUIRED (mixed business, needs human judgement)
+  //   unverified — UNVERIFIED + null (data gaps OR still being checked)
+  // Old DOUBTFUL rows still in the DB are migrated to UNVERIFIED, but we
+  // keep them in the unverified bucket here too in case any are still
+  // arriving from cached clients during the deploy window.
   const breakdown = useMemo(() => ({
     total: watchlist.length,
     compliant: watchlist.filter(w => w.status === 'COMPLIANT').length,
-    doubtful: watchlist.filter(w => w.status === 'DOUBTFUL' || !w.status).length,
+    review: watchlist.filter(w => w.status === 'REVIEW_REQUIRED').length,
+    unverified: watchlist.filter(w => w.status === 'UNVERIFIED' || w.status === 'DOUBTFUL' || !w.status).length,
     nonCompliant: watchlist.filter(w => w.status === 'NON_COMPLIANT').length,
   }), [watchlist])
 
@@ -173,10 +182,12 @@ export default function Home() {
         </div>
       </header>
 
+      {/* Four buckets after migration 007. The total is implicit (the sum)
+          and is shown contextually in the watchlist section below. */}
       <section className="home-stats" aria-label="Watchlist breakdown">
-        <Stat label="Saved stocks" value={breakdown.total} icon="bookmarks" />
         <Stat label="Compliant" value={breakdown.compliant} tone="tertiary" icon="check_circle" />
-        <Stat label="Needs review" value={breakdown.doubtful} tone="caution" icon="help" />
+        <Stat label="Review required" value={breakdown.review} tone="caution" icon="rule" />
+        <Stat label="Unverified" value={breakdown.unverified} tone="neutral" icon="sync_problem" />
         <Stat label="Non-compliant" value={breakdown.nonCompliant} tone="error" icon="cancel" />
       </section>
 

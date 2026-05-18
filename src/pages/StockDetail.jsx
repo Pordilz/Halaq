@@ -11,13 +11,16 @@ import DisclaimerNotice from '../components/DisclaimerNotice'
 import useDocumentTitle from '../hooks/useDocumentTitle'
 import './StockDetail.css'
 
+// Migration 007 split the old DOUBTFUL bucket into REVIEW_REQUIRED (mixed
+// business — needs human judgement of revenue mix) and UNVERIFIED (data
+// gaps — auto-resolvable via the Verify flow). DOUBTFUL is kept as a
+// deprecated alias so cached client state still renders sensibly.
 const STATUS_TONE = {
   COMPLIANT: { className: 'sd-banner--compliant', icon: 'check_circle', label: 'COMPLIANT' },
   NON_COMPLIANT: { className: 'sd-banner--non', icon: 'cancel', label: 'NON-COMPLIANT' },
-  // Renamed from "DOUBTFUL" — testers found that wording sounded like the
-  // verdict had changed. The state actually means "data gaps prevent a
-  // confident verdict", which "Needs review" communicates clearly.
-  DOUBTFUL: { className: 'sd-banner--doubtful', icon: 'help', label: 'NEEDS REVIEW' },
+  REVIEW_REQUIRED: { className: 'sd-banner--doubtful', icon: 'rule', label: 'REVIEW REQUIRED' },
+  UNVERIFIED: { className: 'sd-banner--doubtful', icon: 'sync_problem', label: 'UNVERIFIED' },
+  DOUBTFUL: { className: 'sd-banner--doubtful', icon: 'sync_problem', label: 'UNVERIFIED' },
 }
 
 const TABS = [
@@ -157,7 +160,7 @@ export default function StockDetail() {
     )
   }
 
-  const tone = STATUS_TONE[stock.status] || STATUS_TONE.DOUBTFUL
+  const tone = STATUS_TONE[stock.status] || STATUS_TONE.UNVERIFIED
   const inList = isInWatchlist(stock.ticker)
 
   const handleShare = async () => {
@@ -227,13 +230,23 @@ export default function StockDetail() {
           <span className="sd-banner__label">{stock.methodology} verdict</span>
           <span className="sd-banner__verdict">{tone.label}</span>
           <span className="sd-banner__reason">{stock.statusReason}</span>
-          {stock.status === 'DOUBTFUL' && (
+          {(stock.status === 'UNVERIFIED' || stock.status === 'DOUBTFUL') && (
             <span className="sd-banner__hint">
               <MaterialIcon name="info" size={14} />
-              "Needs review" means Halaq could not access enough reliable
-              financial data to give a confident verdict — usually missing
-              balance-sheet line items. It is not a "fail" — verify the
-              missing figures before acting.
+              "Unverified" means Halaq could not fetch enough reliable
+              financial data to give a confident verdict — usually a missing
+              balance-sheet line item. It is not a "fail." For US tickers,
+              the Verify flow can re-fetch directly from SEC EDGAR filings.
+            </span>
+          )}
+          {stock.status === 'REVIEW_REQUIRED' && (
+            <span className="sd-banner__hint">
+              <MaterialIcon name="info" size={14} />
+              This stock passes every financial ratio but operates in a
+              mixed-business industry (hotels, media, etc.) where some of
+              the revenue may be non-permissible. Halaq cannot make this
+              judgement for you — review the company's revenue mix before
+              acting.
             </span>
           )}
         </div>
@@ -334,7 +347,9 @@ function Overview({ stock, isPro, navigate }) {
   const verdictWords = {
     COMPLIANT: 'compliant',
     NON_COMPLIANT: 'non-compliant',
-    DOUBTFUL: 'needs review',
+    REVIEW_REQUIRED: 'in need of review',
+    UNVERIFIED: 'unverified',
+    DOUBTFUL: 'unverified',
   }[stock.status] || 'pending review'
   return (
     <div className="sd-card">

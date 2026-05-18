@@ -42,12 +42,25 @@
   color: var(--color-tertiary);
 }
 
-.compliance-badge--doubtful {
+.compliance-badge--doubtful,
+.compliance-badge--review {
   background-color: var(--color-caution-container);
   color: var(--color-on-caution-container);
 }
-.compliance-badge--doubtful .compliance-badge__icon {
+.compliance-badge--doubtful .compliance-badge__icon,
+.compliance-badge--review .compliance-badge__icon {
   color: var(--color-caution);
+}
+
+/* UNVERIFIED is visually distinct from REVIEW_REQUIRED — it's a transient,
+   resolvable state rather than a judgement call. Use the neutral surface
+   tone so users don't read it as a yellow-flag warning. */
+.compliance-badge--unverified {
+  background-color: var(--color-surface-container-high);
+  color: var(--color-on-surface-variant);
+}
+.compliance-badge--unverified .compliance-badge__icon {
+  color: var(--color-outline);
 }
 
 .compliance-badge--non-compliant {
