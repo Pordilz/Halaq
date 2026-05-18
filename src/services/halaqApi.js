@@ -39,3 +39,15 @@ export async function openBillingPortal() {
   const { url } = await postJson('/lemonsqueezy/create-portal')
   if (url) window.location.href = url
 }
+
+/**
+ * Pull the user's current Lemon Squeezy subscription state and reconcile
+ * the Supabase profile to match. Use this as a fallback when the webhook
+ * is slow, missing, or misconfigured — it bypasses the webhook entirely
+ * and reads directly from Lemon Squeezy's own data.
+ *
+ * Returns { ok, found, tier, status?, subscriptionId? }.
+ */
+export async function verifySubscription() {
+  return postJson('/lemonsqueezy/verify-subscription')
+}

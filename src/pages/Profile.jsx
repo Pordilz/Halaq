@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
-import { openBillingPortal } from '../services/halaqApi'
+import { openBillingPortal, verifySubscription } from '../services/halaqApi'
 import MaterialIcon from '../components/MaterialIcon'
 import {
   displayName,
@@ -57,7 +57,10 @@ export default function Profile() {
 
   // After webhook flips tier=pro, reload the profile. Poll because the
   // webhook is async — landing here with ?upgrade=success doesn't guarantee
-  // the DB has been written yet.
+  // the DB has been written yet. After a few webhook-free attempts we ALSO
+  // call /api/lemonsqueezy/verify-subscription, which reads directly from
+  // Lemon Squeezy and bypasses the webhook entirely. Covers the case where
+  // the webhook URL is misconfigured or hasn't propagated.
   useEffect(() => {
     if (params.get('upgrade') !== 'success') return
     // If we already know the user is paid, jump straight to success.
@@ -68,11 +71,38 @@ export default function Profile() {
     setUpgradeState('pending')
     let attempts = 0
     const MAX_ATTEMPTS = 15 // 15 × 2s = 30s
+    let verifyTriggered = false
+
     pollRef.current = setInterval(async () => {
       attempts += 1
       await refreshProfile()
+
+      // After 4 webhook-only attempts (~8s), kick the verify endpoint
+      // once. Don't spam it — one call is enough; if the user genuinely
+      // paid, LS knows about it.
+      if (attempts === 4 && !verifyTriggered) {
+        verifyTriggered = true
+        try {
+          await verifySubscription()
+          await refreshProfile()
+        } catch (err) {
+          // Verify is a safety net; failure here just means we keep
+          // waiting for the webhook on subsequent ticks.
+          console.warn('[upgrade] verify-subscription failed:', err?.message || err)
+        }
+      }
+
       if (attempts >= MAX_ATTEMPTS) {
         clearInterval(pollRef.current)
+        // One final verify attempt before giving up.
+        if (!verifyTriggered) {
+          try {
+            await verifySubscription()
+            await refreshProfile()
+          } catch (err) {
+            console.warn('[upgrade] final verify-subscription failed:', err?.message || err)
+          }
+        }
         // Re-check tier via the latest profile (closure capture is stale —
         // setUpgradeState below reads from latest render via the next effect)
         setUpgradeState((s) => (s === 'pending' ? 'timeout' : s))
@@ -175,6 +205,31 @@ export default function Profile() {
     } catch (err) {
       setBillingError(err.message || 'Could not open billing portal')
       setBillingLoading(false)
+    }
+  }
+
+  // Manual "I already paid — check my subscription" recovery. Available to
+  // every free-tier user so anyone whose webhook silently dropped can
+  // self-rescue without contacting support.
+  const [verifyLoading, setVerifyLoading] = useState(false)
+  const [verifyResult, setVerifyResult] = useState(null)
+  async function handleVerifySubscription() {
+    setVerifyLoading(true)
+    setVerifyResult(null)
+    try {
+      const res = await verifySubscription()
+      await refreshProfile()
+      if (res.found && res.tier !== 'free') {
+        setVerifyResult({ ok: true, message: `Subscription confirmed — you're on ${res.tier.toUpperCase()}.` })
+      } else if (res.found) {
+        setVerifyResult({ ok: false, message: `Found a ${res.status || 'non-active'} subscription on Lemon Squeezy. Email qromatech@gmail.com if this is wrong.` })
+      } else {
+        setVerifyResult({ ok: false, message: "No subscription found on Lemon Squeezy for this account's email. If you paid with a different email, email qromatech@gmail.com." })
+      }
+    } catch (err) {
+      setVerifyResult({ ok: false, message: err?.message || 'Could not check subscription right now.' })
+    } finally {
+      setVerifyLoading(false)
     }
   }
 
@@ -372,6 +427,31 @@ export default function Profile() {
               {billingError && (
                 <div className="profile-banner profile-banner--error" role="alert">
                   <MaterialIcon name="error_outline" size={18} /> {billingError}
+                </div>
+              )}
+              {!isPro && (
+                <button
+                  type="button"
+                  className="settings-link-btn"
+                  onClick={handleVerifySubscription}
+                  disabled={verifyLoading}
+                >
+                  <span className="flex-row gap-3">
+                    <MaterialIcon name="verified_user" size={20} className="text-on-surface-variant" />
+                    <span>I already paid — check my subscription</span>
+                  </span>
+                  {verifyLoading
+                    ? <MaterialIcon name="refresh" className="spinner text-outline" size={18} />
+                    : <MaterialIcon name="chevron_right" className="text-outline" />}
+                </button>
+              )}
+              {verifyResult && (
+                <div
+                  className={`profile-banner ${verifyResult.ok ? 'profile-banner--success' : 'profile-banner--error'}`}
+                  role={verifyResult.ok ? 'status' : 'alert'}
+                >
+                  <MaterialIcon name={verifyResult.ok ? 'check_circle' : 'error_outline'} size={18} />
+                  <span>{verifyResult.message}</span>
                 </div>
               )}
               <button
