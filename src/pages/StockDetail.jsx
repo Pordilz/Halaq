@@ -2,12 +2,14 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useWatchlist } from '../hooks/useWatchlist'
+import { supabase } from '../lib/supabase'
 import { fetchAllScreeningData } from '../services/yahooFinanceApi'
 import { screenStock, getCurrencySymbol } from '../services/complianceEngine'
 import MaterialIcon from '../components/MaterialIcon'
 import RatioBar from '../components/RatioBar'
 import ComplianceBadge from '../components/ComplianceBadge'
 import DisclaimerNotice from '../components/DisclaimerNotice'
+import ProvenanceCard from '../components/ProvenanceCard'
 import useDocumentTitle from '../hooks/useDocumentTitle'
 import './StockDetail.css'
 
@@ -47,13 +49,23 @@ export default function StockDetail() {
   const { ticker } = useParams()
   const { user, isPro, profile } = useAuth()
   const navigate = useNavigate()
-  const { isInWatchlist, toggle, updateStatus } = useWatchlist(user)
+  const { watchlist, isInWatchlist, toggle, updateStatus, applyVerification } = useWatchlist(user)
 
   const [activeTab, setActiveTab] = useState('overview')
   const [loading, setLoading] = useState(true)
   const [stock, setStock] = useState(null)
   const [error, setError] = useState(null)
   const [shareNotice, setShareNotice] = useState(null)
+  // Verify-screen call state, mirrors the pattern on Watchlist.jsx.
+  const [verifying, setVerifying] = useState(false)
+  const [verifyError, setVerifyError] = useState(null)
+
+  // Pull the watchlist row for this ticker (if the user has it saved) so we
+  // can surface any prior verify-screen provenance + confidence stored on it.
+  const watchlistRow = useMemo(
+    () => watchlist.find(w => w.ticker === String(ticker).toUpperCase()) || null,
+    [watchlist, ticker]
+  )
 
   useDocumentTitle(stock ? `${stock.ticker} — ${stock.name}` : ticker)
 
@@ -163,6 +175,44 @@ export default function StockDetail() {
   const tone = STATUS_TONE[stock.status] || STATUS_TONE.UNVERIFIED
   const inList = isInWatchlist(stock.ticker)
 
+  async function handleVerify() {
+    if (!user || !stock || verifying) return
+    if (!isInWatchlist(stock.ticker)) {
+      setVerifyError('Add this stock to your watchlist before verifying.')
+      return
+    }
+    setVerifyError(null)
+    setVerifying(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      if (!token) {
+        setVerifyError('Sign in expired — please log in again.')
+        return
+      }
+      const res = await fetch(`/api/verify-screen/${encodeURIComponent(stock.ticker)}`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${token}` },
+      })
+      const body = await res.json().catch(() => null)
+      if (!res.ok) {
+        setVerifyError(body?.error || `Verification failed (${res.status})`)
+        return
+      }
+      // Persist into the watchlist hook so ProvenanceCard + the rest of
+      // the app see the new provenance immediately. Also refresh the local
+      // page state's status so the banner re-renders without a reload.
+      if (body?.status) {
+        applyVerification(stock.ticker, body)
+        setStock(prev => prev ? { ...prev, status: body.status, statusReason: body.statusReason } : prev)
+      }
+    } catch (err) {
+      setVerifyError(err?.message || 'Network error during verification.')
+    } finally {
+      setVerifying(false)
+    }
+  }
+
   const handleShare = async () => {
     const url = `${window.location.origin}/stock/${stock.ticker}`
     const title = `${stock.ticker} — ${stock.name} compliance report`
@@ -259,12 +309,30 @@ export default function StockDetail() {
             <MaterialIcon name={inList ? 'bookmark' : 'bookmark_add'} fill={inList} size={16} />
             {inList ? 'Saved' : 'Watchlist'}
           </button>
+          {inList && (stock.status === 'UNVERIFIED' || stock.status === 'DOUBTFUL' || stock.status === 'REVIEW_REQUIRED') && (
+            <button
+              type="button"
+              className="btn btn-on-glass btn--sm"
+              onClick={handleVerify}
+              disabled={verifying}
+              title="Re-fetch from SEC EDGAR + Yahoo trailing financials"
+            >
+              <MaterialIcon name={verifying ? 'refresh' : 'verified'} size={16} className={verifying ? 'spinner' : ''} />
+              {verifying ? 'Verifying…' : 'Verify'}
+            </button>
+          )}
           <button type="button" className="btn btn-on-glass btn--sm" onClick={handleShare}>
             <MaterialIcon name="share" size={16} />
             {shareNotice || 'Share'}
           </button>
         </div>
       </div>
+      {verifyError && (
+        <div className="sd-verify-error" role="alert">
+          <MaterialIcon name="error" size={14} />
+          {verifyError}
+        </div>
+      )}
 
       {/* Quick stats grid */}
       <section className="sd-stats">
@@ -294,7 +362,17 @@ export default function StockDetail() {
       </div>
 
       <div className="sd-pane">
-        {activeTab === 'overview' && <Overview stock={stock} isPro={isPro} navigate={navigate} />}
+        {activeTab === 'overview' && (
+          <Overview
+            stock={stock}
+            isPro={isPro}
+            navigate={navigate}
+            verification={watchlistRow?.dataSourcesUsed}
+            confidence={watchlistRow?.confidence}
+            onReverify={inList ? handleVerify : null}
+            reverifying={verifying}
+          />
+        )}
         {activeTab === 'ratios' && <Ratios stock={stock} isPro={isPro} navigate={navigate} />}
         {activeTab === 'business' && <Business stock={stock} isPro={isPro} navigate={navigate} />}
         {activeTab === 'purification' && <Purification stock={stock} isPro={isPro} navigate={navigate} />}
@@ -340,7 +418,7 @@ function PremiumGate({ navigate, body }) {
   )
 }
 
-function Overview({ stock, isPro, navigate }) {
+function Overview({ stock, isPro, navigate, verification, confidence, onReverify, reverifying }) {
   const haramPct = (stock.haramRevenuePercent || 0) * 100
   // Friendly label for the verdict in the summary sentence. Matches what
   // the banner badge shows so the page reads consistently.
@@ -353,6 +431,14 @@ function Overview({ stock, isPro, navigate }) {
   }[stock.status] || 'pending review'
   return (
     <div className="sd-card">
+      {verification && (
+        <ProvenanceCard
+          verification={verification}
+          confidence={confidence}
+          onReverify={onReverify}
+          reverifying={reverifying}
+        />
+      )}
       <h3 className="sd-card__title">Summary</h3>
       <p className="sd-card__copy">
         <strong>{stock.name}</strong> is currently <strong>{verdictWords}</strong>{' '}

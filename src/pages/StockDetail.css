@@ -201,6 +201,19 @@
   .sd-banner__actions { display: none; }
 }
 
+/* Inline error rendered under the banner when a Verify call fails
+   (rate limit, network, etc.). Doesn't shift the layout — appears as
+   a transient strip between banner and quick stats. */
+.sd-verify-error {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-micro);
+  color: var(--color-error);
+  margin: calc(var(--space-3) * -1) 0 var(--space-3);
+  padding: var(--space-1) var(--space-3);
+}
+
 /* ---------- Quick stats ---------- */
 .sd-stats {
   display: grid;
