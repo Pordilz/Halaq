@@ -8,6 +8,18 @@
   gap: var(--space-6);
 }
 
+/* Inline error tucked under a row when its Verify call fails (rate limit,
+   network, etc.). Doesn't push the row layout — just appears below. */
+.watchlist-verify-error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-micro);
+  color: var(--color-error);
+  padding: var(--space-1) var(--space-3);
+  margin-top: -2px;
+}
+
 /* ---------- Summary strip ---------- */
 .summary-strip {
   padding: var(--space-5) var(--space-6);

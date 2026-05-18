@@ -80,7 +80,8 @@
   align-items: center;
   gap: var(--space-3);
   flex-shrink: 0;
-  width: 9rem;
+  /* Auto-width so the optional Verify button has room without squeezing
+     the badge. Mobile keeps auto-width via the override at the bottom. */
   justify-content: flex-end;
 }
 
@@ -125,6 +126,34 @@
   white-space: nowrap;
   line-height: 1;
   letter-spacing: 0.02em;
+}
+
+/* Verify button — appears next to UNVERIFIED badges so users can
+   re-screen against authoritative sources (SEC EDGAR + Yahoo TTM)
+   without leaving the watchlist. */
+.stock-row-card__verify-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: inherit;
+  font-size: var(--text-micro);
+  font-weight: var(--font-weight-heading);
+  color: var(--color-primary);
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--color-primary);
+  background: transparent;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+  transition: background-color var(--transition-fast);
+}
+.stock-row-card__verify-btn:hover:not(:disabled) {
+  background: rgba(26, 107, 71, 0.08);
+}
+.stock-row-card__verify-btn:disabled {
+  opacity: 0.7;
+  cursor: progress;
 }
 
 @media (max-width: 640px) {
