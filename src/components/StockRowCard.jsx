@@ -8,6 +8,11 @@ export default function StockRowCard({
   sector,
   exchange,
   status,
+  // If true, the parent is actively screening this row (Watchlist auto-screen).
+  // If false/undefined and status is null, we show "Tap to screen" instead of
+  // a spinner — search results have no auto-screen, so a perpetual spinner
+  // misleads users into thinking the page is stuck.
+  screening = false,
   inWatchlist,
   onToggleWatchlist,
   onClick,
@@ -39,10 +44,15 @@ export default function StockRowCard({
         <div className="stock-row-card__badge-wrapper">
           {status ? (
             <ComplianceBadge status={status} size="sm" />
-          ) : (
+          ) : screening ? (
             <span className="stock-row-card__screen-cta" aria-live="polite">
               <MaterialIcon name="refresh" size={14} className="spinner" />
               Checking…
+            </span>
+          ) : (
+            <span className="stock-row-card__screen-cta">
+              Tap to screen
+              <MaterialIcon name="arrow_forward" size={14} />
             </span>
           )}
         </div>

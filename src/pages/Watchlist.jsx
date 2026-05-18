@@ -128,6 +128,11 @@ export default function Watchlist() {
                   <StockRowCard
                     key={stock.ticker}
                     {...stock}
+                    // Watchlist genuinely auto-screens null-status rows, so
+                    // show the "Checking…" spinner. Other pages (Screener
+                    // search) pass screening={false} so they get the
+                    // "Tap to screen" affordance instead.
+                    screening={!stock.status}
                     inWatchlist={true}
                     onToggleWatchlist={() => removeFromWatchlist(stock.ticker)}
                     onClick={() => navigateToStock(stock.ticker)}

@@ -33,7 +33,16 @@ export async function fetchScreeningPayload(rawTicker) {
   const twoYearsAgo = new Date();
   twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
 
-  const [quote, timeSeries] = await Promise.all([
+  // We deliberately fire THREE Yahoo calls in parallel:
+  // - quoteSummary: rich metadata (sector, description, balance sheet, etc.)
+  // - fundamentalsTimeSeries: the actual historical financials
+  // - quote (v7): the LIVE price + change snapshot. This matches the source
+  //   used by /api/trending and /api/quote, so the hero price on the stock
+  //   detail page never disagrees with the trending list the user clicked
+  //   through from. Previously quoteSummary().price was used, which can lag
+  //   Yahoo's live tick by minutes — producing visible mismatches like
+  //   "trending shows +0.68% / detail shows +0.01%" for the same ticker.
+  const [quote, timeSeries, liveQuote] = await Promise.all([
     yahooFinance.quoteSummary(
       ticker,
       {
@@ -55,12 +64,34 @@ export async function fetchScreeningPayload(rawTicker) {
       },
       { validateResult: false }
     ),
+    yahooFinance
+      .quote(
+        ticker,
+        {
+          fields: [
+            'regularMarketPrice',
+            'regularMarketChange',
+            'regularMarketChangePercent',
+          ],
+        },
+        { validateResult: false }
+      )
+      // Don't fail the whole request if the live quote endpoint blips —
+      // fall back to quoteSummary's slightly-staler price.
+      .catch(() => null),
   ]);
 
   const priceData = quote.price || {};
   const summaryDetail = quote.summaryDetail || {};
   const assetProfile = quote.assetProfile || {};
   const financialData = quote.financialData || {};
+  const live = liveQuote || {};
+
+  // Prefer the live tick when available; fall back to quoteSummary, then
+  // financialData.currentPrice as a final resort.
+  const livePrice = Number(live.regularMarketPrice);
+  const liveChange = Number(live.regularMarketChange);
+  const liveChangePct = Number(live.regularMarketChangePercent);
 
   const profile = {
     ticker,
@@ -74,9 +105,15 @@ export async function fetchScreeningPayload(rawTicker) {
     country: assetProfile.country || '',
     website: assetProfile.website || '',
     employees: num(assetProfile.fullTimeEmployees),
-    regularMarketPrice: num(priceData.regularMarketPrice ?? financialData.currentPrice),
-    regularMarketChange: num(priceData.regularMarketChange),
-    regularMarketChangePercent: num(priceData.regularMarketChangePercent),
+    regularMarketPrice: Number.isFinite(livePrice) && livePrice > 0
+      ? livePrice
+      : num(priceData.regularMarketPrice ?? financialData.currentPrice),
+    regularMarketChange: Number.isFinite(liveChange)
+      ? liveChange
+      : num(priceData.regularMarketChange),
+    regularMarketChangePercent: Number.isFinite(liveChangePct)
+      ? liveChangePct
+      : num(priceData.regularMarketChangePercent),
     fiftyTwoWeekLow: num(summaryDetail.fiftyTwoWeekLow),
     fiftyTwoWeekHigh: num(summaryDetail.fiftyTwoWeekHigh),
   };
