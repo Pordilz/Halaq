@@ -32,17 +32,25 @@ export async function fetchScreeningPayload(rawTicker) {
   const ticker = rawTicker.toUpperCase();
   const twoYearsAgo = new Date();
   twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+  const fifteenMonthsAgo = new Date();
+  fifteenMonthsAgo.setMonth(fifteenMonthsAgo.getMonth() - 15);
 
-  // We deliberately fire THREE Yahoo calls in parallel:
+  // Four Yahoo calls in parallel:
   // - quoteSummary: rich metadata (sector, description, balance sheet, etc.)
-  // - fundamentalsTimeSeries: the actual historical financials
+  // - fundamentalsTimeSeries (annual, module:'all'): historical balance sheet
+  //   + income items. Used for balance-sheet line items (which TTM doesn't
+  //   include) and as the income fallback when TTM is unavailable.
+  // - fundamentalsTimeSeries (trailing, module:'financials'): trailing-twelve-
+  //   months income statement. AAOIFI specifies TTM as the basis for the
+  //   haram-income ratio, and using the most recent ANNUAL statement causes
+  //   borderline stocks (e.g. SAP at 5.9% annual / 4.8% TTM) to flip across
+  //   the 5% threshold unnecessarily. Falls back gracefully to annual on
+  //   tickers Yahoo doesn't have TTM data for (smaller listings).
   // - quote (v7): the LIVE price + change snapshot. This matches the source
   //   used by /api/trending and /api/quote, so the hero price on the stock
   //   detail page never disagrees with the trending list the user clicked
-  //   through from. Previously quoteSummary().price was used, which can lag
-  //   Yahoo's live tick by minutes — producing visible mismatches like
-  //   "trending shows +0.68% / detail shows +0.01%" for the same ticker.
-  const [quote, timeSeries, liveQuote] = await Promise.all([
+  //   through from.
+  const [quote, timeSeries, ttmFinancials, liveQuote] = await Promise.all([
     yahooFinance.quoteSummary(
       ticker,
       {
@@ -64,6 +72,20 @@ export async function fetchScreeningPayload(rawTicker) {
       },
       { validateResult: false }
     ),
+    yahooFinance
+      .fundamentalsTimeSeries(
+        ticker,
+        {
+          period1: fifteenMonthsAgo.toISOString().split('T')[0],
+          type: 'trailing',
+          module: 'financials',
+        },
+        { validateResult: false }
+      )
+      // Graceful fallback — many smaller / non-US listings don't have a
+      // populated trailing series and the call returns []. We detect that
+      // below and use the annual statement instead.
+      .catch(() => null),
     yahooFinance
       .quote(
         ticker,
@@ -124,22 +146,39 @@ export async function fetchScreeningPayload(rawTicker) {
   const latestFinancials = sortedSeries[0] || {};
   const latestDate = latestFinancials?.date || null;
 
+  // Pick the most recent TTM row if Yahoo populated one with usable revenue;
+  // otherwise fall back to the latest annual row. AAOIFI methodology asks
+  // for trailing-twelve-months on the income statement — using last-annual
+  // can leave us 11 months stale right before a 10-K drops, which causes
+  // borderline issuers to flip across thresholds (see SAP.DE: 5.9% annual
+  // vs 4.8% TTM on the haram-income ratio).
+  const ttmSorted = Array.isArray(ttmFinancials)
+    ? [...ttmFinancials].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
+    : [];
+  const latestTtm = ttmSorted[0] || null;
+  const useTtm = !!latestTtm && num(latestTtm.totalRevenue) > 0;
+  // `incomeRow` is what we read income-statement line items from below.
+  // Balance-sheet line items always come from `latestFinancials` because
+  // the TTM module doesn't include balance sheet.
+  const incomeRow = useTtm ? latestTtm : latestFinancials;
+  const incomeRowDate = useTtm ? latestTtm.date : latestDate;
+
   // Interest data field priority (verified across AAPL, MSFT, JNJ):
   //   Most specific:  interestIncome / interestIncomeNonOperating
   //   Broader proxy:  otherNonOperatingIncomeExpenses (AAPL only has this)
   const interestIncome =
-    num(latestFinancials.interestIncome) ||
-    num(latestFinancials.interestIncomeNonOperating) ||
+    num(incomeRow.interestIncome) ||
+    num(incomeRow.interestIncomeNonOperating) ||
     0;
 
   const interestExpense =
-    num(latestFinancials.interestExpense) ||
-    num(latestFinancials.interestExpenseNonOperating) ||
+    num(incomeRow.interestExpense) ||
+    num(incomeRow.interestExpenseNonOperating) ||
     0;
 
   const nonOperatingIncome =
-    num(latestFinancials.otherNonOperatingIncomeExpenses) ||
-    num(latestFinancials.otherIncomeExpense) ||
+    num(incomeRow.otherNonOperatingIncomeExpenses) ||
+    num(incomeRow.otherIncomeExpense) ||
     0;
 
   const debtForEstimate =
@@ -157,19 +196,20 @@ export async function fetchScreeningPayload(rawTicker) {
   }
 
   const totalRevenue =
-    num(latestFinancials.totalRevenue) || num(financialData.totalRevenue);
+    num(incomeRow.totalRevenue) || num(financialData.totalRevenue);
 
   const income = {
-    period: latestDate
-      ? new Date(latestDate).toISOString().split('T')[0]
+    period: incomeRowDate
+      ? new Date(incomeRowDate).toISOString().split('T')[0]
       : 'N/A',
+    basis: useTtm ? 'TTM' : 'ANNUAL',
     revenue: totalRevenue,
     netIncome:
-      num(latestFinancials.netIncomeFromContinuingOperations) ||
-      num(latestFinancials.netIncome),
+      num(incomeRow.netIncomeFromContinuingOperations) ||
+      num(incomeRow.netIncome),
     grossProfit:
-      num(latestFinancials.grossProfit) || num(financialData.grossProfits),
-    operatingIncome: num(latestFinancials.operatingIncome),
+      num(incomeRow.grossProfit) || num(financialData.grossProfits),
+    operatingIncome: num(incomeRow.operatingIncome),
     interestIncome: interestIncome || Math.max(nonOperatingIncome, 0),
     interestExpense: interestExpense || estimatedInterestExpense,
     interestDataSource: dataSource,
