@@ -85,25 +85,29 @@ export function getMethodology(key) {
 // ============================================================
 
 /**
- * Industries that are categorically haram. Match is case-insensitive and
- * uses substring containment in either direction so "Banks—Diversified"
- * still matches "Banks".
+ * Industries that are categorically haram.
+ *
+ * Matching: industry strings from Yahoo are normalised (em-dash / hyphen /
+ * underscore / slash / ampersand collapsed to whitespace, multiple spaces
+ * coalesced) before a whole-word check. This intentionally tightens the
+ * old bidirectional substring match — previously "Entertainment" matched
+ * "Adult Entertainment" via `'adult entertainment'.includes('entertainment')`,
+ * mislabelling Disney as categorically haram. The whole-word match here
+ * still catches every separator variant the source data ships (em-dash,
+ * hyphen, ampersand) without that false-positive class.
  */
 const HARAM_INDUSTRIES = [
   // Alcohol
-  'breweries', 'wineries', 'distilleries', 'beverages—brewers',
-  'beverages—wineries & distilleries', 'beverages - brewers',
-  'beverages - wineries & distilleries',
+  'breweries', 'wineries', 'distilleries',
+  'beverages brewers', 'beverages wineries and distilleries',
   // Conventional banking & insurance (riba-based)
-  'banks—diversified', 'banks—regional', 'banks - diversified', 'banks - regional',
-  'savings & cooperative banks',
-  'insurance—diversified', 'insurance—life', 'insurance—property & casualty',
-  'insurance—reinsurance', 'insurance—specialty', 'insurance - diversified',
-  'insurance - life', 'insurance - property & casualty', 'insurance - reinsurance',
-  'insurance - specialty', 'insurance brokers',
+  'banks diversified', 'banks regional',
+  'savings and cooperative banks',
+  'insurance diversified', 'insurance life', 'insurance property and casualty',
+  'insurance reinsurance', 'insurance specialty', 'insurance brokers',
   'mortgage finance', 'credit services', 'consumer finance', 'capital markets',
   // Gambling
-  'gambling', 'casinos & gaming', 'resorts & casinos',
+  'gambling', 'casinos and gaming', 'resorts and casinos',
   // Tobacco
   'tobacco',
   // Adult entertainment
@@ -115,26 +119,115 @@ const HARAM_INDUSTRIES = [
 /**
  * Industries that are conditionally permissible — pass only if non-permissible
  * income < 5%. The financial ratio screen handles the actual gate.
+ *
+ * Internet content & interactive home entertainment land here because their
+ * advertising / monetisation revenue mix typically includes some non-permissible
+ * sources (alcohol/gambling/adult advertisers; loot-box mechanics). Luxury
+ * goods are flagged because conglomerates like LVMH derive ~8% of revenue
+ * from wines & spirits divisions (Moët, Hennessy) — the financial-screen
+ * 5% haram-revenue threshold catches the worst offenders, but the CAUTION
+ * status prompts the user to verify the revenue mix.
  */
 const CAUTIONARY_INDUSTRIES = [
   'lodging', 'restaurants', 'hotels',
-  'entertainment', 'media—diversified', 'media - diversified', 'broadcasting',
+  'entertainment', 'media diversified', 'broadcasting',
   'department stores', 'discount stores', 'grocery stores', 'specialty retail',
-  'aerospace & defense', 'travel services', 'leisure',
+  'aerospace and defense', 'travel services', 'leisure',
+  // Added: ad-driven internet platforms (replaces the old "communication services"
+  // sector blanket which over-flagged pure telecoms like 7010.SR Saudi Telecom).
+  'internet content and information',
+  'interactive home entertainment',
+  'electronic gaming and multimedia',
+  // Added: luxury goods conglomerates routinely carry alcohol revenue.
+  'luxury goods',
 ]
 
-const CAUTIONARY_SECTORS = ['communication services']
+// Previously contained 'communication services' as a blanket caution; that
+// caught pure telecoms (no ad revenue, no caution warranted). Replaced with
+// the specific industries above. Kept as an empty array so callers don't
+// need to be updated, and so it's a place to add narrow sector flags later
+// if needed.
+const CAUTIONARY_SECTORS = []
 
-function tokenIncludes(haystack, needle) {
-  if (!haystack || !needle) return false
-  return haystack.includes(needle) || needle.includes(haystack)
+/**
+ * Shariah-certified financial institutions whose compliance is asserted via
+ * their own Shariah Supervisory Boards. These tickers bypass the standard
+ * business-activity haram check (they'd otherwise fail on "Banks - Regional"
+ * etc.) and the verdict is overridden to COMPLIANT in `screenStock` — the
+ * conventional AAOIFI leverage/liquidity ratios don't apply directly to
+ * Islamic banks (deposits are Mudarabah/Wakala contracts, not interest-
+ * bearing debt) so showing them as failing those ratios would mislead
+ * users. Same approach used by Zoya, Musaffa, S&P Shariah and FTSE Shariah.
+ *
+ * Tickers verified against Yahoo on 2026-05-21 via scripts/validate-islamic-banks.js;
+ * a few candidate entries (ADIB, SIB) were excluded because Yahoo doesn't
+ * carry them. Refresh the list when new institutions list or existing ones
+ * change Shariah status.
+ */
+const SHARIAH_CERTIFIED_INSTITUTIONS = new Set([
+  // Saudi Arabia — Tadawul
+  '1120.SR',  // Al Rajhi Banking and Investment Corporation
+  '1140.SR',  // Bank Albilad
+  '1150.SR',  // Alinma Bank
+  '1020.SR',  // Bank AlJazira
+  // UAE — DFM / ADX (Yahoo aggregates UAE under .AE)
+  'DIB.AE',   // Dubai Islamic Bank
+  'EIB.AE',   // Emirates Islamic Bank
+  // Qatar — QSE
+  'QIBK.QA',  // Qatar Islamic Bank
+  'MARK.QA',  // Masraf Al Rayan
+  // Kuwait — Boursa Kuwait
+  'KFH.KW',   // Kuwait Finance House
+  'BOUBYAN.KW', // Boubyan Bank
+  // Bahrain — BHB
+  'BARKA.BH', // Al Baraka Banking Group
+  // Malaysia — Bursa
+  '5258.KL',  // Bank Islam Malaysia Berhad
+  // Indonesia — IDX
+  'BRIS.JK',  // Bank Syariah Indonesia
+  // Pakistan — KSE
+  'MEBL.KA',  // Meezan Bank
+])
+
+export function isShariahCertifiedInstitution(ticker) {
+  return SHARIAH_CERTIFIED_INSTITUTIONS.has((ticker || '').toUpperCase())
+}
+
+/**
+ * Normalise industry/sector strings for keyword matching. Collapses every
+ * separator Yahoo (or any data source) is likely to ship — em-dash, en-dash,
+ * hyphen, underscore, slash, ampersand — into single-space-separated tokens
+ * so a single keyword list catches all variants.
+ */
+function normalizeIndustryString(s) {
+  return (s || '')
+    .toLowerCase()
+    .replace(/[—–\-_/]/g, ' ')
+    .replace(/&/g, 'and')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/**
+ * Whole-word/phrase match: returns true iff `keyword` appears in `industry`
+ * as a complete word or contiguous phrase, after both are normalised. Fixes
+ * the old bidirectional `tokenIncludes` bug where "entertainment" matched
+ * "adult entertainment" via reverse substring containment.
+ */
+function industryMatch(industry, keyword) {
+  const n = normalizeIndustryString(industry)
+  const k = normalizeIndustryString(keyword)
+  if (!n || !k) return false
+  if (n === k) return true
+  const escaped = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`\\b${escaped}\\b`).test(n)
 }
 
 export function screenBusinessActivity(profile) {
-  const sector = (profile.sector || '').toLowerCase().trim()
-  const industry = (profile.industry || '').toLowerCase().trim()
+  const sector = profile.sector || ''
+  const industry = profile.industry || ''
 
-  if (!sector && !industry) {
+  if (!sector.trim() && !industry.trim()) {
     return {
       pass: false,
       status: 'DOUBTFUL',
@@ -144,7 +237,7 @@ export function screenBusinessActivity(profile) {
     }
   }
 
-  if (HARAM_INDUSTRIES.some(h => tokenIncludes(industry, h))) {
+  if (HARAM_INDUSTRIES.some(h => industryMatch(industry, h))) {
     return {
       pass: false,
       status: 'FAIL',
@@ -154,8 +247,8 @@ export function screenBusinessActivity(profile) {
   }
 
   if (
-    CAUTIONARY_INDUSTRIES.some(c => tokenIncludes(industry, c)) ||
-    CAUTIONARY_SECTORS.some(c => tokenIncludes(sector, c))
+    CAUTIONARY_INDUSTRIES.some(c => industryMatch(industry, c)) ||
+    CAUTIONARY_SECTORS.some(c => industryMatch(sector, c))
   ) {
     return {
       pass: true,
@@ -314,6 +407,12 @@ export function screenStock(profile, balanceSheet, income, options = {}) {
   const interestExpense = Math.abs(income.interestExpense || 0)
   const estimatedHaramRevenue = interestIncome + interestExpense
 
+  // Shariah-certified institution override. We still run the screens below
+  // for reference (so the ratio breakdown is visible to the user) but the
+  // final verdict is forced to COMPLIANT with an explanation. See
+  // SHARIAH_CERTIFIED_INSTITUTIONS for the rationale.
+  const isShariahCertified = isShariahCertifiedInstitution(profile.ticker)
+
   const dataSource = income.interestDataSource || 'unknown'
   let haramDescription = 'Non-permissible Revenue ÷ Total Revenue must be < 5%'
   if (dataSource === 'explicit') {
@@ -393,6 +492,17 @@ export function screenStock(profile, balanceSheet, income, options = {}) {
     statusReason = 'Business activity is mixed — passes financial screens but the revenue mix requires human review.'
   }
 
+  // Shariah-certified institution override — runs last so the screens above
+  // populate `financialScreen.ratios` for display, but the final verdict is
+  // forced to COMPLIANT regardless of how the conventional ratios came out.
+  if (isShariahCertified) {
+    status = 'COMPLIANT'
+    confidence = 'HIGH'
+    statusReason =
+      'Shariah-certified financial institution — compliance asserted by the institution\'s own Shariah Supervisory Board. ' +
+      'Conventional AAOIFI leverage/liquidity ratios are shown below for transparency, but apply imperfectly to Islamic-finance balance sheets (deposits are Mudarabah/Wakala contracts, not interest-bearing debt).'
+  }
+
   const haramIncomeRatio = financialScreen.ratios.find(r => r.name === 'Haram Income Ratio')
   const haramPercent = haramIncomeRatio?.ratio || 0
 
@@ -411,6 +521,7 @@ export function screenStock(profile, balanceSheet, income, options = {}) {
     status,
     statusReason,
     confidence,
+    isShariahCertified,
 
     businessScreen,
     financialScreen,
