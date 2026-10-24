@@ -87,8 +87,9 @@ export default async function handler(req, res) {
     // Persist status + provenance to the watchlist row. The data_sources_used
     // and confidence columns came in via migration 007. Failures here are
     // non-fatal — the user still gets the verdict in the response.
+    let watchlistRow = null;
     try {
-      await admin
+      const { data } = await admin
         .from('watchlist')
         .update({
           status: result.status,
@@ -97,13 +98,23 @@ export default async function handler(req, res) {
           screened_at: result.verification?.verifiedAt || new Date().toISOString(),
         })
         .eq('user_id', user.id)
-        .eq('ticker', ticker);
+        .eq('ticker', ticker)
+        // select('*'), not named columns, so this works before migration 009.
+        .select('*')
+        .maybeSingle();
+      // The verdict-change fields the 009 trigger set, if any.
+      if (data) {
+        watchlistRow = {
+          previous_status: data.previous_status ?? null,
+          status_changed_at: data.status_changed_at ?? null,
+        };
+      }
     } catch (persistErr) {
       console.warn(`[verify-screen] persist failed for ${user.id}/${ticker}:`, persistErr);
     }
 
     res.setHeader('Cache-Control', 'no-store');
-    return res.status(200).json(result);
+    return res.status(200).json({ ...result, watchlistRow });
   } catch (err) {
     console.error(`[verify-screen] error for ${ticker}:`, err.message || err);
     const { status, message, retryAfter } = classifyYahooError(err);

@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useWatchlist } from '../hooks/useWatchlist'
-import { fetchAllScreeningData } from '../services/yahooFinanceApi'
+import { useAutoScreen } from '../hooks/useAutoScreen'
 import MaterialIcon from '../components/MaterialIcon'
 import ComplianceBadge from '../components/ComplianceBadge'
 import useDocumentTitle from '../hooks/useDocumentTitle'
-import { getCurrencySymbol, screenStock } from '../services/complianceEngine'
+import { getCurrencySymbol } from '../services/complianceEngine'
 import { displayFirstToken } from '../lib/username'
 import { apiUrl } from '../lib/apiBase'
 import './Home.css'
@@ -109,38 +109,9 @@ export default function Home() {
     return () => clearInterval(id)
   }, [fetchQuotes])
 
-  // Auto-screen unstatused watchlist stocks here too, mirroring the
-  // Watchlist page. Without this, the breakdown stats (Compliant / Needs
-  // Review / Non-compliant) showed everything as "Needs Review" whenever
-  // the user landed on Home before visiting Watchlist.
-  const screenedRef = useRef(new Set())
-  useEffect(() => {
-    let cancelled = false
-    const methodology = isPro ? profile?.methodology : undefined
-    const pending = watchlist
-      .filter(s => !s.status && !screenedRef.current.has(s.ticker))
-      .slice(0, 8)
-    if (pending.length === 0) return
-    ;(async () => {
-      for (const stock of pending) {
-        if (cancelled) return
-        screenedRef.current.add(stock.ticker)
-        try {
-          const data = await fetchAllScreeningData(stock.ticker)
-          if (cancelled) return
-          const compliance = screenStock(data.profile, data.balanceSheet, data.income, { methodology })
-          updateStatus(stock.ticker, compliance.status)
-        } catch {
-          // Leave status null so the next visit retries — don't poison the
-          // cache with a fake UNVERIFIED just because Yahoo blipped. The
-          // null rows are already counted in the unverified bucket on the
-          // stat tiles, so users still see them as needing attention.
-        }
-      }
-    })()
-    return () => { cancelled = true }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watchlist.length, isPro, profile?.methodology])
+  // Same auto-screen as the Watchlist page, so the breakdown tiles are right
+  // even when the user lands here first.
+  useAutoScreen(watchlist, updateStatus, isPro ? profile?.methodology : undefined)
 
   // Status taxonomy after migration 007 splits the old DOUBTFUL bucket:
   //   review     — REVIEW_REQUIRED (mixed business, needs human judgement)

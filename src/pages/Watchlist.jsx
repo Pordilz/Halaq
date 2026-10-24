@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useWatchlist } from '../hooks/useWatchlist'
-import { fetchAllScreeningData } from '../services/yahooFinanceApi'
-import { screenStock } from '../services/complianceEngine'
+import { useAutoScreen } from '../hooks/useAutoScreen'
+import { verdictLabel } from '../lib/verdictLabels'
 import { supabase } from '../lib/supabase'
 import { apiUrl } from '../lib/apiBase'
 import MaterialIcon from '../components/MaterialIcon'
@@ -14,7 +14,7 @@ import './Watchlist.css'
 export default function Watchlist() {
   const { user, isPro, profile } = useAuth()
   const navigate = useNavigate()
-  const { watchlist, loading, removeFromWatchlist, updateStatus, applyVerification } = useWatchlist(user)
+  const { watchlist, loading, removeFromWatchlist, updateStatus, applyVerification, dismissChange } = useWatchlist(user)
 
   // Track which tickers have an in-flight Verify request so the row can
   // show "Verifying…" and disable repeat clicks. Also collect any error
@@ -65,40 +65,15 @@ export default function Watchlist() {
     }
   }
 
-  // Auto-screen any watchlist entry that lacks a status. This is what the
-  // user expected — adding to watchlist should produce a compliance verdict
-  // automatically, not leave a "Screen →" CTA. We process unstatused tickers
-  // sequentially with a small delay to avoid hammering Yahoo, and bail out
-  // cleanly if the component unmounts mid-flight.
-  const screenedRef = useRef(new Set())
-  useEffect(() => {
-    let cancelled = false
-    const methodology = isPro ? profile?.methodology : undefined
-    const pending = watchlist
-      .filter(s => !s.status && !screenedRef.current.has(s.ticker))
-      .slice(0, 8) // cap so a 100-stock watchlist doesn't fire 100 fetches at once
-    if (pending.length === 0) return
+  // New rows get a verdict automatically and saved ones are refreshed daily;
+  // changed verdicts surface below as alerts.
+  useAutoScreen(watchlist, updateStatus, isPro ? profile?.methodology : undefined)
 
-    ;(async () => {
-      for (const stock of pending) {
-        if (cancelled) return
-        screenedRef.current.add(stock.ticker)
-        try {
-          const data = await fetchAllScreeningData(stock.ticker)
-          if (cancelled) return
-          const compliance = screenStock(data.profile, data.balanceSheet, data.income, { methodology })
-          updateStatus(stock.ticker, compliance.status)
-        } catch {
-          // Leave status null so the next visit retries — don't poison the
-          // cache with a fake "needs review" just because Yahoo blipped.
-          // The "Checking…" pill will reappear and try again next mount.
-        }
-      }
-    })()
-
-    return () => { cancelled = true }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [watchlist.length, isPro, profile?.methodology])
+  // Verdict changes in the last 30 days (migration 009), newest first.
+  const recentChanges = watchlist
+    .filter(s => s.previousStatus && s.statusChangedAt &&
+      Date.now() - Date.parse(s.statusChangedAt) < 30 * 24 * 60 * 60 * 1000)
+    .sort((a, b) => Date.parse(b.statusChangedAt) - Date.parse(a.statusChangedAt))
 
   // Status taxonomy after migration 007 splits the old DOUBTFUL bucket
   // into REVIEW_REQUIRED (genuine mixed-business judgement call) and
@@ -178,11 +153,18 @@ export default function Watchlist() {
                 )}
               </div>
 
+              {recentChanges.length > 0 && (
+                <div className="card-standard watchlist-changes-card mobile-only">
+                  <RecentChanges changes={recentChanges} onOpen={navigateToStock} onDismiss={dismissChange} />
+                </div>
+              )}
+
               <div className="watchlist-list">
                 {watchlist.map(stock => (
                   <div key={stock.ticker}>
                     <StockRowCard
                       {...stock}
+                      changedFrom={recentChanges.includes(stock) ? stock.previousStatus : null}
                       // Watchlist genuinely auto-screens null-status rows, so
                       // show the "Checking…" spinner. Other pages (Screener
                       // search) pass screening={false} so they get the
@@ -220,18 +202,52 @@ export default function Watchlist() {
 
         <div className="watchlist-sidebar desktop-only">
           <div className="card-standard p-6 sticky top-24">
-            <h4 className="text-label mb-4 flex-row gap-2">
-              <MaterialIcon name="notifications" size={18} />
-              Recent alerts
-            </h4>
-            <div>
-              <p className="text-body-sm text-on-surface-variant italic">
-                No recent compliance changes in your watchlist.
-              </p>
-            </div>
+            <RecentChanges changes={recentChanges} onOpen={navigateToStock} onDismiss={dismissChange} />
           </div>
         </div>
       </div>
     </div>
+  )
+}
+
+function RecentChanges({ changes, onOpen, onDismiss }) {
+  return (
+    <section aria-labelledby="watchlist-changes-title">
+      <h4 id="watchlist-changes-title" className="text-label mb-4 flex-row gap-2">
+        <MaterialIcon name="notifications" size={18} />
+        Recent verdict changes
+      </h4>
+      {changes.length === 0 ? (
+        <p className="text-body-sm text-on-surface-variant">
+          No verdict changes in your watchlist in the last 30 days.
+        </p>
+      ) : (
+        <ul className="watchlist-changes">
+          {changes.map(s => (
+            <li key={s.ticker} className="watchlist-change">
+              <button type="button" className="watchlist-change__open" onClick={() => onOpen(s.ticker)}>
+                <strong>{s.ticker}</strong>
+                <span>{verdictLabel(s.previousStatus)} → {verdictLabel(s.status)}</span>
+                <time dateTime={s.statusChangedAt}>
+                  {new Date(s.statusChangedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                </time>
+              </button>
+              <button
+                type="button"
+                className="watchlist-change__dismiss focus-ghost"
+                aria-label={`Dismiss the ${s.ticker} change`}
+                onClick={() => onDismiss(s.ticker)}
+              >
+                <MaterialIcon name="close" size={16} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="watchlist-changes__foot">
+        Verdicts are re-checked daily. They change when a company reports new financials, its
+        share price moves the ratios, or a screening methodology is updated.
+      </p>
+    </section>
   )
 }

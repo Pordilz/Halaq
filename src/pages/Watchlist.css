@@ -142,3 +142,72 @@
     flex-shrink: 0;
   }
 }
+
+/* Recent verdict changes */
+.watchlist-changes-card {
+  padding: var(--space-5);
+  margin-bottom: var(--space-5);
+}
+
+.watchlist-changes {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.watchlist-change {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background-color: var(--color-surface-container-low);
+  border-radius: var(--radius-lg);
+}
+
+.watchlist-change__open {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: none;
+  border: 0;
+  text-align: left;
+  font-size: var(--text-body-sm);
+  color: var(--color-on-surface-variant);
+  cursor: pointer;
+}
+
+.watchlist-change__open strong {
+  color: var(--color-on-surface);
+}
+
+.watchlist-change__open time {
+  font-size: var(--text-micro);
+  color: var(--color-outline);
+}
+
+.watchlist-change__open:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+  border-radius: var(--radius-lg);
+}
+
+.watchlist-change__dismiss {
+  display: inline-flex;
+  padding: var(--space-2);
+  background: none;
+  border: 0;
+  color: var(--color-outline);
+  cursor: pointer;
+}
+
+.watchlist-changes__foot {
+  margin-top: var(--space-4);
+  font-size: var(--text-micro);
+  color: var(--color-outline);
+}

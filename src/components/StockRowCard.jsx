@@ -1,5 +1,6 @@
 import ComplianceBadge from './ComplianceBadge'
 import MaterialIcon from './MaterialIcon'
+import { verdictLabel } from '../lib/verdictLabels'
 import './StockRowCard.css'
 
 export default function StockRowCard({
@@ -18,6 +19,8 @@ export default function StockRowCard({
   // only when the row needs verification AND the parent supplied a handler.
   verifying = false,
   onVerify,
+  // Previous verdict when it recently changed (Watchlist alerts).
+  changedFrom = null,
   inWatchlist,
   onToggleWatchlist,
   onClick,
@@ -47,6 +50,12 @@ export default function StockRowCard({
         <div className="stock-row-card__meta">
           {sector && <span className="stock-row-card__sector">{sector}</span>}
           {exchange && <span className="stock-row-card__exchange">{exchange}</span>}
+          {changedFrom && (
+            <span className="stock-row-card__changed">
+              <MaterialIcon name="change_circle" size={12} />
+              Was {verdictLabel(changedFrom)}
+            </span>
+          )}
         </div>
       </div>
 

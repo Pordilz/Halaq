@@ -75,6 +75,18 @@
   letter-spacing: 0.02em;
 }
 
+.stock-row-card__changed {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.0625rem var(--space-2);
+  border-radius: var(--radius-full);
+  background-color: var(--color-caution-container);
+  color: var(--color-caution);
+  font-size: var(--text-micro);
+  font-weight: var(--font-weight-subheading);
+}
+
 .stock-row-card__actions {
   display: flex;
   align-items: center;

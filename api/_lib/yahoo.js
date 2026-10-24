@@ -148,6 +148,8 @@ export function normalizeScreeningPayload(ticker, { quote, timeSeries, ttmFinanc
     sector: assetProfile.sector || '',
     industry: assetProfile.industry || '',
     exchange: priceData.exchangeName || priceData.exchange || '',
+    // 'EQUITY', 'ETF', 'MUTUALFUND' … — funds are screened via their holdings.
+    quoteType: priceData.quoteType || null,
     marketCap: num(priceData.marketCap),
     currency: priceData.currency || 'USD',
     description: assetProfile.longBusinessSummary || '',

@@ -26,6 +26,15 @@ function setLocalWatchlist(items) {
   }
 }
 
+// Verdict-change fields written by the watchlist trigger (migration 009).
+// Absent on databases without 009, which reads as "no change".
+function verdictChange(row) {
+  return {
+    previousStatus: row.previous_status || null,
+    statusChangedAt: row.status_changed_at || null,
+  }
+}
+
 export function useWatchlist(user) {
   const [watchlist, setWatchlist] = useState([])
   const [loading, setLoading] = useState(true)
@@ -70,6 +79,7 @@ export function useWatchlist(user) {
           confidence: row.confidence || null,
           dataSourcesUsed: row.data_sources_used || null,
           screenedAt: row.screened_at || null,
+          ...verdictChange(row),
           marketCap: null,
           addedAt: row.added_at,
         }))
@@ -130,32 +140,54 @@ export function useWatchlist(user) {
     }
   }, [user])
 
-  const updateStatus = useCallback(async (ticker, status) => {
-    if (!ticker || !status) return
-    let touched = false
+  const mergeRow = useCallback((ticker, patch) => {
     setWatchlist(prev => {
-      let mutated = false
-      const next = prev.map(w => {
-        if (w.ticker === ticker && w.status !== status) {
-          mutated = true
-          return { ...w, status }
-        }
-        return w
-      })
-      if (!mutated) return prev
-      touched = true
+      const next = prev.map(w => (w.ticker === ticker ? { ...w, ...patch } : w))
       setLocalWatchlist(next)
       return next
     })
+  }, [])
 
-    if (touched && user && supabase.isConfigured) {
+  // Saves a fast-screen verdict plus when it was screened, so useAutoScreen
+  // can tell when it's stale.
+  const updateStatus = useCallback(async (ticker, status) => {
+    if (!ticker || !status) return
+    const current = watchlistRef.current.find(w => w.ticker === ticker)
+    if (!current) return
+    const screenedAt = new Date().toISOString()
+    mergeRow(ticker, { status, screenedAt })
+
+    if (user && supabase.isConfigured) {
       await supabase
         .from('watchlist')
-        .update({ status })
+        .update({ status, screened_at: screenedAt })
+        .eq('user_id', user.id)
+        .eq('ticker', ticker)
+      if (current.status === status) return
+      // A database trigger decides whether this counts as a verdict change
+      // (migration 009). Re-read with select('*') rather than naming the
+      // columns, which would fail the request before 009 is applied.
+      const { data: row } = await supabase
+        .from('watchlist')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('ticker', ticker)
+        .maybeSingle()
+      if (row) mergeRow(ticker, verdictChange(row))
+    }
+  }, [user, mergeRow])
+
+  // Clears a "verdict changed" alert once the user has seen it.
+  const dismissChange = useCallback(async (ticker) => {
+    mergeRow(ticker, { previousStatus: null, statusChangedAt: null })
+    if (user && supabase.isConfigured) {
+      await supabase
+        .from('watchlist')
+        .update({ previous_status: null, status_changed_at: null })
         .eq('user_id', user.id)
         .eq('ticker', ticker)
     }
-  }, [user])
+  }, [user, mergeRow])
 
   /**
    * Apply a verify-screen response to local state. The server has already
@@ -176,6 +208,7 @@ export function useWatchlist(user) {
           confidence: result.confidence || w.confidence || null,
           dataSourcesUsed: result.verification || w.dataSourcesUsed || null,
           screenedAt: result.verification?.verifiedAt || new Date().toISOString(),
+          ...(result.watchlistRow ? verdictChange(result.watchlistRow) : {}),
         }
       })
       if (!mutated) return prev
@@ -226,6 +259,7 @@ export function useWatchlist(user) {
     removeFromWatchlist,
     updateStatus,
     applyVerification,
+    dismissChange,
     toggle,
     loading,
     error,

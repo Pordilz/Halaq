@@ -13,6 +13,7 @@ const HANDLERS = [
   'trending.js',
   'search.js',
   'verify-screen/[ticker].js',
+  'etf/[ticker].js',
   'lemonsqueezy/create-checkout.js',
   'lemonsqueezy/create-portal.js',
   'lemonsqueezy/verify-subscription.js',

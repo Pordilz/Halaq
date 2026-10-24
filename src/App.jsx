@@ -126,6 +126,14 @@ export default function App() {
               }
             />
             <Route
+              path="/etf/:ticker"
+              element={
+                <ProtectedRoute>
+                  <ETF />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/chat"
               element={
                 <ProtectedRoute>

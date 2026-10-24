@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useWatchlist } from '../hooks/useWatchlist'
 import { supabase } from '../lib/supabase'
 import { apiUrl } from '../lib/apiBase'
 import { fetchAllScreeningData } from '../services/yahooFinanceApi'
 import { screenStock, getCurrencySymbol, calculateHoldingPurification } from '../services/complianceEngine'
+import { getDedicatedShariahFund } from '../services/shariahFunds'
 import MaterialIcon from '../components/MaterialIcon'
 import RatioBar from '../components/RatioBar'
 import ComplianceBadge from '../components/ComplianceBadge'
@@ -130,6 +131,7 @@ export default function StockDetail() {
           // stale = Yahoo was unavailable and this is the last saved copy.
           stale: !!data.stale,
           dataAsOf: data.dataAsOf || null,
+          isFund: ['ETF', 'MUTUALFUND'].includes(data.profile.quoteType) || !!getDedicatedShariahFund(ticker),
           dataSources: compliance.dataSources,
           income: data.income,
           balanceSheet: data.balanceSheet,
@@ -326,6 +328,13 @@ export default function StockDetail() {
           <span className="sd-banner__label">{stock.methodology} verdict</span>
           <span className="sd-banner__verdict">{tone.label}</span>
           <span className="sd-banner__reason">{stock.statusReason}</span>
+          {stock.isFund && (
+            <span className="sd-banner__hint">
+              <MaterialIcon name="donut_large" size={14} />
+              {stock.ticker} is a fund, so it has no operating financials of its own.{' '}
+              <Link to={`/etf/${stock.ticker}`}>Open the ETF X-Ray</Link> to screen its holdings.
+            </span>
+          )}
           {stock.stale && (
             <span className="sd-banner__hint">
               <MaterialIcon name="history" size={14} />

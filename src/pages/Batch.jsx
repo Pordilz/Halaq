@@ -5,6 +5,7 @@ import MaterialIcon from '../components/MaterialIcon'
 import { fetchAllScreeningData } from '../services/yahooFinanceApi'
 import { screenStock } from '../services/complianceEngine'
 import ComplianceBadge from '../components/ComplianceBadge'
+import FeatureGate from '../components/FeatureGate'
 import useDocumentTitle from '../hooks/useDocumentTitle'
 import './Batch.css'
 
@@ -68,60 +69,13 @@ export default function Batch() {
 
   if (!isPro) {
     return (
-      <div className="container animate-entrance" style={{ paddingTop: '4rem', paddingBottom: 'var(--space-12)' }}>
-        <div className="max-w-xl mx-auto">
-          <div
-            className="card-standard"
-            style={{
-              padding: '3rem 2rem',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              textAlign: 'center',
-              gap: '1.25rem',
-            }}
-          >
-            <div
-              style={{
-                width: '4rem',
-                height: '4rem',
-                borderRadius: '9999px',
-                background: 'rgba(26, 107, 71, 0.10)',
-                color: 'var(--color-primary)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <MaterialIcon name="layers" size={32} />
-            </div>
-
-            <span
-              style={{
-                background: 'var(--color-primary)',
-                color: 'var(--color-white)',
-                padding: '0.375rem 0.875rem',
-                borderRadius: '9999px',
-                fontSize: 'var(--text-micro)',
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                lineHeight: 1,
-              }}
-            >
-              Pro feature
-            </span>
-
-            <h1 className="text-h1">Batch screening</h1>
-            <p className="text-on-surface-variant text-body-lg" style={{ maxWidth: '32rem' }}>
-              Analyse up to {MAX_TICKERS} tickers at once. Batch screening is available to Pro and Scholar members.
-            </p>
-            <button type="button" className="btn btn-primary btn--lg" onClick={() => navigate('/upgrade?tier=pro')}>
-              Upgrade to Pro
-            </button>
-          </div>
-        </div>
-      </div>
+      <FeatureGate
+        icon="layers"
+        badge="Pro feature"
+        title="Batch screening"
+        body={`Analyse up to ${MAX_TICKERS} tickers at once. Batch screening is available to Pro and Scholar members.`}
+        action={{ label: 'Upgrade to Pro', onClick: () => navigate('/upgrade?tier=pro') }}
+      />
     )
   }
 

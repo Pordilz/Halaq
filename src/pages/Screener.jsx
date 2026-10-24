@@ -8,6 +8,7 @@ import StockRowCard from '../components/StockRowCard'
 import SetupFlow from '../components/SetupFlow'
 import useDocumentTitle from '../hooks/useDocumentTitle'
 import { getCurrencySymbol } from '../services/complianceEngine'
+import { getDedicatedShariahFund } from '../services/shariahFunds'
 import { apiUrl } from '../lib/apiBase'
 import './Screener.css'
 
@@ -174,7 +175,12 @@ export default function Screener() {
 
   const filteredResults = results.filter(matchesFilters)
   const filteredTrending = trending.filter(matchesFilters)
-  const navigateToStock = (ticker) => navigate(`/stock/${ticker}`)
+  // Funds are screened through their holdings, so they open the ETF X-Ray.
+  // Yahoo lists some Shariah funds (e.g. STXSHA.JO) as equities, hence the list.
+  const navigateToStock = (ticker) => {
+    const isFund = getDedicatedShariahFund(ticker) || results.some(r => r.ticker === ticker && r.sector === 'ETF')
+    navigate(isFund ? `/etf/${ticker}` : `/stock/${ticker}`)
+  }
   const isSearching = query.trim().length > 1
 
   return (
