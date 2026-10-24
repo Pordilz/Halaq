@@ -1,9 +1,10 @@
+import { isValidTicker, classifyYahooError } from '../_lib/yahoo.js';
+import { getScreeningPayload } from '../_lib/screening-cache.js';
 import {
-  fetchScreeningPayload,
-  isValidTicker,
-  normalizeYahooError,
-} from '../_lib/yahoo.js';
-import { getUserFromToken, enforceFreeRateLimit } from '../_lib/supabase.js';
+  getUserFromToken,
+  enforceFreeRateLimit,
+  enforceAnonRateLimit,
+} from '../_lib/supabase.js';
 
 export const config = { maxDuration: 30 };
 
@@ -21,31 +22,36 @@ export default async function handler(req, res) {
 
   const ticker = String(queryTicker).toUpperCase();
 
-  // Authenticated requests get the daily-screen rate limit. Anonymous browsing
-  // is rate-limited by Vercel's edge in front of this function — we don't try
-  // to maintain in-memory state in serverless.
+  // Signed-in free users share a daily quota; signed-out visitors get a
+  // smaller one keyed by a hashed IP (both atomic — migration 008).
+  // Responses served from Vercel's CDN cache never reach this function, so
+  // repeat views of a popular ticker don't count.
   const token = req.headers.authorization?.replace('Bearer ', '');
-  if (token) {
-    const { user, profile } = await getUserFromToken(token);
-    if (user) {
-      const blocked = await enforceFreeRateLimit({ user, profile });
-      if (blocked) {
-        res.setHeader('Cache-Control', 'no-store');
-        return res.status(blocked.status).json({ error: blocked.error });
-      }
-    }
+  const { user, profile } = token ? await getUserFromToken(token) : { user: null, profile: null };
+  const blocked = user
+    ? await enforceFreeRateLimit({ user, profile })
+    : await enforceAnonRateLimit({ req });
+  if (blocked) {
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(blocked.status).json({
+      error: blocked.error,
+      code: user ? 'QUOTA_FREE' : 'QUOTA_ANON',
+    });
   }
 
   try {
-    const payload = await fetchScreeningPayload(ticker);
+    const payload = await getScreeningPayload(ticker);
+    // A stale fallback (Yahoo down) shouldn't sit in the CDN for long.
     res.setHeader(
       'Cache-Control',
-      's-maxage=300, stale-while-revalidate=900'
+      payload.stale ? 's-maxage=60' : 's-maxage=300, stale-while-revalidate=900'
     );
     return res.status(200).json(payload);
   } catch (err) {
-    const status = err.statusCode || 400;
+    const { status, message, retryAfter } = classifyYahooError(err);
     console.error(`[Halaq API] Error screening ${ticker}:`, err.message);
-    return res.status(status).json({ error: normalizeYahooError(err.message) });
+    res.setHeader('Cache-Control', 'no-store');
+    if (retryAfter) res.setHeader('Retry-After', String(retryAfter));
+    return res.status(status).json({ error: message });
   }
 }

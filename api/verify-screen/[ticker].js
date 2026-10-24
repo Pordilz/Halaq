@@ -23,7 +23,7 @@
  * source-verified verdict — caching the response would defeat the purpose.
  */
 
-import { isValidTicker, normalizeYahooError } from '../_lib/yahoo.js';
+import { isValidTicker, classifyYahooError } from '../_lib/yahoo.js';
 import { buildVerifiedScreening } from '../_lib/verify-screen.js';
 import { getUserFromToken, enforceFreeRateLimit, getSupabaseAdmin } from '../_lib/supabase.js';
 
@@ -106,7 +106,9 @@ export default async function handler(req, res) {
     return res.status(200).json(result);
   } catch (err) {
     console.error(`[verify-screen] error for ${ticker}:`, err.message || err);
-    const status = err.statusCode || 500;
-    return res.status(status).json({ error: normalizeYahooError(err.message || 'Verification failed') });
+    const { status, message, retryAfter } = classifyYahooError(err);
+    res.setHeader('Cache-Control', 'no-store');
+    if (retryAfter) res.setHeader('Retry-After', String(retryAfter));
+    return res.status(status).json({ error: message || 'Verification failed' });
   }
 }

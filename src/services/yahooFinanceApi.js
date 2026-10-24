@@ -30,7 +30,12 @@ export async function fetchAllScreeningData(ticker, { signal } = {}) {
     } catch {
       body = {}
     }
-    throw new Error(body.error || `Server error (${res.status})`)
+    // status + code let the page tell a quota limit (429, QUOTA_ANON /
+    // QUOTA_FREE) from an unknown ticker (404) or a Yahoo outage (502/503).
+    throw Object.assign(new Error(body.error || `Server error (${res.status})`), {
+      status: res.status,
+      code: body.code || null,
+    })
   }
 
   const data = await res.json()

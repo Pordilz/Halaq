@@ -1,35 +1,21 @@
 /**
  * Halaq local API server (dev only).
- * Mirrors the Vercel /api/* endpoints so Vite can proxy without deploying.
- * In production, requests go directly to the Vercel functions in /api.
+ *
+ * Mounts the Vercel functions in /api as Express routes, so local dev runs
+ * exactly the code production runs (rate limits, caching, CORS preflight)
+ * instead of a hand-maintained copy. In production, requests go directly to
+ * the Vercel functions.
  */
 
 import express from 'express';
 import cors from 'cors';
-import crypto from 'crypto';
-import { lemonSqueezySetup, createCheckout, getSubscription } from '@lemonsqueezy/lemonsqueezy.js';
-import { createClient } from '@supabase/supabase-js';
-import { fetchScreeningPayload, isValidTicker, normalizeYahooError } from '../api/_lib/yahoo.js';
-import { buildVerifiedScreening } from '../api/_lib/verify-screen.js';
+import { readdir } from 'node:fs/promises';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { dirname, join, relative, sep } from 'node:path';
 
 const app = express();
 const PORT = process.env.PORT || 3005;
-
-if (process.env.LEMON_SQUEEZY_API_KEY) {
-  lemonSqueezySetup({ apiKey: process.env.LEMON_SQUEEZY_API_KEY });
-}
-
-const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabaseAdmin = supabaseUrl && supabaseKey
-  ? createClient(supabaseUrl, supabaseKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    })
-  : null;
-
-if (!supabaseAdmin) {
-  console.warn('[Halaq API] Supabase service role key not set — auth features disabled in dev.');
-}
+const API_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'api');
 
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
@@ -37,308 +23,46 @@ app.use(cors({
     : true,
 }));
 
-// ---- Auth helpers ----
-async function requireAuth(req, res, next) {
-  if (!supabaseAdmin) return res.status(503).json({ error: 'Auth backend not configured' });
-  const token = req.headers.authorization?.replace('Bearer ', '');
-  if (!token) return res.status(401).json({ error: 'Unauthorized' });
-  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
-  if (error || !user) return res.status(401).json({ error: 'Unauthorized' });
-  const { data: profile } = await supabaseAdmin
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
-  req.user = user;
-  req.profile = profile || { subscription_tier: 'free' };
-  next();
+// api/screen/[ticker].js → /api/screen/:ticker. Files under api/_lib are
+// helpers, not functions — Vercel skips underscore-prefixed paths too.
+async function discoverFunctions(dir) {
+  const found = [];
+  for (const entry of await readdir(dir, { withFileTypes: true })) {
+    if (entry.name.startsWith('_') || entry.name.startsWith('.')) continue;
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) found.push(...(await discoverFunctions(full)));
+    else if (entry.name.endsWith('.js')) found.push(full);
+  }
+  return found;
 }
 
-async function optionalAuth(req, res, next) {
-  if (!supabaseAdmin) return next();
-  const token = req.headers.authorization?.replace('Bearer ', '');
-  if (!token) return next();
-  const { data: { user } } = await supabaseAdmin.auth.getUser(token);
-  if (user) {
-    req.user = user;
-    const { data: profile } = await supabaseAdmin
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-    req.profile = profile || { subscription_tier: 'free' };
-  }
-  next();
+function routeFor(file) {
+  const path = relative(API_DIR, file).split(sep).join('/').replace(/\.js$/, '');
+  return '/api/' + path.replace(/\[([^\]]+)\]/g, ':$1');
 }
 
-// ---- Lemon Squeezy webhook (must be registered before express.json()) ----
-app.post('/api/lemonsqueezy/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
-  const secret = process.env.LEMON_SQUEEZY_WEBHOOK_SECRET;
-  const signature = req.headers['x-signature'];
-  if (!secret) return res.status(500).send('Webhook secret not configured');
-  if (!signature) return res.status(401).send('Missing signature');
-
-  const hmac = crypto.createHmac('sha256', secret);
-  const digest = Buffer.from(hmac.update(req.body).digest('hex'), 'utf8');
-  const sig = Buffer.from(signature, 'utf8');
-  if (digest.length !== sig.length || !crypto.timingSafeEqual(digest, sig)) {
-    return res.status(401).send('Invalid signature');
-  }
-
-  const payload = JSON.parse(req.body.toString());
-  const eventName = payload.meta?.event_name;
-  const customData = payload.meta?.custom_data || {};
-  const userId = customData.supabase_user_id;
-  const sub = payload.data?.attributes || {};
-
-  if (!supabaseAdmin || !userId) return res.status(200).json({ received: true });
-
-  try {
-    if (eventName === 'subscription_created' || eventName === 'subscription_updated') {
-      const tierMap = {
-        [process.env.LEMON_PRO_VARIANT_ID]: 'pro',
-        [process.env.LEMON_SCHOLAR_VARIANT_ID]: 'scholar',
-      };
-      const newTier = (sub.status === 'active' || sub.status === 'on_trial')
-        ? (tierMap[sub.variant_id] || 'free')
-        : 'free';
-      await supabaseAdmin.from('profiles').update({
-        subscription_tier: newTier,
-        stripe_subscription_id: payload.data.id,
-        subscription_status: sub.status,
-        subscription_period_end: sub.renews_at ? new Date(sub.renews_at).toISOString() : null,
-      }).eq('id', userId);
-    } else if (eventName === 'subscription_cancelled' || eventName === 'subscription_expired') {
-      await supabaseAdmin.from('profiles').update({
-        subscription_tier: 'free',
-        subscription_status: 'cancelled',
-        stripe_subscription_id: null,
-      }).eq('id', userId);
-    }
-  } catch (err) {
-    console.error('[Webhook] DB error:', err);
-  }
-
-  res.status(200).json({ received: true });
-});
-
-app.use(express.json({ limit: '128kb' }));
-
-// ---- Lemon Squeezy: checkout + portal ----
-app.post('/api/lemonsqueezy/create-checkout', requireAuth, async (req, res) => {
-  const { tier } = req.body || {};
-  if (!['pro', 'scholar'].includes(tier)) {
-    return res.status(400).json({ error: 'Invalid tier' });
-  }
-  const variantId = tier === 'scholar'
-    ? process.env.LEMON_SCHOLAR_VARIANT_ID
-    : process.env.LEMON_PRO_VARIANT_ID;
-  if (!process.env.LEMON_SQUEEZY_STORE_ID || !variantId) {
-    return res.status(500).json({ error: 'Billing not configured' });
-  }
-  try {
-    const newCheckout = await createCheckout(process.env.LEMON_SQUEEZY_STORE_ID, variantId, {
-      checkoutData: {
-        email: req.user.email,
-        custom: { supabase_user_id: req.user.id, tier },
-      },
-      productOptions: {
-        redirectUrl: `${process.env.VITE_APP_URL || 'http://localhost:3000'}/profile?upgrade=success`,
-        receiptButtonText: 'Return to Halaq',
-        receiptLinkUrl: `${process.env.VITE_APP_URL || 'http://localhost:3000'}/profile`,
-      },
+// Vercel handlers read route params from req.query and get a parsed JSON
+// body unless they opt out (the Lemon Squeezy webhook reads the raw body to
+// check its signature). Express 5's req.query is a getter, so redefine it.
+function adapt(handler) {
+  return (req, res, next) => {
+    Object.defineProperty(req, 'query', {
+      value: { ...req.query, ...req.params },
+      configurable: true,
+      enumerable: true,
     });
-    res.json({ url: newCheckout.data?.data?.attributes?.url });
-  } catch (err) {
-    console.error('Lemon Squeezy checkout error:', err);
-    res.status(500).json({ error: 'Unable to start checkout session' });
-  }
-});
+    Promise.resolve(handler(req, res)).catch(next);
+  };
+}
 
-app.post('/api/lemonsqueezy/create-portal', requireAuth, async (req, res) => {
-  const subId = req.profile.stripe_subscription_id;
-  if (!subId) return res.status(400).json({ error: 'No subscription found' });
-  try {
-    const sub = await getSubscription(subId);
-    if (sub.error) throw new Error(sub.error.message);
-    const url = sub.data?.data?.attributes?.urls?.customer_portal;
-    if (!url) throw new Error('Customer portal URL not generated');
-    res.json({ url });
-  } catch (err) {
-    console.error('Portal error:', err.message || err);
-    res.status(500).json({ error: err.message || 'Unable to open billing portal' });
-  }
-});
-
-// ---- Screen ----
-app.get('/api/screen/:ticker', optionalAuth, async (req, res) => {
-  const ticker = String(req.params.ticker || '').toUpperCase();
-  if (!isValidTicker(ticker)) {
-    return res.status(400).json({ error: 'Invalid ticker format' });
-  }
-
-  // Free-tier daily rate limit (auth users only)
-  if (req.user && req.profile?.subscription_tier === 'free') {
-    const now = new Date();
-    const reset = req.profile.daily_search_reset_at
-      ? new Date(req.profile.daily_search_reset_at)
-      : null;
-    let count = req.profile.daily_search_count || 0;
-    if (!reset || now.getTime() - reset.getTime() > 24 * 60 * 60 * 1000) {
-      count = 0;
-    }
-    const FREE_DAILY_LIMIT = 50;
-    if (count >= FREE_DAILY_LIMIT) {
-      return res.status(429).json({
-        error: `Daily screening limit reached (${FREE_DAILY_LIMIT}/${FREE_DAILY_LIMIT}). Upgrade to Pro for unlimited access.`,
-      });
-    }
-    if (supabaseAdmin) {
-      supabaseAdmin
-        .from('profiles')
-        .update({
-          daily_search_count: count + 1,
-          daily_search_reset_at: count === 0 ? now.toISOString() : req.profile.daily_search_reset_at,
-        })
-        .eq('id', req.user.id)
-        .then(() => {});
-    }
-  }
-
-  try {
-    const payload = await fetchScreeningPayload(ticker);
-    res.json(payload);
-  } catch (err) {
-    const status = err.statusCode || 400;
-    console.error(`[Halaq API] Error screening ${ticker}:`, err.message);
-    res.status(status).json({ error: normalizeYahooError(err.message) });
-  }
-});
-
-// ---- Verify (heavy multi-source re-screen for a watchlist ticker) ----
-app.post('/api/verify-screen/:ticker', requireAuth, async (req, res) => {
-  const ticker = String(req.params.ticker || '').toUpperCase();
-  if (!isValidTicker(ticker)) {
-    return res.status(400).json({ error: 'Invalid ticker format' });
-  }
-
-  // Watchlist gate — verify is for stocks the user is tracking. Without
-  // this, an authenticated user could pin our cost surface to arbitrary
-  // tickers by hammering the verify endpoint.
-  if (!supabaseAdmin) {
-    return res.status(503).json({ error: 'Verification service unavailable.' });
-  }
-  const { data: watchRow, error: watchErr } = await supabaseAdmin
-    .from('watchlist')
-    .select('id')
-    .eq('user_id', req.user.id)
-    .eq('ticker', ticker)
-    .maybeSingle();
-  if (watchErr) {
-    console.error(`[verify-screen] watchlist lookup failed for ${ticker}:`, watchErr);
-    return res.status(500).json({ error: 'Could not verify watchlist membership.' });
-  }
-  if (!watchRow) {
-    return res.status(403).json({
-      error: 'Add this stock to your watchlist before verifying.',
-    });
-  }
-
-  // Share the daily-screen pool — verify is a heavier screen, same
-  // operation class for billing purposes.
-  if (req.profile?.subscription_tier === 'free') {
-    const now = new Date();
-    const reset = req.profile.daily_search_reset_at
-      ? new Date(req.profile.daily_search_reset_at)
-      : null;
-    let count = req.profile.daily_search_count || 0;
-    if (!reset || now.getTime() - reset.getTime() > 24 * 60 * 60 * 1000) {
-      count = 0;
-    }
-    const FREE_DAILY_LIMIT = 50;
-    if (count >= FREE_DAILY_LIMIT) {
-      return res.status(429).json({
-        error: `Daily screening limit reached (${FREE_DAILY_LIMIT}/${FREE_DAILY_LIMIT}). Upgrade to Pro for unlimited access.`,
-      });
-    }
-    supabaseAdmin
-      .from('profiles')
-      .update({
-        daily_search_count: count + 1,
-        daily_search_reset_at: count === 0 ? now.toISOString() : req.profile.daily_search_reset_at,
-      })
-      .eq('id', req.user.id)
-      .then(() => {});
-  }
-
-  const isPro = req.profile?.subscription_tier && req.profile.subscription_tier !== 'free';
-  const methodology = isPro && req.profile?.methodology ? req.profile.methodology : 'AAOIFI';
-
-  try {
-    const result = await buildVerifiedScreening(ticker, methodology);
-
-    // Persist; non-fatal on failure (user still sees the verdict).
-    supabaseAdmin
-      .from('watchlist')
-      .update({
-        status: result.status,
-        confidence: result.confidence,
-        data_sources_used: result.verification,
-        screened_at: result.verification?.verifiedAt || new Date().toISOString(),
-      })
-      .eq('user_id', req.user.id)
-      .eq('ticker', ticker)
-      .then(() => {});
-
-    res.setHeader('Cache-Control', 'no-store');
-    res.json(result);
-  } catch (err) {
-    console.error(`[verify-screen] error for ${ticker}:`, err.message || err);
-    res.status(err.statusCode || 500).json({ error: normalizeYahooError(err.message || 'Verification failed') });
-  }
-});
-
-// ---- Search ----
-app.get('/api/search', async (req, res) => {
-  const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
-  if (!q || q.length < 1 || q.length > 50) return res.json([]);
-  try {
-    const url = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(q)}&quotesCount=10&newsCount=0&enableFuzzyQuery=true&quotesQueryId=tss_match_phrase_query`;
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 7000);
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Halaq/1.0 (+https://halaq.app)',
-        'Accept': 'application/json',
-      },
-      signal: controller.signal,
-    });
-    clearTimeout(timer);
-    if (!response.ok) return res.json([]);
-    const data = await response.json();
-    const ALLOWED = new Set(['NMS', 'NYQ', 'NGM', 'PCX', 'BTS', 'ASE', 'NAS', 'JNB']);
-    const quotes = (data?.quotes || [])
-      .filter(item =>
-        (item.quoteType === 'EQUITY' || item.quoteType === 'ETF') &&
-        (ALLOWED.has(item.exchange) || item.symbol?.endsWith('.JO'))
-      )
-      .slice(0, 8)
-      .map(item => ({
-        symbol: item.symbol,
-        name: item.shortname || item.longname || item.symbol,
-        exchange: item.exchDisp || item.exchange || '',
-        type: item.quoteType,
-      }));
-    res.json(quotes);
-  } catch (err) {
-    if (err?.name !== 'AbortError') console.error('[Search] Error:', err.message);
-    res.json([]);
-  }
-});
-
-app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
+for (const file of await discoverFunctions(API_DIR)) {
+  const mod = await import(pathToFileURL(file).href);
+  const rawBody = mod.config?.api?.bodyParser === false;
+  const route = routeFor(file);
+  const middleware = rawBody ? [] : [express.json({ limit: '128kb' })];
+  app.all(route, ...middleware, adapt(mod.default));
+  console.log(`  ${route}`);
+}
 
 app.listen(PORT, () => {
   console.log(`\n  Halaq API server: http://localhost:${PORT}\n`);

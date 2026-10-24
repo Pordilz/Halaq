@@ -106,24 +106,27 @@ export async function fetchRawYahoo(ticker) {
       // populated trailing series and the call returns []. We detect that
       // below and use the annual statement instead.
       .catch(() => null),
-    yahooFinance
-      .quote(
-        ticker,
-        {
-          fields: [
-            'regularMarketPrice',
-            'regularMarketChange',
-            'regularMarketChangePercent',
-          ],
-        },
-        { validateResult: false }
-      )
-      // Don't fail the whole request if the live quote endpoint blips —
-      // fall back to quoteSummary's slightly-staler price.
-      .catch(() => null),
+    // Don't fail the whole request if the live quote endpoint blips —
+    // fall back to quoteSummary's slightly-staler price.
+    fetchLiveQuote(ticker).catch(() => null),
   ]);
 
   return { quote, timeSeries, ttmFinancials, liveQuote };
+}
+
+/** One cheap Yahoo call: the live price + change. */
+export function fetchLiveQuote(ticker) {
+  return yahooFinance.quote(
+    ticker,
+    {
+      fields: [
+        'regularMarketPrice',
+        'regularMarketChange',
+        'regularMarketChangePercent',
+      ],
+    },
+    { validateResult: false }
+  );
 }
 
 export function normalizeScreeningPayload(ticker, { quote, timeSeries, ttmFinancials, liveQuote }) {
@@ -259,6 +262,43 @@ export function normalizeScreeningPayload(ticker, { quote, timeSeries, ttmFinanc
   };
 
   return { profile, income, balanceSheet };
+}
+
+/**
+ * Map a Yahoo failure to an HTTP response. yahoo-finance2 throws HTTPError
+ * with the upstream status in `err.code`; network failures only have a
+ * message. `retryable` failures are retried once and may be answered from a
+ * stale cached copy.
+ */
+export function classifyYahooError(err) {
+  const message = String(err?.message || err || '');
+  const code = Number(err?.code);
+
+  if (err?.statusCode === 400) {
+    return { status: 400, retryable: false, message };
+  }
+  if (code === 404 || /not found|no fundamentals/i.test(message)) {
+    return { status: 404, retryable: false, message: normalizeYahooError(message) };
+  }
+  if (code === 429 || /too many requests|rate.?limit/i.test(message)) {
+    return {
+      status: 503,
+      retryable: true,
+      retryAfter: 60,
+      message: 'Our market-data provider is busy right now. Please try again in a minute.',
+    };
+  }
+  if (
+    code >= 500 ||
+    /ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|ECONNREFUSED|fetch failed|socket hang up|timed? ?out|network/i.test(message)
+  ) {
+    return {
+      status: 502,
+      retryable: true,
+      message: 'Market data is temporarily unavailable. Please try again shortly.',
+    };
+  }
+  return { status: 502, retryable: false, message: normalizeYahooError(message) };
 }
 
 export function normalizeYahooError(message) {

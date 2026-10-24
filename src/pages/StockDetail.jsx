@@ -127,6 +127,9 @@ export default function StockDetail() {
           haramRevenueEstimated: compliance.haramRevenueEstimated,
           isShariahCertified: compliance.isShariahCertified,
           dividendRate: data.profile.dividendRate,
+          // stale = Yahoo was unavailable and this is the last saved copy.
+          stale: !!data.stale,
+          dataAsOf: data.dataAsOf || null,
           dataSources: compliance.dataSources,
           income: data.income,
           balanceSheet: data.balanceSheet,
@@ -138,7 +141,9 @@ export default function StockDetail() {
           updateStatus(ticker, compliance.status)
         }
       } catch (err) {
-        if (!cancelled && err.name !== 'AbortError') setError(err.message)
+        if (!cancelled && err.name !== 'AbortError') {
+          setError({ message: err.message, status: err.status || null, code: err.code || null })
+        }
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -167,14 +172,46 @@ export default function StockDetail() {
     )
   }
 
+  if (error?.status === 429) {
+    const signedOut = error.code === 'QUOTA_ANON'
+    return (
+      <div className="sd-page container sd-error">
+        <MaterialIcon name="hourglass_top" size={48} className="text-primary" />
+        <h2 className="text-h2">You've reached today's free screens</h2>
+        <p className="text-on-surface-variant">{error.message}</p>
+        <div className="sd-error__actions">
+          {signedOut && (
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => navigate(`/login?redirect=${encodeURIComponent(`/stock/${ticker}`)}`)}
+            >
+              Sign in
+            </button>
+          )}
+          <button type="button" className="btn btn-primary" onClick={() => navigate('/upgrade')}>
+            {signedOut ? 'See plans' : 'Upgrade to Pro'}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   if (error || !stock) {
+    const heading = error?.status === 404
+      ? `We couldn't find ${ticker}`
+      : error?.status >= 500
+        ? 'Market data is temporarily unavailable'
+        : `We couldn't load ${ticker}`
     return (
       <div className="sd-page container sd-error">
         <MaterialIcon name="error_outline" size={48} className="text-error" />
-        <h2 className="text-h2">We couldn't load {ticker}</h2>
-        <p className="text-on-surface-variant">{error || 'Unknown error fetching data.'}</p>
+        <h2 className="text-h2">{heading}</h2>
+        <p className="text-on-surface-variant">{error?.message || 'Unknown error fetching data.'}</p>
         <div className="sd-error__actions">
-          <button type="button" className="btn btn-secondary" onClick={() => window.location.reload()}>Retry</button>
+          {error?.status !== 404 && (
+            <button type="button" className="btn btn-secondary" onClick={() => window.location.reload()}>Retry</button>
+          )}
           <button type="button" className="btn btn-primary" onClick={() => navigate('/screener')}>Back to screener</button>
         </div>
       </div>
@@ -289,6 +326,13 @@ export default function StockDetail() {
           <span className="sd-banner__label">{stock.methodology} verdict</span>
           <span className="sd-banner__verdict">{tone.label}</span>
           <span className="sd-banner__reason">{stock.statusReason}</span>
+          {stock.stale && (
+            <span className="sd-banner__hint">
+              <MaterialIcon name="history" size={14} />
+              Live market data is temporarily unavailable, so this verdict uses the last saved
+              data{stock.dataAsOf ? ` from ${new Date(stock.dataAsOf).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}.
+            </span>
+          )}
           {(stock.status === 'UNVERIFIED' || stock.status === 'DOUBTFUL') && (
             <span className="sd-banner__hint">
               <MaterialIcon name="info" size={14} />
