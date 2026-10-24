@@ -16,6 +16,7 @@
 
 import YahooFinance from 'yahoo-finance2';
 import { numOrNull, extractInterest } from './interest.js';
+import { byDateDesc, yahooDay } from './yahoo-dates.js';
 
 const yahooFinance = new YahooFinance({
   suppressNotices: ['yahooSurvey'],
@@ -111,7 +112,7 @@ export async function fetchTrailingTwelveMonthIncome(ticker) {
     );
 
     const sortedTrailing = Array.isArray(trailing)
-      ? [...trailing].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
+      ? [...trailing].sort(byDateDesc)
       : [];
     const latest = sortedTrailing[0];
 
@@ -135,7 +136,7 @@ export async function fetchTrailingTwelveMonthIncome(ticker) {
     );
 
     const quarters = Array.isArray(quarterly)
-      ? [...quarterly].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).slice(0, 4)
+      ? [...quarterly].sort(byDateDesc).slice(0, 4)
       : [];
 
     if (quarters.length === 4) {
@@ -164,7 +165,7 @@ export async function fetchTrailingTwelveMonthIncome(ticker) {
       { validateResult: false }
     );
     const sorted = Array.isArray(annual)
-      ? [...annual].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
+      ? [...annual].sort(byDateDesc)
       : [];
     if (sorted[0]) {
       return buildIncomeFromRow(sorted[0], 'ANNUAL');
@@ -180,7 +181,7 @@ function buildIncomeFromRow(row, basis) {
   const interest = extractInterest(key => numOrNull(row[key]));
 
   return {
-    period: row.date ? new Date(row.date).toISOString().split('T')[0] : 'N/A',
+    period: yahooDay(row.date),
     revenue: num(row.totalRevenue),
     netIncome:
       num(row.netIncomeFromContinuingOperations) ||
@@ -207,9 +208,7 @@ function buildIncomeFromQuarterlySum(quarters) {
   const interest = extractInterest(sumOrNull);
 
   return {
-    period: quarters[0]?.date
-      ? new Date(quarters[0].date).toISOString().split('T')[0]
-      : 'N/A',
+    period: yahooDay(quarters[0]?.date),
     revenue: sum('totalRevenue'),
     netIncome:
       sum('netIncomeFromContinuingOperations') ||

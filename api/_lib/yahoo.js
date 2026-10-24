@@ -6,6 +6,7 @@
 
 import YahooFinance from 'yahoo-finance2';
 import { numOrNull, extractInterest } from './interest.js';
+import { byDateDesc, yahooDay } from './yahoo-dates.js';
 
 const yahooFinance = new YahooFinance({
   suppressNotices: ['yahooSurvey'],
@@ -174,9 +175,7 @@ export function normalizeScreeningPayload(ticker, { quote, timeSeries, ttmFinanc
     ),
   };
 
-  const sortedSeries = [...(timeSeries || [])].sort(
-    (a, b) => new Date(b.date || 0) - new Date(a.date || 0)
-  );
+  const sortedSeries = [...(timeSeries || [])].sort(byDateDesc);
   const latestFinancials = sortedSeries[0] || {};
   const latestDate = latestFinancials?.date || null;
 
@@ -187,7 +186,7 @@ export function normalizeScreeningPayload(ticker, { quote, timeSeries, ttmFinanc
   // borderline issuers to flip across thresholds (see SAP.DE: 5.9% annual
   // vs 4.8% TTM on the haram-income ratio).
   const ttmSorted = Array.isArray(ttmFinancials)
-    ? [...ttmFinancials].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
+    ? [...ttmFinancials].sort(byDateDesc)
     : [];
   const latestTtm = ttmSorted[0] || null;
   const useTtm = !!latestTtm && num(latestTtm.totalRevenue) > 0;
@@ -203,9 +202,7 @@ export function normalizeScreeningPayload(ticker, { quote, timeSeries, ttmFinanc
     num(incomeRow.totalRevenue) || num(financialData.totalRevenue);
 
   const income = {
-    period: incomeRowDate
-      ? new Date(incomeRowDate).toISOString().split('T')[0]
-      : 'N/A',
+    period: yahooDay(incomeRowDate),
     basis: useTtm ? 'TTM' : 'ANNUAL',
     revenue: totalRevenue,
     netIncome:
@@ -247,9 +244,7 @@ export function normalizeScreeningPayload(ticker, { quote, timeSeries, ttmFinanc
   );
 
   const balanceSheet = {
-    period: latestDate
-      ? new Date(latestDate).toISOString().split('T')[0]
-      : 'N/A',
+    period: yahooDay(latestDate),
     totalDebt,
     cashAndShortTermInvestments: cash,
     cashAndCashEquivalents: num(lf.cashAndCashEquivalents),

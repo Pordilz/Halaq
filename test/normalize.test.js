@@ -36,6 +36,19 @@ describe('normalizeScreeningPayload on recorded Yahoo data', () => {
     assert.equal(screen('SPUS').r.status, 'UNVERIFIED')
   })
 
+  test('TTM statement dates (Unix seconds from Yahoo) are real dates, not 1970', () => {
+    for (const ticker of ['AAPL', 'MSFT', 'JPM', 'SBK.JO']) {
+      const raw = load(ticker)
+      assert.equal(typeof raw.ttmFinancials[0].date, 'number', `${ticker} fixture should hold Unix seconds`)
+      const { d } = screen(ticker, raw)
+      assert.equal(d.income.basis, 'TTM')
+      for (const period of [d.income.period, d.balanceSheet.period]) {
+        assert.match(period, /^\d{4}-\d{2}-\d{2}$/)
+        assert.ok(Number(period.slice(0, 4)) >= 2020, `${ticker} period ${period}`)
+      }
+    }
+  })
+
   test('MSFT reports interest income explicitly; AAPL only via non-operating income', () => {
     assert.equal(screen('MSFT').d.income.interestDataSource, 'explicit')
     assert.equal(screen('AAPL').d.income.interestDataSource, 'estimated')
