@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase'
+import { apiUrl } from '../lib/apiBase'
 
-const API_BASE = '/api'
+const API_BASE = apiUrl('/api')
 
 async function authHeaders() {
   const headers = { 'Content-Type': 'application/json' }

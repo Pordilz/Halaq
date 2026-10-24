@@ -8,6 +8,7 @@ import StockRowCard from '../components/StockRowCard'
 import SetupFlow from '../components/SetupFlow'
 import useDocumentTitle from '../hooks/useDocumentTitle'
 import { getCurrencySymbol } from '../services/complianceEngine'
+import { apiUrl } from '../lib/apiBase'
 import './Screener.css'
 
 const FILTER_OPTIONS = [
@@ -84,7 +85,7 @@ export default function Screener() {
     const controller = new AbortController()
     abortRef.current = controller
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`, { signal: controller.signal })
+      const res = await fetch(apiUrl(`/api/search?q=${encodeURIComponent(q)}`), { signal: controller.signal })
       if (!res.ok) throw new Error('Search failed')
       const data = await res.json()
       setResults(
@@ -126,7 +127,7 @@ export default function Screener() {
     setTrendingLoading(true)
     setTrendingError(null)
     try {
-      const res = await fetch(`/api/trending?page=${page}&size=${PAGE_SIZE}`)
+      const res = await fetch(apiUrl(`/api/trending?page=${page}&size=${PAGE_SIZE}`))
       if (!res.ok) throw new Error('Failed')
       const data = await res.json()
       setTrending(prev => page === 0 ? data.items : [...prev, ...data.items])

@@ -8,8 +8,9 @@ import { getUserFromToken, enforceFreeRateLimit } from '../_lib/supabase.js';
 export const config = { maxDuration: 30 };
 
 export default async function handler(req, res) {
+  if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'GET') {
-    res.setHeader('Allow', 'GET');
+    res.setHeader('Allow', 'GET, OPTIONS');
     return res.status(405).json({ error: 'Method not allowed' });
   }
 

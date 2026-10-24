@@ -8,6 +8,7 @@ import ComplianceBadge from '../components/ComplianceBadge'
 import useDocumentTitle from '../hooks/useDocumentTitle'
 import { getCurrencySymbol, screenStock } from '../services/complianceEngine'
 import { displayFirstToken } from '../lib/username'
+import { apiUrl } from '../lib/apiBase'
 import './Home.css'
 
 const formatPrice = (price, currency) => {
@@ -53,7 +54,7 @@ export default function Home() {
     const subset = tickers.slice(0, QUOTE_LIMIT)
     const results = await Promise.allSettled(
       subset.map(t =>
-        fetch(`/api/quote/${encodeURIComponent(t)}`, { signal })
+        fetch(apiUrl(`/api/quote/${encodeURIComponent(t)}`), { signal })
           .then(r => (r.ok ? r.json() : null))
       )
     )

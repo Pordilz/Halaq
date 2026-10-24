@@ -8,6 +8,19 @@ dist/
 .env
 .env.local
 .env.*.local
+.env.android
+
+# Capacitor — generated / local-only
+android/local.properties
+android/keystore.properties
+android/.gradle/
+android/build/
+android/app/build/
+android/app/release/
+android/keystores/
+android/app/google-services.json
+*.keystore
+*.jks
 
 # IDE
 .vscode/

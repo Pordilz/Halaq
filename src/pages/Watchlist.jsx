@@ -5,6 +5,7 @@ import { useWatchlist } from '../hooks/useWatchlist'
 import { fetchAllScreeningData } from '../services/yahooFinanceApi'
 import { screenStock } from '../services/complianceEngine'
 import { supabase } from '../lib/supabase'
+import { apiUrl } from '../lib/apiBase'
 import MaterialIcon from '../components/MaterialIcon'
 import StockRowCard from '../components/StockRowCard'
 import useDocumentTitle from '../hooks/useDocumentTitle'
@@ -40,7 +41,7 @@ export default function Watchlist() {
         setVerifyError({ ticker, message: 'Sign in expired — please log in again.' })
         return
       }
-      const res = await fetch(`/api/verify-screen/${encodeURIComponent(ticker)}`, {
+      const res = await fetch(apiUrl(`/api/verify-screen/${encodeURIComponent(ticker)}`), {
         method: 'POST',
         headers: { authorization: `Bearer ${token}` },
       })

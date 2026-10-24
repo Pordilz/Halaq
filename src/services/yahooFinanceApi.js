@@ -5,6 +5,7 @@
  */
 
 import { supabase } from '../lib/supabase'
+import { apiUrl } from '../lib/apiBase'
 
 export async function fetchAllScreeningData(ticker, { signal } = {}) {
   const headers = {}
@@ -17,7 +18,7 @@ export async function fetchAllScreeningData(ticker, { signal } = {}) {
     // Anonymous request — fine.
   }
 
-  const res = await fetch(`/api/screen/${encodeURIComponent(ticker)}`, {
+  const res = await fetch(apiUrl(`/api/screen/${encodeURIComponent(ticker)}`), {
     headers,
     signal,
   })

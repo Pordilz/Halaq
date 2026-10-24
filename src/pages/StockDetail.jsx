@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useWatchlist } from '../hooks/useWatchlist'
 import { supabase } from '../lib/supabase'
+import { apiUrl } from '../lib/apiBase'
 import { fetchAllScreeningData } from '../services/yahooFinanceApi'
 import { screenStock, getCurrencySymbol } from '../services/complianceEngine'
 import MaterialIcon from '../components/MaterialIcon'
@@ -190,7 +191,7 @@ export default function StockDetail() {
         setVerifyError('Sign in expired — please log in again.')
         return
       }
-      const res = await fetch(`/api/verify-screen/${encodeURIComponent(stock.ticker)}`, {
+      const res = await fetch(apiUrl(`/api/verify-screen/${encodeURIComponent(stock.ticker)}`), {
         method: 'POST',
         headers: { authorization: `Bearer ${token}` },
       })
