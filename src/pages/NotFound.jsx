@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router'
 import MaterialIcon from '../components/MaterialIcon'
 
 export default function NotFound() {

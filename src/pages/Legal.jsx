@@ -1,4 +1,4 @@
-import { Link, useParams, Navigate } from 'react-router-dom'
+import { Link, useParams, Navigate } from 'react-router'
 import MaterialIcon from '../components/MaterialIcon'
 import useDocumentTitle from '../hooks/useDocumentTitle'
 import './Legal.css'

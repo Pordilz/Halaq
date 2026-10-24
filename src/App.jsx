@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react'
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router'
 import Layout from './components/Layout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import RedirectIfAuthed from './components/RedirectIfAuthed'

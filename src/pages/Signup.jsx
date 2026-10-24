@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router'
 import { useAuth } from '../contexts/AuthContext'
 import MaterialIcon from '../components/MaterialIcon'
 import Logo from '../components/Logo'

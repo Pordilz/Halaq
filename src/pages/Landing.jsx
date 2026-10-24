@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router'
 import MaterialIcon from '../components/MaterialIcon'
 import Logo from '../components/Logo'
 import { HeroPhoneMockup } from '../components/illustrations'
