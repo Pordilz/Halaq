@@ -18,7 +18,7 @@
   width: 4rem;
   height: 4rem;
   border-radius: var(--radius-full);
-  background-color: var(--color-primary-container);
+  background-color: rgb(var(--tint-primary-rgb) / 0.4);
   color: var(--color-primary);
   display: flex;
   align-items: center;

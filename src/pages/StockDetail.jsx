@@ -331,15 +331,19 @@ export default function StockDetail() {
           {stock.isFund && (
             <span className="sd-banner__hint">
               <MaterialIcon name="donut_large" size={14} />
-              {stock.ticker} is a fund, so it has no operating financials of its own.{' '}
-              <Link to={`/etf/${stock.ticker}`}>Open the ETF X-Ray</Link> to screen its holdings.
+              <span>
+                {stock.ticker} is a fund, so it has no operating financials of its own.{' '}
+                <Link to={`/etf/${stock.ticker}`} className="sd-banner__link">Open the ETF X-Ray</Link> to screen its holdings.
+              </span>
             </span>
           )}
           {stock.stale && (
             <span className="sd-banner__hint">
               <MaterialIcon name="history" size={14} />
-              Live market data is temporarily unavailable, so this verdict uses the last saved
-              data{stock.dataAsOf ? ` from ${new Date(stock.dataAsOf).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}.
+              <span>
+                Live market data is temporarily unavailable, so this verdict uses the last saved
+                data{stock.dataAsOf ? ` from ${new Date(stock.dataAsOf).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}.
+              </span>
             </span>
           )}
           {(stock.status === 'UNVERIFIED' || stock.status === 'DOUBTFUL') && (
@@ -405,7 +409,10 @@ export default function StockDetail() {
             : '—'
         } />
         <Stat label="Total debt" value={formatNumber(stock.balanceSheet.totalDebt, stock.currency)} />
-        <Stat label="Revenue (FY)" value={formatNumber(stock.income.revenue, stock.currency)} />
+        <Stat
+          label={stock.income.basis === 'TTM' ? 'Revenue (TTM)' : 'Revenue (FY)'}
+          value={formatNumber(stock.income.revenue, stock.currency)}
+        />
       </section>
 
       <div className="sd-tabs" role="tablist">

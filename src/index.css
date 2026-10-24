@@ -112,6 +112,17 @@
   --shadow-standard: 0 10px 40px rgba(15, 26, 39, 0.05);
   --shadow-floating: 0 10px 40px rgba(15, 26, 39, 0.12);
 
+  /* ---- Tints (space-separated RGB, used as rgb(var(--x) / alpha)) ---- */
+  /* Translucent washes on page surfaces. Dark mode swaps the base colour so
+     the same alpha reads as a subtle tint on a dark surface. */
+  --primary-rgb: 26 107 71;          /* faint primary washes, focus rings */
+  --tint-primary-rgb: 163 240 202;   /* mint chips, icon wells */
+  --tint-secondary-rgb: 255 231 146; /* gold chips */
+  --tint-error-rgb: 254 226 226;
+  --tint-caution-rgb: 254 243 199;
+  --glass-rgb: 255 255 255;          /* frosted panels */
+  --glass-surface-rgb: 248 249 251;  /* frosted header */
+
   /* ---- Transitions ---- */
   --transition-fast: 200ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-medium: 300ms ease-out;
@@ -138,6 +149,73 @@
   --max-w-xl: 36rem;
   --max-w-4xl: 56rem;
   --max-w-6xl: 72rem;
+}
+
+/* =====================================================================
+   Dark theme. src/lib/theme.js sets data-theme from the user's choice
+   (Settings → Appearance) or the system setting. Fixed roles
+   (--color-*-fixed*) and --color-white keep their values: they're used
+   on brand-green surfaces that stay green in both themes.
+   ===================================================================== */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --color-primary: #7dd9a8;
+  --color-primary-container: #0d5233;
+  --color-on-primary: #003920;
+  --color-on-primary-container: #a3f0ca;
+  --color-inverse-primary: #1a6b47;
+
+  --color-secondary: #e8c84a;
+  --color-secondary-container: #5c4300;
+  --color-on-secondary: #3d2e00;
+  --color-on-secondary-container: #ffe792;
+
+  --color-tertiary: #6ed9a0;
+  --color-tertiary-container: #005230;
+  --color-on-tertiary: #00391d;
+  --color-on-tertiary-container: #90f5be;
+
+  --color-error: #f87171;
+  --color-error-container: #4c1010;
+  --color-on-error: #450a0a;
+  --color-on-error-container: #fecaca;
+
+  --color-caution: #fbbf24;
+  --color-caution-container: #3d2606;
+  --color-on-caution-container: #fde68a;
+
+  /* Cards (container-lowest) sit slightly above the page in dark mode. */
+  --color-surface: #0f141a;
+  --color-surface-dim: #0f141a;
+  --color-surface-bright: #353c45;
+  --color-surface-container-lowest: #161c23;
+  --color-surface-container-low: #1b222a;
+  --color-surface-container: #20272f;
+  --color-surface-container-high: #2a323b;
+  --color-surface-container-highest: #353d47;
+  --color-surface-tint: #7dd9a8;
+  --color-surface-variant: #353d47;
+  --color-inverse-surface: #e1e6ee;
+  --color-inverse-on-surface: #1e2832;
+  --color-on-surface: #e3e8ef;
+  --color-on-surface-variant: #b4c0ce;
+  --color-outline: #8d9aa9;
+  --color-outline-variant: #3d4854;
+  --color-outline-variant-15: rgba(141, 154, 169, 0.18);
+  --color-background: #0f141a;
+  --color-on-background: #e3e8ef;
+
+  --shadow-standard: 0 10px 40px rgba(0, 0, 0, 0.35);
+  --shadow-floating: 0 10px 40px rgba(0, 0, 0, 0.5);
+
+  --primary-rgb: 125 217 168;
+  --tint-primary-rgb: 34 135 90;
+  --tint-secondary-rgb: 138 101 0;
+  --tint-error-rgb: 127 29 29;
+  --tint-caution-rgb: 120 53 15;
+  --glass-rgb: 22 28 35;
+  --glass-surface-rgb: 15 20 26;
 }
 
 /* =============================================
@@ -505,13 +583,13 @@ input.input-field:focus {
 
 /* Rule 3: Glassmorphism */
 .glass-panel {
-  background: rgba(248, 249, 251, 0.88);
+  background: rgb(var(--glass-surface-rgb) / 0.88);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
 
 .glass-panel-dark {
-  background: rgba(255, 255, 255, 0.92);
+  background: rgb(var(--glass-rgb) / 0.92);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
@@ -535,7 +613,7 @@ input.input-field:focus {
   right: -5%;
   width: 320px;
   height: 320px;
-  background-color: rgba(163, 240, 202, 0.15); /* primary-fixed/15 */
+  background-color: rgb(var(--tint-primary-rgb) / 0.15); /* primary-fixed/15 */
   border-radius: var(--radius-full);
   filter: blur(90px);
   z-index: -10;
@@ -548,7 +626,7 @@ input.input-field:focus {
   left: -8%;
   width: 260px;
   height: 260px;
-  background-color: rgba(255, 231, 146, 0.12); /* secondary-fixed/12 */
+  background-color: rgb(var(--tint-secondary-rgb) / 0.12); /* secondary-fixed/12 */
   border-radius: var(--radius-full);
   filter: blur(70px);
   z-index: -10;
@@ -584,7 +662,7 @@ input.input-field:focus {
 }
 
 .btn:focus-visible {
-  outline: 3px solid rgba(26, 107, 71, 0.35);
+  outline: 3px solid rgb(var(--primary-rgb) / 0.35);
   outline-offset: 2px;
 }
 
@@ -619,11 +697,11 @@ input.input-field:focus {
 .btn-primary {
   background: linear-gradient(135deg, #1a6b47 0%, #22875a 100%);
   color: var(--color-white);
-  box-shadow: 0 4px 12px rgba(26, 107, 71, 0.18);
+  box-shadow: 0 4px 12px rgb(var(--primary-rgb) / 0.18);
 }
 
 .btn-primary:hover:not(:disabled) {
-  box-shadow: 0 6px 18px rgba(26, 107, 71, 0.28);
+  box-shadow: 0 6px 18px rgb(var(--primary-rgb) / 0.28);
 }
 
 .btn-primary:active {
@@ -656,12 +734,12 @@ input.input-field:focus {
 
 .btn-outline:hover:not(:disabled) {
   border-color: var(--color-primary);
-  background-color: rgba(26, 107, 71, 0.04);
+  background-color: rgb(var(--primary-rgb) / 0.04);
 }
 
 .btn-danger {
   background-color: var(--color-error);
-  color: var(--color-white);
+  color: var(--color-on-error);
 }
 
 .btn-danger:active {

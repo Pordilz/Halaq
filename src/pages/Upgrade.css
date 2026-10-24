@@ -39,7 +39,7 @@
 
 .plan-card--highlight {
   border-color: var(--color-primary);
-  box-shadow: 0 16px 48px rgba(26, 107, 71, 0.18);
+  box-shadow: 0 16px 48px rgb(var(--primary-rgb) / 0.18);
 }
 
 .plan-card--focused {
@@ -52,7 +52,7 @@
 .plan-card__ribbon {
   align-self: flex-start;
   background-color: var(--color-primary);
-  color: var(--color-white);
+  color: var(--color-on-primary);
   padding: 0.3rem 0.75rem;
   border-radius: var(--radius-full);
   font-size: 0.6875rem;

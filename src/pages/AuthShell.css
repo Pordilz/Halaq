@@ -66,7 +66,7 @@
 
 .auth-shell__brand--signup {
   background:
-    radial-gradient(circle at 0% 100%, rgba(163, 240, 202, 0.22), transparent 55%),
+    radial-gradient(circle at 0% 100%, rgb(var(--tint-primary-rgb) / 0.22), transparent 55%),
     linear-gradient(155deg, #1a6b47 0%, #22875a 60%, #0d5233 100%);
 }
 
@@ -325,7 +325,7 @@
   outline: none;
   background-color: var(--color-surface-container-lowest);
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 4px rgba(26, 107, 71, 0.10);
+  box-shadow: 0 0 0 4px rgb(var(--primary-rgb) / 0.10);
 }
 
 .auth-shell__password {
@@ -388,7 +388,7 @@
 
 .auth-shell__input.is-invalid {
   border-color: var(--color-error);
-  background-color: rgba(254, 226, 226, 0.4);
+  background-color: rgb(var(--tint-error-rgb) / 0.4);
 }
 
 .auth-shell__field-error {

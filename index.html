@@ -5,7 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#1a6b47" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0f1a27" media="(prefers-color-scheme: dark)" />
-    <meta name="color-scheme" content="light" />
+    <meta name="color-scheme" content="light dark" />
+    <script>
+      // Apply the saved theme before first paint (see src/lib/theme.js).
+      try {
+        var pref = localStorage.getItem('halaq_theme')
+        var dark = pref === 'dark' || (pref !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+      } catch (e) {}
+    </script>
 
     <title>Halaq — Shariah Stock Screener for Muslim Investors</title>
     <meta
@@ -116,6 +124,9 @@
         letter-spacing: 0.01em;
       }
       @keyframes halaq-spin { to { transform: rotate(360deg); } }
+      html[data-theme='dark'], html[data-theme='dark'] body { background-color: #0f141a; }
+      html[data-theme='dark'] .halaq-boot { color: #b4c0ce; }
+      html[data-theme='dark'] .halaq-boot__spinner { border-color: #2a323b; border-top-color: #7dd9a8; }
       /* Once React mounts, the #root div fills with content and we hide the boot loader. */
       #root:not(:empty) ~ .halaq-boot { display: none; }
     </style>

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
+import { getThemePreference, setThemePreference } from '../lib/theme'
 import { openBillingPortal, verifySubscription } from '../services/halaqApi'
 import MaterialIcon from '../components/MaterialIcon'
 import {
@@ -26,6 +27,7 @@ export default function Profile() {
   const [params] = useSearchParams()
 
   const [notifications, setNotifications] = useState(profile?.alerts_enabled || false)
+  const [theme, setTheme] = useState(getThemePreference)
   const [methodology, setMethodology] = useState(profile?.methodology || 'AAOIFI')
   const [billingLoading, setBillingLoading] = useState(false)
   const [billingError, setBillingError] = useState(null)
@@ -387,12 +389,40 @@ export default function Profile() {
           </section>
 
           <section className="settings-section">
+            <h3 className="section-title">Appearance</h3>
+            <div className="settings-card">
+              <div className="settings-row">
+                <div className="settings-info">
+                  <label className="settings-label" htmlFor="settings-theme">Theme</label>
+                  <div className="settings-desc">System follows your device's light or dark setting.</div>
+                </div>
+                <select
+                  id="settings-theme"
+                  className="settings-select"
+                  value={theme}
+                  onChange={(e) => {
+                    setTheme(e.target.value)
+                    setThemePreference(e.target.value)
+                  }}
+                >
+                  <option value="system">System</option>
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                </select>
+              </div>
+            </div>
+          </section>
+
+          <section className="settings-section">
             <h3 className="section-title">Notifications</h3>
             <div className="settings-card">
               <div className="settings-row">
                 <div className="settings-info">
-                  <div className="settings-label">Compliance change alerts</div>
-                  <div className="settings-desc">Email me when a stock in my watchlist changes status.</div>
+                  <div className="settings-label">Email alerts (coming soon)</div>
+                  <div className="settings-desc">
+                    Email me when a watchlist verdict changes once email alerts launch. Changes
+                    already show on your Watchlist.
+                  </div>
                 </div>
                 <button
                   type="button"

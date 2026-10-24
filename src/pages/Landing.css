@@ -218,7 +218,7 @@
   width: 3rem;
   height: 3rem;
   border-radius: var(--radius-full);
-  background-color: rgba(163, 240, 202, 0.30);
+  background-color: rgb(var(--tint-primary-rgb) / 0.30);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -289,7 +289,7 @@
   width: 4rem;
   height: 4rem;
   border-radius: var(--radius-2xl);
-  background-color: rgba(163, 240, 202, 0.30);
+  background-color: rgb(var(--tint-primary-rgb) / 0.30);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -386,7 +386,7 @@
 /* ---------- Disclaimer ---------- */
 .landing-disclaimer {
   padding: var(--space-12) var(--space-5);
-  background-color: rgba(254, 243, 199, 0.32);
+  background-color: rgb(var(--tint-caution-rgb) / 0.32);
 }
 
 .landing-disclaimer__inner {
@@ -457,7 +457,7 @@
   padding: 0 1.75rem;
   border-radius: var(--radius-full);
   background: var(--color-white);
-  color: var(--color-primary);
+  color: var(--color-on-primary-fixed-variant);
   font-family: inherit;
   font-weight: 700;
   font-size: var(--text-body-lg);
@@ -526,7 +526,7 @@
 
 .landing-footer__copy {
   margin-top: var(--space-3) !important;
-  color: rgba(234, 241, 255, 0.45);
+  color: rgba(234, 241, 255, 0.6);
   font-size: var(--text-micro) !important;
 }
 

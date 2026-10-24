@@ -197,7 +197,7 @@
   left: var(--space-3);
   top: var(--space-3);
   background-color: var(--color-primary);
-  color: var(--color-white);
+  color: var(--color-on-primary);
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-lg);
   font-weight: var(--font-weight-heading);
@@ -224,11 +224,11 @@
   font-size: var(--text-body-sm);
   letter-spacing: -0.02em;
   transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-  box-shadow: 0 2px 8px rgba(26, 107, 71, 0.18);
+  box-shadow: 0 2px 8px rgb(var(--primary-rgb) / 0.18);
 }
 
 .avatar-chip:hover {
-  box-shadow: 0 4px 12px rgba(26, 107, 71, 0.28);
+  box-shadow: 0 4px 12px rgb(var(--primary-rgb) / 0.28);
 }
 
 .avatar-chip:active {

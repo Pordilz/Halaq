@@ -3,7 +3,11 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import { AuthProvider } from './contexts/AuthContext'
+import { applyTheme, watchSystemTheme } from './lib/theme'
 import './index.css'
+
+applyTheme()
+watchSystemTheme()
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

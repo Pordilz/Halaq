@@ -69,7 +69,7 @@
 
 .home-hero__actions .btn-primary {
   background: var(--color-white);
-  color: var(--color-primary);
+  color: var(--color-on-primary-fixed-variant);
   box-shadow: 0 6px 18px rgba(15, 26, 39, 0.18);
 }
 
@@ -120,7 +120,7 @@
   justify-content: center;
 }
 
-.home-stat--tertiary .home-stat__icon { background-color: var(--color-tertiary-fixed); color: var(--color-tertiary); }
+.home-stat--tertiary .home-stat__icon { background-color: var(--color-tertiary-fixed); color: var(--color-on-tertiary-fixed-variant); }
 .home-stat--caution .home-stat__icon { background-color: var(--color-caution-container); color: var(--color-caution); }
 .home-stat--error .home-stat__icon { background-color: var(--color-error-container); color: var(--color-error); }
 
@@ -227,7 +227,7 @@
 
 .home-tile:hover {
   border-color: var(--color-primary);
-  box-shadow: 0 8px 24px rgba(26, 107, 71, 0.10);
+  box-shadow: 0 8px 24px rgb(var(--primary-rgb) / 0.10);
 }
 
 .home-tile:active {
@@ -243,7 +243,7 @@
 }
 
 .home-tile__ticker {
-  background-color: rgba(163, 240, 202, 0.4);
+  background-color: rgb(var(--tint-primary-rgb) / 0.4);
   color: var(--color-primary);
   font-weight: var(--font-weight-display);
   font-size: var(--text-body-sm);

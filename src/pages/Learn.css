@@ -24,7 +24,7 @@
   right: -50px;
   width: 250px;
   height: 250px;
-  background: linear-gradient(135deg, rgba(163, 240, 202, 0.18) 0%, rgba(26, 107, 71, 0.04) 100%);
+  background: linear-gradient(135deg, rgb(var(--tint-primary-rgb) / 0.18) 0%, rgb(var(--primary-rgb) / 0.04) 100%);
   border-radius: var(--radius-full);
   z-index: 0;
   pointer-events: none;
@@ -69,8 +69,8 @@
 
 .category-pill.active {
   background-color: var(--color-primary);
-  color: var(--color-white);
-  box-shadow: 0 4px 12px rgba(26, 107, 71, 0.20);
+  color: var(--color-on-primary);
+  box-shadow: 0 4px 12px rgb(var(--primary-rgb) / 0.20);
 }
 
 /* Articles grid */
@@ -95,7 +95,7 @@
 
 .article-card:hover {
   border-color: var(--color-primary);
-  box-shadow: 0 8px 28px rgba(26, 107, 71, 0.10);
+  box-shadow: 0 8px 28px rgb(var(--primary-rgb) / 0.10);
 }
 
 .article-card:active {
@@ -240,7 +240,7 @@
   width: 3rem;
   height: 3rem;
   border-radius: var(--radius-xl);
-  background-color: rgba(163, 240, 202, 0.22);
+  background-color: rgb(var(--tint-primary-rgb) / 0.22);
   display: flex;
   align-items: center;
   justify-content: center;
