@@ -25,41 +25,18 @@ export default class ErrorBoundary extends React.Component {
     if (!this.state.hasError) return this.props.children
 
     return (
-      <div
-        className="container"
-        style={{
-          minHeight: '70vh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          textAlign: 'center',
-          padding: '2rem',
-        }}
-      >
-        <MaterialIcon
-          name="error_outline"
-          size={48}
-          className="text-error mb-4"
-        />
-        <h1 className="text-h2" style={{ marginBottom: '0.75rem' }}>
-          Something went wrong
-        </h1>
-        <p
-          className="text-on-surface-variant text-body-lg"
-          style={{ maxWidth: '480px', marginBottom: '2rem' }}
-        >
+      <div className="container status-screen" role="alert">
+        <MaterialIcon name="error_outline" size={48} className="text-error" />
+        <h1 className="text-h2">Something went wrong</h1>
+        <p className="status-screen__body text-on-surface-variant text-body-lg">
           We hit an unexpected error rendering this page. Try refreshing — if it
           persists, please report it so we can investigate.
         </p>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button
-            className="btn btn-primary"
-            onClick={() => window.location.reload()}
-          >
+        <div className="status-screen__actions">
+          <button type="button" className="btn btn-primary" onClick={() => window.location.reload()}>
             Refresh page
           </button>
-          <button className="btn btn-secondary" onClick={this.handleReset}>
+          <button type="button" className="btn btn-secondary" onClick={this.handleReset}>
             Try again
           </button>
         </div>

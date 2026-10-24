@@ -237,9 +237,9 @@ export default function Profile() {
 
   if (!user) {
     return (
-      <div className="container" style={{ paddingTop: '4rem', textAlign: 'center' }}>
+      <div className="container status-screen">
         <h2 className="text-h2">Sign in to view your profile</h2>
-        <button className="btn btn-primary mt-6 mx-auto" onClick={() => navigate('/login')}>Log In</button>
+        <button type="button" className="btn btn-primary" onClick={() => navigate('/login')}>Log In</button>
       </div>
     )
   }

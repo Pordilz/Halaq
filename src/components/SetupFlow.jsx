@@ -1,108 +1,94 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import MaterialIcon from './MaterialIcon'
+import './SetupFlow.css'
 
+const TICKER_PATTERN = /^[A-Z0-9.-]{1,15}$/
+
+/**
+ * Post-signup welcome: pick a first stock (added to the watchlist and
+ * opened), then a note on how Halaq screens. onComplete(ticker | null).
+ */
 export default function SetupFlow({ onComplete }) {
   const [step, setStep] = useState(1)
   const [ticker, setTicker] = useState('')
-  const [standard, setStandard] = useState('AAOIFI')
-  const [isFinishing, setIsFinishing] = useState(false)
+  const finishRef = useRef(null)
+  const valid = TICKER_PATTERN.test(ticker)
 
-  const handleNext = () => {
-    if (step === 1 && ticker.trim()) setStep(2);
-    else if (step === 2) {
-      setStep(3)
-      // 2.0s forced celebration
-      setTimeout(() => {
-        setIsFinishing(true)
-        setTimeout(() => {
-          onComplete()
-        }, 400) // fade out duration
-      }, 2000)
-    }
-  }
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onComplete(null) }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onComplete])
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') handleNext();
+  useEffect(() => {
+    if (step === 2) finishRef.current?.focus()
+  }, [step])
+
+  function next(e) {
+    e?.preventDefault()
+    if (step === 1 && valid) setStep(2)
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', backgroundColor: 'rgba(248, 249, 251, 0.6)', backdropFilter: 'blur(12px)', transition: 'opacity 400ms ease', opacity: isFinishing ? 0 : 1, padding: 0 }}>
-      {/* Media query overrides pushed directly or via matching behavior */}
-      <div className="setup-modal-container animate-entrance shadow-standard" style={{ width: '100%', maxWidth: '440px', backgroundColor: 'white', borderTopLeftRadius: '2rem', borderTopRightRadius: '2rem', padding: '2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <style dangerouslySetInnerHTML={{__html: `
-          @media (min-width: 768px) {
-            .setup-modal-container { border-radius: 2rem !important; align-self: center !important; }
-          }
-        `}} />
-        
+    <div className="setup-flow">
+      <div
+        className="setup-flow__sheet card-standard animate-entrance"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="setup-flow-title"
+      >
         {step === 1 && (
-          <div className="animate-entrance" style={{ width: '100%' }}>
-            <div style={{ width: '4rem', height: '4rem', backgroundColor: 'var(--color-surface-container)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
-              <MaterialIcon name="search" size={32} className="text-primary" />
+          <form className="setup-flow__step" onSubmit={next}>
+            <div className="setup-flow__icon">
+              <MaterialIcon name="search" size={32} />
             </div>
-            <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--color-on-surface)', marginBottom: '0.5rem' }}>Build your watchlist</h2>
-            <p style={{ fontSize: '1rem', color: 'var(--color-on-surface-variant)', marginBottom: '2rem' }}>What's the first stock you'd like to screen? (e.g., AAPL)</p>
-            
-            <input 
+            <h2 id="setup-flow-title" className="setup-flow__title">Build your watchlist</h2>
+            <p className="setup-flow__body">
+              What's the first stock you'd like to screen? We'll add it to your watchlist.
+            </p>
+            <label htmlFor="setup-flow-ticker" className="sr-only">Ticker</label>
+            <input
+              id="setup-flow-ticker"
+              className="setup-flow__input"
               type="text"
               autoFocus
-              style={{ width: '100%', height: '3.5rem', padding: '0 1.5rem', backgroundColor: '#dde6f3', borderRadius: '1rem', fontSize: '1.125rem', fontWeight: 700, textAlign: 'center', color: 'var(--color-on-surface)', outline: 'none', border: '1px solid transparent', textTransform: 'uppercase', letterSpacing: '0.05em', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)', marginBottom: '1rem', transition: 'all 0.2s' }}
-              onFocus={(e) => { e.target.style.backgroundColor = 'white'; e.target.style.borderColor = 'var(--color-primary)' }}
-              onBlur={(e) => { e.target.style.backgroundColor = '#dde6f3'; e.target.style.borderColor = 'transparent' }}
+              autoComplete="off"
+              autoCapitalize="characters"
               value={ticker}
-              onChange={(e) => setTicker(e.target.value.toUpperCase())}
-              onKeyDown={handleKeyDown}
-              placeholder="ENTER TICKER"
+              onChange={(e) => setTicker(e.target.value.toUpperCase().trim())}
+              placeholder="e.g. AAPL or NPN.JO"
             />
-            
-            <button 
-              style={{ width: '100%', height: '52px', borderRadius: '9999px', color: 'white', fontWeight: 700, fontSize: '1rem', transition: 'all 0.15s', cursor: ticker.trim() ? 'pointer' : 'not-allowed', background: 'linear-gradient(135deg, #1a6b47 0%, #22875a 100%)', border: 'none', opacity: ticker.trim() ? 1 : 0.5 }}
-              onClick={handleNext}
-              disabled={!ticker.trim()}
-            >
-              Continue →
+            <button type="submit" className="btn btn-primary setup-flow__cta" disabled={!valid}>
+              Continue
             </button>
-            <button style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-on-surface-variant)', background: 'none', border: 'none', cursor: 'pointer', width: '100%', marginTop: '1rem' }} onClick={() => setStep(2)}>Skip this step</button>
-          </div>
+            <button type="button" className="setup-flow__skip" onClick={() => { setTicker(''); setStep(2) }}>
+              Skip this step
+            </button>
+          </form>
         )}
 
         {step === 2 && (
-          <div className="animate-entrance" style={{ width: '100%' }}>
-            <div style={{ width: '4rem', height: '4rem', backgroundColor: 'var(--color-surface-container)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
-              <MaterialIcon name="menu_book" size={32} className="text-secondary" />
+          <div className="setup-flow__step">
+            <div className="setup-flow__icon setup-flow__icon--secondary">
+              <MaterialIcon name="menu_book" size={32} />
             </div>
-            <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--color-on-surface)', marginBottom: '0.5rem' }}>Your Standard</h2>
-            <p style={{ fontSize: '1rem', color: 'var(--color-on-surface-variant)', marginBottom: '1.5rem' }}>Halaq defaults to AAOIFI, the most widely cited scholarly standard.</p>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '2rem', width: '100%' }}>
-               {['AAOIFI', 'DJIM', 'S&P', 'FTSE'].map(std => (
-                 <label key={std} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', borderRadius: '1rem', border: '2px solid', cursor: 'pointer', transition: 'all 0.2s', borderColor: standard === std ? 'var(--color-primary)' : 'var(--color-surface-container)', backgroundColor: standard === std ? 'rgba(163, 240, 202, 0.2)' : 'var(--color-surface-lowest)' }}>
-                   <span style={{ fontWeight: 700, color: 'var(--color-on-surface)' }}>{std}</span>
-                   <div style={{ width: '1.5rem', height: '1.5rem', borderRadius: '50%', border: '2px solid', display: 'flex', alignItems: 'center', justifyContent: 'center', borderColor: standard === std ? 'var(--color-primary)' : 'var(--color-outline-variant)', backgroundColor: standard === std ? 'var(--color-primary)' : 'transparent' }}>
-                     {standard === std && <MaterialIcon name="check" size={16} className="text-white" />}
-                   </div>
-                   <input type="radio" style={{ display: 'none' }} name="standard" value={std} checked={standard === std} onChange={(e) => setStandard(e.target.value)} />
-                 </label>
-               ))}
-            </div>
-
-            <button 
-              style={{ width: '100%', height: '52px', borderRadius: '9999px', color: 'white', fontWeight: 700, fontSize: '1rem', transition: 'all 0.15s', cursor: 'pointer', background: 'linear-gradient(135deg, #1a6b47 0%, #22875a 100%)', border: 'none' }}
-              onClick={handleNext}
+            <h2 id="setup-flow-title" className="setup-flow__title">How Halaq screens</h2>
+            <p className="setup-flow__body">
+              Every verdict uses AAOIFI Shari'ah Standard No. 21: the business must be permissible,
+              debt and interest-bearing cash under 30% of market cap, and impermissible income
+              under 5% of revenue. Pro members can switch to the S&amp;P, Dow Jones Islamic or FTSE
+              methodologies in Settings.
+            </p>
+            <button
+              ref={finishRef}
+              type="button"
+              className="btn btn-primary setup-flow__cta"
+              onClick={() => onComplete(ticker || null)}
             >
-              Finish Setup
+              {ticker ? `Screen ${ticker}` : 'Start screening'}
             </button>
           </div>
         )}
-
-        {step === 3 && (
-          <div className="animate-entrance" style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem 0' }}>
-            <MaterialIcon name="check_circle" fill className="text-tertiary glowPulse" size={80} style={{ animation: 'scaleSpring 0.6s ease-out forwards, glowPulse 2s infinite', marginBottom: '1.5rem' }} />
-            <h2 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-on-surface)', marginBottom: '0.5rem' }}>You're all set!</h2>
-            <p style={{ fontSize: '1.125rem', color: 'var(--color-on-surface-variant)', fontWeight: 600 }}>Redirecting to screener...</p>
-          </div>
-        )}
-
       </div>
     </div>
   )

@@ -25,7 +25,7 @@ export default function Screener() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const { user } = useAuth()
-  const { isInWatchlist, toggle: toggleWatchlist } = useWatchlist(user)
+  const { isInWatchlist, toggle: toggleWatchlist, addToWatchlist } = useWatchlist(user)
 
   useDocumentTitle('Screener', 'Screen any stock for Shariah compliance against AAOIFI standards.')
 
@@ -185,7 +185,17 @@ export default function Screener() {
 
   return (
     <div className="screener-page container">
-      {showSetup && <SetupFlow onComplete={() => setShowSetup(false)} />}
+      {showSetup && (
+        <SetupFlow
+          onComplete={(ticker) => {
+            setShowSetup(false)
+            if (ticker) {
+              addToWatchlist({ ticker })
+              navigateToStock(ticker)
+            }
+          }}
+        />
+      )}
 
       <div className="screener-hero">
         <h1 className="text-h1 mb-2">Find halal stocks</h1>
@@ -224,13 +234,16 @@ export default function Screener() {
               onClick={() => setShowFilterDropdown(o => !o)}
               aria-label="Filters"
               aria-expanded={showFilterDropdown}
+              aria-controls="screener-filters"
             >
               <MaterialIcon name="tune" size={22} />
             </button>
 
+            {/* A disclosure of checkboxes, not a menu: role="menu" would tell
+                screen readers to expect menuitems and arrow-key navigation. */}
             {showFilterDropdown && (
-              <div className="filter-dropdown" role="menu">
-                <div className="filter-dropdown-header">Exchanges</div>
+              <div className="filter-dropdown" id="screener-filters" role="group" aria-labelledby="screener-filters-title">
+                <div className="filter-dropdown-header" id="screener-filters-title">Exchanges</div>
                 {FILTER_OPTIONS.map(f => (
                   <label key={f.id} className="filter-option">
                     <input
@@ -457,21 +470,17 @@ function TrendingRow({ item, inWatchlist, onToggleWatchlist, onClick }) {
     : '—'
 
   return (
-    <div
-      className="trending-row"
-      role="button"
-      tabIndex={0}
-      onClick={onClick}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          onClick?.()
-        }
-      }}
-    >
+    <div className="trending-row row-link-host">
       <div className="trending-row__ticker">{item.ticker}</div>
       <div className="trending-row__info">
-        <p className="trending-row__name">{item.name}</p>
+        <button
+          type="button"
+          className="trending-row__name row-link"
+          onClick={onClick}
+          aria-label={`${item.name} (${item.ticker})`}
+        >
+          {item.name}
+        </button>
         <span className="trending-row__exchange">{item.exchange}</span>
       </div>
       <div className="trending-row__price">{priceLabel}</div>
@@ -483,7 +492,8 @@ function TrendingRow({ item, inWatchlist, onToggleWatchlist, onClick }) {
         type="button"
         className="trending-row__bookmark"
         onClick={(e) => { e.stopPropagation(); onToggleWatchlist?.() }}
-        aria-label={inWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}
+        aria-label={inWatchlist ? `Remove ${item.ticker} from watchlist` : `Add ${item.ticker} to watchlist`}
+        aria-pressed={!!inWatchlist}
       >
         <MaterialIcon name="bookmark" fill={inWatchlist} className={inWatchlist ? 'text-secondary' : 'text-outline'} size={20} />
       </button>

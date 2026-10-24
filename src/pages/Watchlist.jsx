@@ -90,10 +90,10 @@ export default function Watchlist() {
 
   if (!user) {
     return (
-      <div className="container" style={{ paddingTop: '4rem', textAlign: 'center' }}>
-        <MaterialIcon name="lock" size={48} className="text-outline-variant mb-4" />
+      <div className="container status-screen">
+        <MaterialIcon name="lock" size={48} className="text-outline-variant" />
         <h2 className="text-h2">Sign in to save stocks</h2>
-        <button type="button" className="btn btn-primary mt-6 mx-auto" onClick={() => navigate('/login')}>
+        <button type="button" className="btn btn-primary" onClick={() => navigate('/login')}>
           Log in
         </button>
       </div>
@@ -112,7 +112,7 @@ export default function Watchlist() {
       <div className="watchlist-layout">
         <div className="watchlist-main">
           {loading ? (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '3rem 0' }}>
+            <div className="watchlist-loading" role="status" aria-label="Loading your watchlist">
               <MaterialIcon name="refresh" className="spinner text-primary" size={32} />
             </div>
           ) : total > 0 ? (

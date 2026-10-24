@@ -31,22 +31,18 @@ export default function StockRowCard({
     !screening
 
   return (
-    <div
-      className="stock-row-card"
-      role="button"
-      tabIndex={0}
-      onClick={onClick}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          onClick?.()
-        }
-      }}
-    >
+    <div className="stock-row-card row-link-host">
       <div className="stock-row-card__ticker">{ticker}</div>
 
       <div className="stock-row-card__info">
-        <p className="stock-row-card__name">{name}</p>
+        <button
+          type="button"
+          className="stock-row-card__name row-link"
+          onClick={onClick}
+          aria-label={`${name} (${ticker})`}
+        >
+          {name}
+        </button>
         <div className="stock-row-card__meta">
           {sector && <span className="stock-row-card__sector">{sector}</span>}
           {exchange && <span className="stock-row-card__exchange">{exchange}</span>}
@@ -107,7 +103,8 @@ export default function StockRowCard({
             e.stopPropagation()
             onToggleWatchlist?.()
           }}
-          aria-label={inWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}
+          aria-label={inWatchlist ? `Remove ${ticker} from watchlist` : `Add ${ticker} to watchlist`}
+          aria-pressed={!!inWatchlist}
         >
           <MaterialIcon
             name="bookmark"

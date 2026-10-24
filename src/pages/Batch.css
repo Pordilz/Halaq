@@ -122,3 +122,13 @@
   color: var(--color-outline);
   padding: var(--space-3) var(--space-4);
 }
+
+.batch-ticker {
+  font-weight: var(--font-weight-display);
+}
+
+.batch-error-icon {
+  display: inline;
+  margin-right: var(--space-1);
+  vertical-align: middle;
+}

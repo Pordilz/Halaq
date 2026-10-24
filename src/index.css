@@ -442,6 +442,54 @@ ul, ol {
 .top-24 { top: 6rem; }
 .overflow-hidden { overflow: hidden; }
 
+/* Clickable rows. The row's main action is a real <button> or <a>
+   (.row-link) whose ::after covers the whole row (.row-link-host), so the
+   row stays clickable without nesting its other controls (bookmark,
+   verify) inside a role="button" — which screen readers can't operate. */
+.row-link-host { position: relative; }
+.row-link {
+  display: block;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+.row-link::after { content: ''; position: absolute; inset: 0; }
+.row-link:focus-visible { outline: none; }
+.row-link-host:has(.row-link:focus-visible) {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+.row-link-host :is(button, a):not(.row-link) { position: relative; z-index: 1; }
+
+/* Full-page centred status: 404, error boundary, loaders, sign-in prompts. */
+.status-screen {
+  min-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-8);
+  gap: var(--space-3);
+}
+.status-screen--loader { min-height: 60vh; color: var(--color-on-surface-variant); }
+.status-screen__code {
+  font-size: 6rem;
+  font-weight: var(--font-weight-display);
+  color: var(--color-primary);
+  opacity: 0.15;
+  line-height: 1;
+}
+.status-screen__body { max-width: 30rem; margin-bottom: var(--space-5); }
+.status-screen__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-3); }
+
 /* Visually hidden but read by screen readers (labels, toggle inputs). */
 .sr-only {
   position: absolute;

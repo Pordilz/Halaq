@@ -129,9 +129,9 @@ export default function Batch() {
                     if (r.error) {
                       return (
                         <tr key={i} className="batch-row-error">
-                          <td style={{ fontWeight: 'bold' }}>{r.ticker}</td>
+                          <td className="batch-ticker">{r.ticker}</td>
                           <td colSpan="6" className="text-error">
-                            <MaterialIcon name="error" size={14} style={{ display: 'inline', marginRight: 4, verticalAlign: 'middle' }} />
+                            <MaterialIcon name="error" size={14} className="batch-error-icon" />
                             Error fetching data
                           </td>
                         </tr>
@@ -148,7 +148,7 @@ export default function Batch() {
 
                     return (
                       <tr key={i}>
-                        <td style={{ fontWeight: 'bold' }}>{r.ticker}</td>
+                        <td className="batch-ticker">{r.ticker}</td>
                         <td className="batch-company-name" title={r.companyName}>{r.companyName}</td>
                         <td><ComplianceBadge status={r.status} /></td>
                         <td>{getRatioValue('leverage')}</td>

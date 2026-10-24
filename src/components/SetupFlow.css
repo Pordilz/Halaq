@@ -1,0 +1,100 @@
+.setup-flow {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background-color: rgb(var(--glass-surface-rgb) / 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.setup-flow__sheet {
+  width: 100%;
+  max-width: 27.5rem;
+  padding: var(--space-8);
+  border-radius: var(--radius-3xl) var(--radius-3xl) 0 0;
+  background-color: var(--color-surface-container-lowest);
+  box-shadow: var(--shadow-floating);
+}
+
+.setup-flow__step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-4);
+}
+
+.setup-flow__icon {
+  width: 4rem;
+  height: 4rem;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgb(var(--tint-primary-rgb) / 0.4);
+  color: var(--color-primary);
+}
+
+.setup-flow__icon--secondary {
+  background-color: rgb(var(--tint-secondary-rgb) / 0.4);
+  color: var(--color-secondary);
+}
+
+.setup-flow__title {
+  font-size: 1.75rem;
+  font-weight: var(--font-weight-display);
+  color: var(--color-on-surface);
+}
+
+.setup-flow__body {
+  color: var(--color-on-surface-variant);
+  line-height: 1.6;
+}
+
+.setup-flow__input {
+  width: 100%;
+  height: 3.5rem;
+  padding: 0 var(--space-6);
+  border-radius: var(--radius-xl);
+  border: 1px solid transparent;
+  background-color: var(--color-surface-container-high);
+  color: var(--color-on-surface);
+  font-size: var(--text-body-lg);
+  font-weight: var(--font-weight-heading);
+  text-align: center;
+  letter-spacing: 0.05em;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.setup-flow__input:focus {
+  outline: none;
+  background-color: var(--color-surface-container-lowest);
+  border-color: var(--color-primary);
+}
+
+.setup-flow__cta {
+  width: 100%;
+}
+
+.setup-flow__skip {
+  background: none;
+  border: none;
+  padding: var(--space-2);
+  font-size: var(--text-body-sm);
+  font-weight: var(--font-weight-heading);
+  color: var(--color-on-surface-variant);
+  cursor: pointer;
+}
+
+@media (min-width: 768px) {
+  .setup-flow {
+    align-items: center;
+  }
+
+  .setup-flow__sheet {
+    border-radius: var(--radius-3xl);
+  }
+}
