@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
+import { safeRedirect } from '../lib/safeRedirect'
 import MaterialIcon from '../components/MaterialIcon'
 import Logo from '../components/Logo'
 import './AuthShell.css'
@@ -43,8 +44,7 @@ export default function Login() {
       return
     }
     const params = new URLSearchParams(location.search)
-    const redirect = params.get('redirect') || '/home'
-    navigate(redirect)
+    navigate(safeRedirect(params.get('redirect')))
   }
 
   async function resendConfirmation() {
