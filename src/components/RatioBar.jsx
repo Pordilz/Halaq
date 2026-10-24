@@ -3,9 +3,9 @@ import './RatioBar.css'
 
 /**
  * Ratio Progress Bar Card
- * @param {{ name, ratio, threshold, ratioPercent, thresholdPercent, pass, description, error }} props
+ * @param {{ name, ratio, threshold, ratioPercent, thresholdPercent, pass, description, error, estimated, methodology }} props
  */
-export default function RatioBar({ name, ratio, threshold, ratioPercent, thresholdPercent, pass, description, error }) {
+export default function RatioBar({ name, ratio, threshold, ratioPercent, thresholdPercent, pass, description, error, estimated, methodology }) {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -18,18 +18,24 @@ export default function RatioBar({ name, ratio, threshold, ratioPercent, thresho
 
   return (
     <div className="ratio-card card-standard">
-      <p className="ratio-card__label">{name}</p>
+      <p className="ratio-card__label">
+        {name}
+        {estimated && !error && <span className="ratio-card__tag">Estimated</span>}
+      </p>
       <p className="ratio-card__value">{error ? 'N/A' : ratioPercent}</p>
-      <p className="ratio-card__threshold">Max: {thresholdPercent} (AAOIFI)</p>
-      
+      <p className="ratio-card__threshold">
+        Max: {thresholdPercent}{methodology ? ` (${methodology})` : ''}
+      </p>
+
       <div className="ratio-card__track">
-        <div 
-          className={`ratio-card__fill ${pass ? 'ratio-card__fill--pass' : 'ratio-card__fill--fail'}`} 
+        <div
+          className={`ratio-card__fill ${pass ? 'ratio-card__fill--pass' : 'ratio-card__fill--fail'}`}
           style={{ width: `${barWidth}%` }}
         />
       </div>
-      
+
       {description && <p className="ratio-card__desc">{description}</p>}
+      {error && <p className="ratio-card__desc">{error} — this ratio couldn't be computed from current data.</p>}
     </div>
   )
 }

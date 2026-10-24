@@ -80,21 +80,21 @@ export async function buildVerifiedScreening(ticker, methodology) {
     : null;
 
   // Step 2: merge each Shariah-relevant field with provenance.
+  // Only interest EARNED feeds the impermissible-income screen; interest paid
+  // is covered by the leverage ratio (see api/_lib/interest.js).
   const yahooInterest =
     fast.income.interestDataSource === 'explicit'
-      ? { value: Math.abs(fast.income.interestIncome) + Math.abs(fast.income.interestExpense), source: 'yahoo:explicit' }
+      ? { value: Math.abs(fast.income.interestIncome), source: 'yahoo:explicit' }
       : null;
   const ttmInterest =
     ttmIncome && ttmIncome.interestDataSource === 'explicit'
-      ? { value: Math.abs(ttmIncome.interestIncome) + Math.abs(ttmIncome.interestExpense), source: 'yahoo:ttm' }
+      ? { value: Math.abs(ttmIncome.interestIncome), source: 'yahoo:ttm' }
       : null;
   const edgarInterest =
-    edgar?.facts.interestIncome || edgar?.facts.interestExpense
+    edgar?.facts.interestIncome
       ? {
-          value:
-            Math.abs(edgar.facts.interestIncome?.value || 0) +
-            Math.abs(edgar.facts.interestExpense?.value || 0),
-          source: edgar.facts.interestIncome?.source || edgar.facts.interestExpense?.source || 'edgar',
+          value: Math.abs(edgar.facts.interestIncome.value || 0),
+          source: edgar.facts.interestIncome.source || 'edgar',
         }
       : null;
 
@@ -111,15 +111,15 @@ export async function buildVerifiedScreening(ticker, methodology) {
   const mergedIncome = {
     ...incomeBase,
     revenue: totalRevenuePick.value || incomeBase.revenue,
-    // The engine still wants split interestIncome/Expense fields. When we
-    // picked EDGAR, propagate its split values; otherwise keep whatever
-    // the income base (TTM or fast annual) had.
+    // Prefer EDGAR's reported figures; otherwise keep the income base's
+    // (TTM or fast annual). A null interestIncome stays null — the engine
+    // reports it as a data gap rather than screening it as 0%.
     interestIncome: edgarInterest
-      ? Math.abs(edgar.facts.interestIncome?.value || 0)
-      : Math.abs(incomeBase.interestIncome || 0),
-    interestExpense: edgarInterest
-      ? Math.abs(edgar.facts.interestExpense?.value || 0)
-      : Math.abs(incomeBase.interestExpense || 0),
+      ? edgarInterest.value
+      : incomeBase.interestIncome == null ? null : Math.abs(incomeBase.interestIncome),
+    interestExpense: edgar?.facts.interestExpense
+      ? Math.abs(edgar.facts.interestExpense.value || 0)
+      : incomeBase.interestExpense,
     interestDataSource:
       edgarInterest ? 'explicit' :
       incomeBase.interestDataSource,

@@ -111,7 +111,7 @@ const DOCS = {
       },
       {
         h: 'Methodology',
-        p: 'Primary: AAOIFI Shariah Standard No. 21 (Investment Sukuk) and the AAOIFI quantitative thresholds in current use. Pro+ users can switch to Dow Jones Islamic Market Index, S&P Shariah, or FTSE Shariah methodologies.',
+        p: 'Primary: AAOIFI Shariah Standard No. 21 (Financial Papers — Shares and Bonds) and the AAOIFI quantitative thresholds in current use. Pro+ users can switch to Dow Jones Islamic Market Index, S&P Shariah, or FTSE Shariah methodologies.',
       },
       {
         h: 'Peer review',

@@ -238,7 +238,7 @@ export default function Landing() {
             <strong>Standards</strong>
             <a href="https://aaoifi.com" target="_blank" rel="noreferrer">AAOIFI</a>
             <a href="https://www.spglobal.com/spdji/en/index-family/shariah/" target="_blank" rel="noreferrer">S&amp;P Shariah</a>
-            <a href="https://www.ftserussell.com/products/indices/ftse-shariah" target="_blank" rel="noreferrer">FTSE Shariah</a>
+            <a href="https://www.lseg.com/en/ftse-russell/indices/global-shariah" target="_blank" rel="noreferrer">FTSE Shariah</a>
           </div>
         </div>
       </footer>

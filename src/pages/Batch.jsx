@@ -164,9 +164,9 @@ export default function Batch() {
                     <th>Ticker</th>
                     <th>Company</th>
                     <th>Status</th>
-                    <th>Debt / MCap</th>
-                    <th>Cash / MCap</th>
-                    <th>Recv / MCap</th>
+                    <th>Debt ratio</th>
+                    <th>Cash ratio</th>
+                    <th>Recv. ratio</th>
                     <th>Haram Inc</th>
                   </tr>
                 </thead>
@@ -184,10 +184,12 @@ export default function Batch() {
                       )
                     }
 
-                    const getRatioValue = (name) => {
-                      const ratio = r.financialScreen.ratios.find(rate => rate.name.includes(name));
-                      if (!ratio || ratio.error || ratio.ratio == null) return 'N/A';
-                      return `${(ratio.ratio * 100).toFixed(1)}%`;
+                    // '—' = the methodology has no such screen; 'N/A' = no data.
+                    const getRatioValue = (key) => {
+                      const ratio = r.financialScreen.ratios.find(rate => rate.key === key);
+                      if (!ratio) return '—';
+                      if (ratio.error || ratio.ratio == null) return 'N/A';
+                      return `${(ratio.ratio * 100).toFixed(1)}%${ratio.estimated ? '*' : ''}`;
                     }
 
                     return (
@@ -195,15 +197,18 @@ export default function Batch() {
                         <td style={{ fontWeight: 'bold' }}>{r.ticker}</td>
                         <td className="batch-company-name" title={r.companyName}>{r.companyName}</td>
                         <td><ComplianceBadge status={r.status} /></td>
-                        <td>{getRatioValue('Debt')}</td>
-                        <td>{getRatioValue('Cash')}</td>
-                        <td>{getRatioValue('Receivables')}</td>
-                        <td>{getRatioValue('Haram')}</td>
+                        <td>{getRatioValue('leverage')}</td>
+                        <td>{getRatioValue('liquidity')}</td>
+                        <td>{getRatioValue('receivables')}</td>
+                        <td>{getRatioValue('haramIncome')}</td>
                       </tr>
                     )
                   })}
                 </tbody>
               </table>
+              <p className="batch-footnote">
+                * Estimated from non-operating income. — The methodology has no such screen.
+              </p>
             </div>
           </div>
         )}

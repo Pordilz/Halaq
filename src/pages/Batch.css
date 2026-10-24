@@ -116,3 +116,9 @@
   background: rgba(185, 28, 28, 0.04);
   color: var(--color-error);
 }
+
+.batch-footnote {
+  font-size: var(--text-micro);
+  color: var(--color-outline);
+  padding: var(--space-3) var(--space-4);
+}

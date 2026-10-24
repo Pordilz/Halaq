@@ -5,15 +5,27 @@
  */
 
 import YahooFinance from 'yahoo-finance2';
+import { numOrNull, extractInterest } from './interest.js';
 
 const yahooFinance = new YahooFinance({
   suppressNotices: ['yahooSurvey'],
 });
 
+// Display fields only — missing becomes 0. Shariah-relevant fields use
+// numOrNull so "no data" can't be mistaken for "zero debt".
 function num(val) {
-  if (val === null || val === undefined) return 0;
-  const n = Number(val);
-  return Number.isFinite(n) ? n : 0;
+  return numOrNull(val) ?? 0;
+}
+
+// First positive value, else the first known one (a reported 0), else null.
+function pick(...vals) {
+  const known = vals.filter(v => v !== null);
+  return known.find(v => v > 0) ?? known[0] ?? null;
+}
+
+function sumOrNull(...vals) {
+  const known = vals.filter(v => v !== null);
+  return known.length ? known.reduce((a, b) => a + b, 0) : null;
 }
 
 const TICKER_PATTERN = /^[A-Z0-9.\-]{1,15}$/;
@@ -30,6 +42,14 @@ export async function fetchScreeningPayload(rawTicker) {
   }
 
   const ticker = rawTicker.toUpperCase();
+  return normalizeScreeningPayload(ticker, await fetchRawYahoo(ticker));
+}
+
+/**
+ * The raw Yahoo responses a screen is built from. Kept separate from
+ * normalizeScreeningPayload so tests and scripts can replay recorded data.
+ */
+export async function fetchRawYahoo(ticker) {
   const twoYearsAgo = new Date();
   twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
   const fifteenMonthsAgo = new Date();
@@ -103,6 +123,10 @@ export async function fetchScreeningPayload(rawTicker) {
       .catch(() => null),
   ]);
 
+  return { quote, timeSeries, ttmFinancials, liveQuote };
+}
+
+export function normalizeScreeningPayload(ticker, { quote, timeSeries, ttmFinancials, liveQuote }) {
   const priceData = quote.price || {};
   const summaryDetail = quote.summaryDetail || {};
   const assetProfile = quote.assetProfile || {};
@@ -138,9 +162,14 @@ export async function fetchScreeningPayload(rawTicker) {
       : num(priceData.regularMarketChangePercent),
     fiftyTwoWeekLow: num(summaryDetail.fiftyTwoWeekLow),
     fiftyTwoWeekHigh: num(summaryDetail.fiftyTwoWeekHigh),
+    // Annual dividend per share — pre-fills the purification calculator.
+    dividendRate: pick(
+      numOrNull(summaryDetail.dividendRate),
+      numOrNull(summaryDetail.trailingAnnualDividendRate)
+    ),
   };
 
-  const sortedSeries = [...timeSeries].sort(
+  const sortedSeries = [...(timeSeries || [])].sort(
     (a, b) => new Date(b.date || 0) - new Date(a.date || 0)
   );
   const latestFinancials = sortedSeries[0] || {};
@@ -163,37 +192,7 @@ export async function fetchScreeningPayload(rawTicker) {
   const incomeRow = useTtm ? latestTtm : latestFinancials;
   const incomeRowDate = useTtm ? latestTtm.date : latestDate;
 
-  // Interest data field priority (verified across AAPL, MSFT, JNJ):
-  //   Most specific:  interestIncome / interestIncomeNonOperating
-  //   Broader proxy:  otherNonOperatingIncomeExpenses (AAPL only has this)
-  const interestIncome =
-    num(incomeRow.interestIncome) ||
-    num(incomeRow.interestIncomeNonOperating) ||
-    0;
-
-  const interestExpense =
-    num(incomeRow.interestExpense) ||
-    num(incomeRow.interestExpenseNonOperating) ||
-    0;
-
-  const nonOperatingIncome =
-    num(incomeRow.otherNonOperatingIncomeExpenses) ||
-    num(incomeRow.otherIncomeExpense) ||
-    0;
-
-  const debtForEstimate =
-    num(latestFinancials.totalDebt) || num(financialData.totalDebt);
-  let estimatedInterestExpense = 0;
-  let dataSource = 'unavailable';
-
-  if (interestIncome > 0 || interestExpense > 0) {
-    dataSource = 'explicit';
-  } else if (nonOperatingIncome !== 0) {
-    dataSource = 'estimated';
-  } else if (debtForEstimate > 0) {
-    estimatedInterestExpense = debtForEstimate * 0.05;
-    dataSource = 'debt-derived';
-  }
+  const interest = extractInterest(key => numOrNull(incomeRow[key]));
 
   const totalRevenue =
     num(incomeRow.totalRevenue) || num(financialData.totalRevenue);
@@ -210,26 +209,37 @@ export async function fetchScreeningPayload(rawTicker) {
     grossProfit:
       num(incomeRow.grossProfit) || num(financialData.grossProfits),
     operatingIncome: num(incomeRow.operatingIncome),
-    interestIncome: interestIncome || Math.max(nonOperatingIncome, 0),
-    interestExpense: interestExpense || estimatedInterestExpense,
-    interestDataSource: dataSource,
+    // null when unavailable — the engine treats that as a data gap, never 0%.
+    interestIncome: interest.interestIncome,
+    interestExpense: interest.interestExpense,
+    interestDataSource: interest.dataSource,
   };
 
-  // `||` binds looser than `+`, so the previous form `(a + b) || totalCash`
-  // would silently fall through to financialData.totalCash whenever both
-  // line items were 0 — and totalCash already *includes* short-term
-  // investments, so the liquidity ratio would be inflated.
-  const cashFromLines =
-    num(latestFinancials.cashAndCashEquivalents) +
-    num(latestFinancials.otherShortTermInvestments);
-  const cash = cashFromLines > 0 ? cashFromLines : num(financialData.totalCash);
+  // Balance-sheet line items. When Yahoo has a balance sheet for the period,
+  // an omitted line means the company reported none (e.g. no debt), so it
+  // counts as 0. With no balance sheet at all, the figures are unknown and
+  // stay null — screening them as 0% used to pass stocks on no data.
+  const lf = latestFinancials;
+  const hasBalanceSheet = numOrNull(lf.totalAssets) > 0;
+  const orZeroIfReported = v => v ?? (hasBalanceSheet ? 0 : null);
 
-  const shortTermDebt = num(latestFinancials.currentDebt) || 0;
-  const longTermDebt = num(latestFinancials.longTermDebt) || 0;
-  const totalDebt =
-    num(latestFinancials.totalDebt) ||
-    shortTermDebt + longTermDebt ||
-    num(financialData.totalDebt);
+  // Prefer the line items; financialData.totalCash already includes
+  // short-term investments, so it is only a fallback.
+  const cashFromLines = sumOrNull(
+    numOrNull(lf.cashAndCashEquivalents),
+    numOrNull(lf.otherShortTermInvestments)
+  );
+  const cash = orZeroIfReported(
+    cashFromLines > 0 ? cashFromLines : pick(numOrNull(financialData.totalCash), cashFromLines)
+  );
+
+  const totalDebt = orZeroIfReported(
+    pick(
+      numOrNull(lf.totalDebt),
+      sumOrNull(numOrNull(lf.currentDebt), numOrNull(lf.longTermDebt)),
+      numOrNull(financialData.totalDebt)
+    )
+  );
 
   const balanceSheet = {
     period: latestDate
@@ -237,11 +247,11 @@ export async function fetchScreeningPayload(rawTicker) {
       : 'N/A',
     totalDebt,
     cashAndShortTermInvestments: cash,
-    cashAndCashEquivalents: num(latestFinancials.cashAndCashEquivalents),
-    netReceivables:
-      num(latestFinancials.accountsReceivable) ||
-      num(latestFinancials.netReceivables),
-    totalAssets: num(latestFinancials.totalAssets),
+    cashAndCashEquivalents: num(lf.cashAndCashEquivalents),
+    netReceivables: orZeroIfReported(
+      pick(numOrNull(lf.accountsReceivable), numOrNull(lf.netReceivables))
+    ),
+    totalAssets: numOrNull(lf.totalAssets),
     totalLiabilities:
       num(latestFinancials.totalLiabilities) ||
       num(latestFinancials.totalLiabilitiesNetMinorityInterest) ||

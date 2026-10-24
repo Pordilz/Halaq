@@ -5,7 +5,7 @@ import { useWatchlist } from '../hooks/useWatchlist'
 import { supabase } from '../lib/supabase'
 import { apiUrl } from '../lib/apiBase'
 import { fetchAllScreeningData } from '../services/yahooFinanceApi'
-import { screenStock, getCurrencySymbol } from '../services/complianceEngine'
+import { screenStock, getCurrencySymbol, calculateHoldingPurification } from '../services/complianceEngine'
 import MaterialIcon from '../components/MaterialIcon'
 import RatioBar from '../components/RatioBar'
 import ComplianceBadge from '../components/ComplianceBadge'
@@ -117,8 +117,16 @@ export default function StockDetail() {
           statusReason: compliance.statusReason,
           methodology: compliance.methodology,
           ratios: compliance.financialScreen.ratios,
+          ratioBasis: {
+            denominator: compliance.financialScreen.denominator,
+            marketCapAverageMonths: compliance.financialScreen.marketCapAverageMonths,
+          },
           business: compliance.businessScreen,
-          haramRevenuePercent: compliance.haramRevenuePercent || 0,
+          // null = couldn't be computed (no interest income data), not 0%.
+          haramRevenuePercent: compliance.haramRevenuePercent,
+          haramRevenueEstimated: compliance.haramRevenueEstimated,
+          isShariahCertified: compliance.isShariahCertified,
+          dividendRate: data.profile.dividendRate,
           dataSources: compliance.dataSources,
           income: data.income,
           balanceSheet: data.balanceSheet,
@@ -420,7 +428,7 @@ function PremiumGate({ navigate, body }) {
 }
 
 function Overview({ stock, isPro, navigate, verification, confidence, onReverify, reverifying }) {
-  const haramPct = (stock.haramRevenuePercent || 0) * 100
+  const haramPct = stock.haramRevenuePercent == null ? null : stock.haramRevenuePercent * 100
   // Friendly label for the verdict in the summary sentence. Matches what
   // the banner badge shows so the page reads consistently.
   const verdictWords = {
@@ -461,10 +469,10 @@ function Overview({ stock, isPro, navigate, verification, confidence, onReverify
           value={`${stock.ratios.filter(r => r.pass).length}/${stock.ratios.length} pass`}
         />
         <OverviewCell
-          tone={haramPct < 1 ? 'tertiary' : haramPct < 5 ? 'caution' : 'error'}
+          tone={haramPct == null ? 'neutral' : haramPct < 1 ? 'tertiary' : haramPct < 5 ? 'caution' : 'error'}
           icon="volunteer_activism"
-          label="Purification rate"
-          value={`${haramPct.toFixed(2)}%`}
+          label={stock.haramRevenueEstimated ? 'Purification rate (est.)' : 'Purification rate'}
+          value={haramPct == null ? '—' : `${haramPct.toFixed(2)}%`}
         />
         <OverviewCell
           tone="neutral"
@@ -483,7 +491,7 @@ function Overview({ stock, isPro, navigate, verification, confidence, onReverify
           <MaterialIcon name="auto_awesome" className="text-primary" />
           <div>
             <strong>See the full math</strong>
-            <span>Pro unlocks the exact debt, liquidity, receivable and haram-revenue ratios.</span>
+            <span>Pro unlocks the exact debt, cash and impermissible-income ratios.</span>
           </div>
           <button type="button" className="btn btn-primary btn--sm" onClick={() => navigate('/upgrade')}>
             Upgrade
@@ -577,12 +585,16 @@ function Ratios({ stock, isPro, navigate }) {
     <div className="sd-card">
       <h3 className="sd-card__title">Financial ratios · {stock.methodology}</h3>
       <p className="sd-card__copy">
-        We compute four ratios from the most recent annual report. Pass means the value is below
-        the methodology's published threshold.
+        We compute {stock.methodology}'s {stock.ratios.length} ratios from the latest reported
+        financials. Pass means the value is below the methodology's published threshold.
+        {stock.ratioBasis?.marketCapAverageMonths && (
+          <> {stock.methodology} measures debt and cash against a {stock.ratioBasis.marketCapAverageMonths}-month
+          average market cap; this screen uses today's market cap, and Verify uses a 24-month average.</>
+        )}
       </p>
       <div className="sd-ratios-grid">
         {stock.ratios.map(r => (
-          <RatioBar key={r.name} {...r} />
+          <RatioBar key={r.key || r.name} {...r} methodology={stock.methodology} />
         ))}
       </div>
     </div>
@@ -616,25 +628,107 @@ function Business({ stock, isPro, navigate }) {
 }
 
 function Purification({ stock, isPro, navigate }) {
+  const [shares, setShares] = useState('')
+  const [dividendPerShare, setDividendPerShare] = useState(
+    stock.dividendRate > 0 ? String(stock.dividendRate) : ''
+  )
   if (!isPro) return <PremiumGate navigate={navigate} body="Compute the exact dividend purification % owed under your methodology." />
-  const pct = (stock.haramRevenuePercent || 0) * 100
+
   const symbol = getCurrencySymbol(stock.currency || 'USD')
+  if (stock.isShariahCertified) {
+    return (
+      <div className="sd-card">
+        <h3 className="sd-card__title">Dividend purification</h3>
+        <p className="sd-card__copy">
+          {stock.name} is a Shariah-certified institution. Its financing income comes from
+          Islamic contracts rather than interest, and any purification of its dividends is set by
+          its own Shariah Supervisory Board — check its annual report or investor relations.
+        </p>
+      </div>
+    )
+  }
+  if (stock.haramRevenuePercent == null) {
+    return (
+      <div className="sd-card">
+        <h3 className="sd-card__title">Dividend purification</h3>
+        <p className="sd-card__copy">
+          The purification rate for {stock.ticker} can't be calculated: interest income isn't
+          available in the current data. Add it to your watchlist and run Verify to fetch reported
+          figures.
+        </p>
+      </div>
+    )
+  }
+
+  const pct = stock.haramRevenuePercent * 100
+  const holding = calculateHoldingPurification({
+    shares,
+    dividendPerShare,
+    haramRevenuePercent: stock.haramRevenuePercent,
+    currency: stock.currency || 'USD',
+  })
+  const money = value => `${symbol}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
   return (
     <div className="sd-card">
       <h3 className="sd-card__title">Dividend purification</h3>
       <div className="sd-pur">
-        <span className="sd-pur__label">Purification rate</span>
+        <span className="sd-pur__label">
+          Purification rate{stock.haramRevenueEstimated ? ' (estimate)' : ''}
+        </span>
         <span className="sd-pur__value">{pct.toFixed(2)}%</span>
       </div>
       <p className="sd-card__copy">
         Donate this percentage of any dividend received from {stock.ticker} to charity to purify
         the impermissible portion of revenue. Capital gains are not purified under the dominant
         AAOIFI position.
+        {stock.haramRevenueEstimated && ' This rate is estimated from non-operating income because interest income isn\'t reported separately.'}
       </p>
-      <div className="sd-pur-example">
-        <span>Worked example: a {symbol}1,000 dividend → donate</span>
-        <strong>{symbol}{(pct * 10).toFixed(2)}</strong>
+
+      <div className="sd-pur-calc">
+        <label className="sd-pur-calc__field">
+          <span>Shares held</span>
+          <input
+            type="number"
+            inputMode="decimal"
+            min="0"
+            step="any"
+            value={shares}
+            onChange={e => setShares(e.target.value)}
+            placeholder="e.g. 50"
+          />
+        </label>
+        <label className="sd-pur-calc__field">
+          <span>Annual dividend per share ({symbol.trim()})</span>
+          <input
+            type="number"
+            inputMode="decimal"
+            min="0"
+            step="any"
+            value={dividendPerShare}
+            onChange={e => setDividendPerShare(e.target.value)}
+            placeholder="e.g. 1.00"
+          />
+        </label>
       </div>
+
+      {holding.dividends > 0 ? (
+        <div className="sd-pur-example">
+          <span>{money(holding.dividends)} in dividends a year → donate</span>
+          <strong>{money(holding.amount)}</strong>
+        </div>
+      ) : (
+        <div className="sd-pur-example">
+          <span>Worked example: a {symbol}1,000 dividend → donate</span>
+          <strong>{symbol}{(pct * 10).toFixed(2)}</strong>
+        </div>
+      )}
+      {stock.dividendRate > 0 && (
+        <p className="sd-card__copy">
+          Dividend per share pre-filled from the latest annual rate ({money(stock.dividendRate)}).
+          Use the amount you actually received if it differs.
+        </p>
+      )}
     </div>
   )
 }

@@ -15,6 +15,7 @@
  */
 
 import YahooFinance from 'yahoo-finance2';
+import { numOrNull, extractInterest } from './interest.js';
 
 const yahooFinance = new YahooFinance({
   suppressNotices: ['yahooSurvey'],
@@ -176,22 +177,7 @@ export async function fetchTrailingTwelveMonthIncome(ticker) {
 }
 
 function buildIncomeFromRow(row, basis) {
-  const interestIncome =
-    num(row.interestIncome) ||
-    num(row.interestIncomeNonOperating) ||
-    0;
-  const interestExpense =
-    num(row.interestExpense) ||
-    num(row.interestExpenseNonOperating) ||
-    0;
-  const nonOperatingIncome =
-    num(row.otherNonOperatingIncomeExpenses) ||
-    num(row.otherIncomeExpense) ||
-    0;
-
-  let dataSource = 'unavailable';
-  if (interestIncome > 0 || interestExpense > 0) dataSource = 'explicit';
-  else if (nonOperatingIncome !== 0) dataSource = 'estimated';
+  const interest = extractInterest(key => numOrNull(row[key]));
 
   return {
     period: row.date ? new Date(row.date).toISOString().split('T')[0] : 'N/A',
@@ -201,36 +187,24 @@ function buildIncomeFromRow(row, basis) {
       num(row.netIncome),
     grossProfit: num(row.grossProfit),
     operatingIncome: num(row.operatingIncome),
-    interestIncome: interestIncome || Math.max(nonOperatingIncome, 0),
-    interestExpense,
-    interestDataSource: dataSource,
+    interestIncome: interest.interestIncome,
+    interestExpense: interest.interestExpense,
+    interestDataSource: interest.dataSource,
     basis,
   };
 }
 
 function buildIncomeFromQuarterlySum(quarters) {
-  // Sum the line items across quarters. interestDataSource is 'explicit'
-  // only if at least one quarter reported it explicitly — partial
-  // explicitness is still better than the debt-derived estimate.
+  // Sum the line items across quarters. A field counts as reported if at
+  // least one quarter has it; quarters without it contribute nothing.
   const sum = (key) =>
     quarters.reduce((acc, q) => acc + num(q[key]), 0);
+  const sumOrNull = (key) => {
+    const vals = quarters.map(q => numOrNull(q[key])).filter(v => v !== null);
+    return vals.length ? vals.reduce((a, b) => a + b, 0) : null;
+  };
 
-  const interestIncome =
-    sum('interestIncome') ||
-    sum('interestIncomeNonOperating') ||
-    0;
-  const interestExpense =
-    sum('interestExpense') ||
-    sum('interestExpenseNonOperating') ||
-    0;
-  const nonOperatingIncome =
-    sum('otherNonOperatingIncomeExpenses') ||
-    sum('otherIncomeExpense') ||
-    0;
-
-  let dataSource = 'unavailable';
-  if (interestIncome > 0 || interestExpense > 0) dataSource = 'explicit';
-  else if (nonOperatingIncome !== 0) dataSource = 'estimated';
+  const interest = extractInterest(sumOrNull);
 
   return {
     period: quarters[0]?.date
@@ -242,9 +216,9 @@ function buildIncomeFromQuarterlySum(quarters) {
       sum('netIncome'),
     grossProfit: sum('grossProfit'),
     operatingIncome: sum('operatingIncome'),
-    interestIncome: interestIncome || Math.max(nonOperatingIncome, 0),
-    interestExpense,
-    interestDataSource: dataSource,
+    interestIncome: interest.interestIncome,
+    interestExpense: interest.interestExpense,
+    interestDataSource: interest.dataSource,
     basis: 'QUARTERLY_SUM',
   };
 }

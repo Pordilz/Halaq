@@ -500,10 +500,12 @@ export default function Profile() {
                   <div>
                     <strong>Financial ratios (quantitative)</strong>
                     <span>
-                      Four AAOIFI ratios computed from the latest annual report:
-                      total debt ÷ market cap (&lt;33%), cash + interest-bearing securities ÷
-                      market cap (&lt;33%), receivables ÷ market cap (&lt;49%), and
-                      (interest income + interest expense) ÷ revenue (&lt;5%).
+                      AAOIFI (default) tests three ratios from the latest financials:
+                      total debt ÷ market cap (&lt;30%), cash + interest-bearing securities ÷
+                      market cap (&lt;30%), and interest income ÷ revenue (&lt;5%). S&amp;P and
+                      Dow Jones Islamic use the same limits against a 36- and 24-month
+                      average market cap; FTSE uses total assets (&lt;33.333%) and adds
+                      receivables + cash ÷ total assets (&lt;50%).
                     </span>
                   </div>
                 </li>

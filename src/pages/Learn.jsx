@@ -41,35 +41,35 @@ const ARTICLES = [
     icon: 'gavel',
     category: 'Methodology',
     readTime: '10 min',
-    title: 'AAOIFI Standard 21 — the four ratios, in plain English',
+    title: 'AAOIFI Standard 21 — the three financial tests, in plain English',
     summary:
-      'How the four AAOIFI ratios work, what they measure, and what each one tells you about a company\'s capital structure.',
+      'How the AAOIFI debt, cash and impermissible-income tests work, what each one measures, and how the major index methodologies differ.',
     sections: [
       {
         h: '1. Leverage',
-        p: 'Total interest-bearing debt divided by market cap, threshold under 33%. Measures how much of the company\'s market value is financed by riba-based borrowing. Companies with very low debt — Apple, Microsoft, Saudi Aramco — pass easily; capital-heavy banks and utilities almost always fail.',
+        p: 'Total interest-bearing debt divided by market cap, threshold under 30%. Measures how much of the company\'s market value is financed by riba-based borrowing. Companies with very low debt — Apple, Microsoft, Saudi Aramco — pass easily; capital-heavy banks and utilities almost always fail.',
       },
       {
         h: '2. Liquidity',
-        p: 'Cash plus interest-bearing securities divided by market cap, threshold under 33%. Measures how much of the company\'s market value sits in interest-earning assets. Cash-rich tech companies that park reserves in money-market funds can fail this even with zero debt.',
+        p: 'Cash plus interest-bearing securities divided by market cap, threshold under 30%. Measures how much of the company\'s market value sits in interest-earning assets. Cash-rich tech companies that park reserves in money-market funds can fail this even with zero debt.',
       },
       {
-        h: '3. Receivables',
-        p: 'Accounts receivable divided by market cap, threshold under 49% (AAOIFI; FTSE uses 50%; DJIM uses 33%). High receivables relative to market cap can indicate that a substantial share of the company\'s value is locked up in deferred-payment claims, which raises Shariah concerns about trading at a price different from face value.',
+        h: '3. Impermissible income',
+        p: 'Interest income plus any other impermissible income, divided by total revenue, threshold under 5%. Interest the company pays is not counted here — the leverage test already covers borrowing. A company under 5% can be cleansed via dividend purification (donate that percentage to charity); above 5%, the contamination is too large to purify.',
       },
       {
-        h: '4. Haram revenue',
-        p: 'Interest income plus interest expense divided by total revenue, threshold under 5%. The idea: a company with non-permissible revenue under 5% can be cleansed via dividend purification (donate that percentage to charity). Above 5%, the contamination is too large to purify.',
+        h: 'How the index methodologies differ',
+        p: 'Since September 2026 the S&P Shariah and Dow Jones Islamic Market indices use the same 30% debt and cash limits as AAOIFI, measured against a 36-month and 24-month average market cap respectively, and count all interest income in the 5% test. FTSE (Yasaar) measures against total assets instead, with 33.333% limits and an extra test: receivables plus cash under 50% of total assets. AAOIFI never had a separate receivables limit, and S&P and DJIM have dropped theirs.',
       },
       {
         h: 'Two screens, not one',
-        p: 'A company can pass all four financial ratios and still fail because its primary business is non-permissible (a brewery, a casino, a conventional bank). The qualitative business-activity screen is applied first; financial ratios only matter if the business itself is permissible.',
+        p: 'A company can pass every financial ratio and still fail because its primary business is non-permissible (a brewery, a casino, a conventional bank). The qualitative business-activity screen is applied first; financial ratios only matter if the business itself is permissible.',
       },
     ],
     sources: [
       { name: 'AAOIFI Standards (purchase / preview)', url: 'https://aaoifi.com/shariaa-standards/?lang=en' },
       { name: 'S&P Dow Jones Shariah index methodology', url: 'https://www.spglobal.com/spdji/en/index-family/shariah/' },
-      { name: 'FTSE Shariah methodology', url: 'https://www.ftserussell.com/products/indices/ftse-shariah' },
+      { name: 'FTSE Shariah methodology', url: 'https://www.lseg.com/en/ftse-russell/indices/global-shariah' },
     ],
   },
   {
@@ -87,7 +87,7 @@ const ARTICLES = [
       },
       {
         h: 'How Halaq computes the rate',
-        p: 'We compute (interest income + interest expense) ÷ total revenue from the latest reported annual statement. That percentage is the purification rate for any dividend received during that period. Example: a company with a 1.8% rate and a $250 dividend → donate $4.50.',
+        p: 'We compute interest income ÷ total revenue from the trailing-twelve-month income statement (the latest annual statement when TTM isn\'t available). Only income the company earned from interest counts — interest it pays isn\'t purified by shareholders. That percentage is the purification rate for any dividend received during that period. Example: a company with a 1.8% rate and a $250 dividend → donate $4.50. The Purification tab on each stock does this for your share count.',
       },
       {
         h: 'Capital gains vs dividends',
@@ -99,7 +99,7 @@ const ARTICLES = [
       },
     ],
     sources: [
-      { name: 'AAOIFI Shariah Standard No. 21 — Investment Sukuk', url: 'https://aaoifi.com/shariaa-standards/?lang=en' },
+      { name: 'AAOIFI Shariah Standard No. 21 — Financial Papers (Shares and Bonds)', url: 'https://aaoifi.com/shariaa-standards/?lang=en' },
       { name: 'Mufti Taqi Usmani — An Introduction to Islamic Finance', url: 'https://muftitaqiusmani.com' },
       { name: 'IIFA — International Islamic Fiqh Academy resolutions', url: 'https://iifa-aifi.org/en/' },
     ],
@@ -139,19 +139,19 @@ const ARTICLES = [
     readTime: '5 min',
     title: 'Why debt thresholds exist',
     summary:
-      'Reading a balance sheet the halal way: what counts as interest-bearing debt and why the 33% line was drawn there.',
+      'Reading a balance sheet the halal way: what counts as interest-bearing debt, where the one-third benchmark comes from, and why AAOIFI draws the line at 30%.',
     sections: [
       {
         h: 'What "debt" means here',
         p: 'On a balance sheet, debt for Shariah purposes is interest-bearing financial debt: bonds, term loans, revolving credit, finance leases. It does not include trade payables, deferred revenue or pension liabilities — those are operational and free of riba. Halaq uses the company\'s reported "total debt" line which already filters operational liabilities out.',
       },
       {
-        h: 'Why 33%?',
-        p: 'The threshold is rooted in the prophetic guidance "the third is much" (الثلث كثير), which scholars have used as a benchmark for what is "substantial". Anything more than one-third is considered too significant to overlook; less is tolerable in the secondary-market shareholding context. The same one-third logic underpins liquidity and (with some variation) receivables.',
+        h: 'Why a third — and why 30%?',
+        p: 'The benchmark is rooted in the prophetic guidance "the third is much" (الثلث كثير), which scholars have used as a measure of what is "substantial": more than one-third is too significant to overlook, less is tolerable in the secondary-market shareholding context. FTSE still applies one-third (of total assets). AAOIFI Standard 21 sets a stricter 30% of market cap for both debt and interest-bearing cash, and since September 2026 the S&P and Dow Jones Islamic indices use 30% as well.',
       },
     ],
     sources: [
-      { name: 'AAOIFI Shariah Standard No. 21 — Investment Sukuk', url: 'https://aaoifi.com/shariaa-standards/?lang=en' },
+      { name: 'AAOIFI Shariah Standard No. 21 — Financial Papers (Shares and Bonds)', url: 'https://aaoifi.com/shariaa-standards/?lang=en' },
       { name: 'Mufti Taqi Usmani — An Introduction to Islamic Finance', url: 'https://muftitaqiusmani.com' },
       { name: 'IFSB — Islamic Financial Services Board', url: 'https://www.ifsb.org/published.php' },
     ],
@@ -171,7 +171,7 @@ const ARTICLES = [
       },
       {
         h: 'How Halaq estimates this',
-        p: 'Public companies rarely break out non-permissible revenue cleanly. Halaq uses interest income + interest expense as a proxy when explicit lines are missing. We surface our confidence (explicit / estimated / debt-derived) so you can adjust trust in the verdict accordingly.',
+        p: 'Public companies rarely break out non-permissible revenue cleanly, so the measurable part of the 5% test is interest income. When a company doesn\'t report it separately we use its other non-operating income as an estimate, and when neither is available the test is marked unavailable rather than passed. Every ratio shows whether it was reported or estimated, and an estimate alone never marks a stock non-compliant — it shows as Unverified until you run Verify. Mixed businesses (hotels, media, retail) are flagged for review, because their impermissible sales lines aren\'t in the data.',
       },
       {
         h: 'Common confusions',
@@ -179,9 +179,9 @@ const ARTICLES = [
       },
     ],
     sources: [
-      { name: 'AAOIFI Shariah Standard No. 21 — Investment Sukuk', url: 'https://aaoifi.com/shariaa-standards/?lang=en' },
+      { name: 'AAOIFI Shariah Standard No. 21 — Financial Papers (Shares and Bonds)', url: 'https://aaoifi.com/shariaa-standards/?lang=en' },
       { name: 'S&P Dow Jones Islamic Market Index — methodology', url: 'https://www.spglobal.com/spdji/en/index-family/shariah/' },
-      { name: 'FTSE Shariah Global Equity Index — methodology', url: 'https://www.ftserussell.com/products/indices/ftse-shariah' },
+      { name: 'FTSE Shariah Global Equity Index — methodology', url: 'https://www.lseg.com/en/ftse-russell/indices/global-shariah' },
     ],
   },
 ]

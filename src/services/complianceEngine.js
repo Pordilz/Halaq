@@ -5,11 +5,12 @@
  * financial-ratio screen on top of normalised profile + balance-sheet + income
  * data, plus a purification calculator. Pure functions, easy to unit-test.
  *
- * Methodologies supported (thresholds vary slightly between scholars):
- *   - AAOIFI (default)
- *   - DJIM   (Dow Jones Islamic Market)
- *   - SP     (S&P Global Shariah)
- *   - FTSE   (FTSE Shariah)
+ * Methodologies supported — sources and the date each was last checked are
+ * in SHARIAH.md; thresholds are pinned by test/complianceEngine.test.js:
+ *   - AAOIFI (default) — Shari'ah Standard No. 21
+ *   - DJIM   — Dow Jones Islamic Market Indices methodology (Sept 2026)
+ *   - SP     — S&P Shariah Indices methodology (Oct 2026)
+ *   - FTSE   — FTSE Yasaar Global Equity Shariah Index Series
  *
  * Disclaimer: this is screening guidance, not a fatwa. Consult a qualified
  * scholar for personal rulings.
@@ -21,58 +22,74 @@
 
 export const METHODOLOGY_KEYS = ['AAOIFI', 'DJIM', 'SP', 'FTSE']
 
+/**
+ * Screening presets.
+ *
+ * `denominator` applies to the leverage, liquidity and receivables ratios.
+ * `marketCapAverageMonths` is the averaging window the index specifies; the
+ * fast screen uses current market cap and the Verify path a 24-month
+ * average, so the UI states which one a verdict used. A null receivables
+ * threshold means the standard has no receivables screen (S&P and DJIM
+ * dropped theirs; AAOIFI SS21 never had one). `revenueIncludesInterest`
+ * divides by total business revenue — operating revenue plus all interest
+ * income — as S&P and DJIM specify.
+ */
 const METHODOLOGIES = {
   AAOIFI: {
     label: 'AAOIFI',
-    description: 'Accounting & Auditing Organization for Islamic Financial Institutions',
+    description: "AAOIFI Shari'ah Standard No. 21 (Financial Papers)",
     thresholds: {
-      leverage: 0.33,        // total debt / market cap
-      liquidity: 0.33,       // (cash + interest-bearing securities) / market cap
-      receivables: 0.49,     // accounts receivable / market cap
-      haramRevenue: 0.05,    // non-permissible revenue / total revenue
+      leverage: 0.30,        // interest-bearing debt / market cap
+      liquidity: 0.30,       // (cash + interest-bearing securities) / market cap
+      receivables: null,
+      haramRevenue: 0.05,    // impermissible income / total revenue
     },
-    leverageDenominator: 'marketCap',
-    liquidityDenominator: 'marketCap',
-    receivablesDenominator: 'marketCap',
+    denominator: 'marketCap',
+    marketCapAverageMonths: null,
+    receivablesIncludeCash: false,
+    revenueIncludesInterest: false,
   },
   DJIM: {
     label: 'Dow Jones Islamic Market',
-    description: 'Dow Jones Islamic Market Index methodology',
+    description: 'Dow Jones Islamic Market Indices methodology (September 2026)',
     thresholds: {
-      leverage: 0.33,
-      liquidity: 0.33,
-      receivables: 0.33,
+      leverage: 0.30,
+      liquidity: 0.30,
+      receivables: null,
       haramRevenue: 0.05,
     },
-    leverageDenominator: 'marketCap',
-    liquidityDenominator: 'marketCap',
-    receivablesDenominator: 'marketCap',
+    denominator: 'marketCap',
+    marketCapAverageMonths: 24,
+    receivablesIncludeCash: false,
+    revenueIncludesInterest: true,
   },
   SP: {
     label: 'S&P Shariah',
-    description: 'S&P Dow Jones Islamic Market indices',
+    description: 'S&P Shariah Indices methodology (October 2026)',
     thresholds: {
-      leverage: 0.33,
-      liquidity: 0.33,
-      receivables: 0.49,
+      leverage: 0.30,
+      liquidity: 0.30,
+      receivables: null,
       haramRevenue: 0.05,
     },
-    leverageDenominator: 'marketCap',
-    liquidityDenominator: 'marketCap',
-    receivablesDenominator: 'marketCap',
+    denominator: 'marketCap',
+    marketCapAverageMonths: 36,
+    receivablesIncludeCash: false,
+    revenueIncludesInterest: true,
   },
   FTSE: {
     label: 'FTSE Shariah',
-    description: 'FTSE Shariah Global Equity Index',
+    description: 'FTSE Yasaar Global Equity Shariah Index Series',
     thresholds: {
-      leverage: 0.3333,      // 33.33% of total assets (not market cap)
-      liquidity: 0.3333,     // 33.33% of total assets
-      receivables: 0.50,     // 50% of total assets
+      leverage: 0.33333,     // 33.333% of total assets (not market cap)
+      liquidity: 0.33333,
+      receivables: 0.50,     // (receivables + cash) / total assets
       haramRevenue: 0.05,
     },
-    leverageDenominator: 'totalAssets',
-    liquidityDenominator: 'totalAssets',
-    receivablesDenominator: 'totalAssets',
+    denominator: 'totalAssets',
+    marketCapAverageMonths: null,
+    receivablesIncludeCash: true,
+    revenueIncludesInterest: false,
   },
 }
 
@@ -270,35 +287,41 @@ export function screenBusinessActivity(profile) {
 // 2. FINANCIAL RATIO SCREEN
 // ============================================================
 
-function calculateRatio(name, numerator, denominator, threshold, description) {
-  if (!denominator || denominator <= 0) {
-    return {
-      name,
-      pass: false,
-      ratio: null,
-      threshold,
-      thresholdPercent: (threshold * 100).toFixed(2) + '%',
-      ratioPercent: 'N/A',
-      numerator,
-      denominator,
-      description,
-      error: 'Denominator unavailable',
-    }
-  }
+const RATIO_NAMES = {
+  leverage: 'Leverage Ratio',
+  liquidity: 'Liquidity Ratio',
+  receivables: 'Receivables Ratio',
+  haramIncome: 'Haram Income Ratio',
+}
 
-  const ratio = numerator / denominator
-  return {
-    name,
-    pass: ratio < threshold,
-    ratio,
+const formatPercent = value => (value * 100).toFixed(2) + '%'
+
+/**
+ * One ratio test. A missing denominator or numerator is a data gap
+ * (`error` set) — never a 0% pass. `estimated` marks a ratio computed from a
+ * proxy figure; the verdict won't hard-fail a stock on an estimate alone.
+ */
+function calculateRatio(key, numerator, denominator, threshold, description, { estimated = false } = {}) {
+  const base = {
+    key,
+    name: RATIO_NAMES[key],
     threshold,
-    thresholdPercent: (threshold * 100).toFixed(2) + '%',
-    ratioPercent: (ratio * 100).toFixed(2) + '%',
+    thresholdPercent: formatPercent(threshold),
     numerator,
     denominator,
     description,
-    error: null,
+    estimated,
   }
+
+  if (!denominator || denominator <= 0) {
+    return { ...base, pass: false, ratio: null, ratioPercent: 'N/A', error: 'Denominator unavailable' }
+  }
+  if (numerator == null || !Number.isFinite(numerator)) {
+    return { ...base, pass: false, ratio: null, ratioPercent: 'N/A', error: 'Data unavailable' }
+  }
+
+  const ratio = numerator / denominator
+  return { ...base, pass: ratio < threshold, ratio, ratioPercent: formatPercent(ratio), error: null }
 }
 
 export function screenFinancialRatios({
@@ -307,57 +330,75 @@ export function screenFinancialRatios({
   totalAssets,
   cashAndInterestBearing,
   receivables,
-  haramRevenue = 0,
+  haramRevenue = null,
+  haramRevenueEstimated = false,
   totalRevenue,
-  haramDescription = 'Non-permissible Revenue ÷ Total Revenue must be < 5%',
+  haramDescription,
   methodology = 'AAOIFI',
 }) {
   const cfg = getMethodology(methodology)
-
-  const denominators = {
-    marketCap,
-    totalAssets,
-  }
-
-  const leverageDenom = denominators[cfg.leverageDenominator] ?? marketCap
-  const liquidityDenom = denominators[cfg.liquidityDenominator] ?? marketCap
-  const receivablesDenom = denominators[cfg.receivablesDenominator] ?? marketCap
-
-  const denomLabel = (key) =>
-    key === 'totalAssets' ? 'Total Assets' : 'Market Cap'
+  const t = cfg.thresholds
+  const byAssets = cfg.denominator === 'totalAssets'
+  const denominator = byAssets ? totalAssets : marketCap
+  const denomLabel = byAssets ? 'Total Assets' : 'Market Cap'
 
   const ratios = [
     calculateRatio(
-      'Leverage Ratio',
+      'leverage',
       totalDebt,
-      leverageDenom,
-      cfg.thresholds.leverage,
-      `Total Debt ÷ ${denomLabel(cfg.leverageDenominator)} must be < ${(cfg.thresholds.leverage * 100).toFixed(2)}%`
+      denominator,
+      t.leverage,
+      `Total Debt ÷ ${denomLabel} must be < ${formatPercent(t.leverage)}`
     ),
     calculateRatio(
-      'Liquidity Ratio',
+      'liquidity',
       cashAndInterestBearing,
-      liquidityDenom,
-      cfg.thresholds.liquidity,
-      `(Cash + Interest-bearing Securities) ÷ ${denomLabel(cfg.liquidityDenominator)} must be < ${(cfg.thresholds.liquidity * 100).toFixed(2)}%`
-    ),
-    calculateRatio(
-      'Receivables Ratio',
-      receivables,
-      receivablesDenom,
-      cfg.thresholds.receivables,
-      `Accounts Receivable ÷ ${denomLabel(cfg.receivablesDenominator)} must be < ${(cfg.thresholds.receivables * 100).toFixed(2)}%`
-    ),
-    calculateRatio(
-      'Haram Income Ratio',
-      haramRevenue,
-      totalRevenue,
-      cfg.thresholds.haramRevenue,
-      haramDescription
+      denominator,
+      t.liquidity,
+      `(Cash + Interest-bearing Securities) ÷ ${denomLabel} must be < ${formatPercent(t.liquidity)}`
     ),
   ]
 
-  return { ratios, allPass: ratios.every(r => r.pass), methodology: cfg.label }
+  if (t.receivables != null) {
+    const includeCash = cfg.receivablesIncludeCash
+    const numerator = !includeCash
+      ? receivables
+      : receivables == null || cashAndInterestBearing == null
+        ? null
+        : receivables + cashAndInterestBearing
+    ratios.push(
+      calculateRatio(
+        'receivables',
+        numerator,
+        denominator,
+        t.receivables,
+        `${includeCash ? '(Accounts Receivable + Cash)' : 'Accounts Receivable'} ÷ ${denomLabel} must be < ${formatPercent(t.receivables)}`
+      )
+    )
+  }
+
+  const revenueDenominator =
+    cfg.revenueIncludesInterest && totalRevenue > 0 && haramRevenue > 0
+      ? totalRevenue + haramRevenue
+      : totalRevenue
+  ratios.push(
+    calculateRatio(
+      'haramIncome',
+      haramRevenue,
+      revenueDenominator,
+      t.haramRevenue,
+      haramDescription || `Impermissible Income ÷ Total Revenue must be < ${formatPercent(t.haramRevenue)}`,
+      { estimated: haramRevenueEstimated }
+    )
+  )
+
+  return {
+    ratios,
+    allPass: ratios.every(r => r.pass),
+    methodology: cfg.label,
+    denominator: cfg.denominator,
+    marketCapAverageMonths: cfg.marketCapAverageMonths,
+  }
 }
 
 // ============================================================
@@ -379,14 +420,35 @@ export function calculatePurification(haramRevenuePercent, dividendReceived, cur
   const amount = (haramRevenuePercent || 0) * (dividendReceived || 0)
   const symbol = getCurrencySymbol(currency)
 
+  let description
+  if (haramRevenuePercent == null) {
+    description = "Purification can't be calculated — interest income data is unavailable"
+  } else if (amount > 0) {
+    description = `Donate ${symbol}${amount.toFixed(2)} to charity from this dividend`
+  } else if (haramRevenuePercent > 0) {
+    description = 'Enter the dividend received to calculate purification'
+  } else {
+    description = 'No purification required — no impermissible income detected'
+  }
+
   return {
     amount: Math.round(amount * 100) / 100,
     percent: haramRevenuePercent,
     percentDisplay: ((haramRevenuePercent || 0) * 100).toFixed(2) + '%',
-    description:
-      amount > 0
-        ? `Donate ${symbol}${amount.toFixed(2)} to charity from this dividend`
-        : 'No purification required — no haram income detected',
+    description,
+  }
+}
+
+/**
+ * Purification owed on a holding: shares × annual dividend per share ×
+ * impermissible-income share. Same as the S&P / DJIM dividend purification
+ * ratio (dividends × non-permissible income ÷ total income).
+ */
+export function calculateHoldingPurification({ shares, dividendPerShare, haramRevenuePercent, currency = 'USD' }) {
+  const dividends = Math.max(0, Number(shares) || 0) * Math.max(0, Number(dividendPerShare) || 0)
+  return {
+    dividends: Math.round(dividends * 100) / 100,
+    ...calculatePurification(haramRevenuePercent, dividends, currency),
   }
 }
 
@@ -399,13 +461,22 @@ export function screenStock(profile, balanceSheet, income, options = {}) {
     ? options.methodology
     : 'AAOIFI'
 
+  const cfg = getMethodology(methodology)
   const businessScreen = screenBusinessActivity(profile)
 
-  // Both interest INCOME (riba earned) and interest EXPENSE (riba paid)
-  // are considered non-permissible under AAOIFI standards.
-  const interestIncome = Math.abs(income.interestIncome || 0)
-  const interestExpense = Math.abs(income.interestExpense || 0)
-  const estimatedHaramRevenue = interestIncome + interestExpense
+  // Impermissible income = interest EARNED (AAOIFI SS21; S&P and DJIM count
+  // "all forms of interest income"). Interest paid is what the leverage
+  // ratio measures; adding it here over-failed stocks and overstated
+  // purification. Yahoo can't break out other impermissible revenue lines,
+  // which is why mixed businesses are routed to REVIEW_REQUIRED.
+  // Older payloads may carry 'debt-derived' — treated as unavailable.
+  const dataSource = ['explicit', 'estimated'].includes(income.interestDataSource)
+    ? income.interestDataSource
+    : 'unavailable'
+  const haramRevenue =
+    dataSource === 'unavailable' || income.interestIncome == null
+      ? null
+      : Math.abs(income.interestIncome)
 
   // Shariah-certified institution override. We still run the screens below
   // for reference (so the ratio breakdown is visible to the user) but the
@@ -413,15 +484,13 @@ export function screenStock(profile, balanceSheet, income, options = {}) {
   // SHARIAH_CERTIFIED_INSTITUTIONS for the rationale.
   const isShariahCertified = isShariahCertifiedInstitution(profile.ticker)
 
-  const dataSource = income.interestDataSource || 'unknown'
-  let haramDescription = 'Non-permissible Revenue ÷ Total Revenue must be < 5%'
-  if (dataSource === 'explicit') {
-    haramDescription = 'Interest Income + Interest Expense ÷ Total Revenue must be < 5% (from reported financial data)'
-  } else if (dataSource === 'estimated') {
-    haramDescription = 'Non-operating Income ÷ Total Revenue must be < 5% (estimated — explicit interest data unavailable)'
-  } else if (dataSource === 'debt-derived') {
-    haramDescription = 'Estimated Interest (Total Debt × 5%) ÷ Total Revenue must be < 5% (derived from debt — no interest data available)'
-  }
+  const revenueLabel = cfg.revenueIncludesInterest ? '(Total Revenue + Interest Income)' : 'Total Revenue'
+  const haramLimit = formatPercent(cfg.thresholds.haramRevenue)
+  const haramDescription = {
+    explicit: `Interest Income ÷ ${revenueLabel} must be < ${haramLimit} (reported)`,
+    estimated: `Non-operating Income ÷ ${revenueLabel} must be < ${haramLimit} (estimate — interest income isn't reported separately)`,
+    unavailable: `Interest Income ÷ ${revenueLabel} must be < ${haramLimit} (interest income not available)`,
+  }[dataSource]
 
   const financialScreen = screenFinancialRatios({
     totalDebt: balanceSheet.totalDebt,
@@ -429,7 +498,8 @@ export function screenStock(profile, balanceSheet, income, options = {}) {
     totalAssets: balanceSheet.totalAssets,
     cashAndInterestBearing: balanceSheet.cashAndShortTermInvestments,
     receivables: balanceSheet.netReceivables,
-    haramRevenue: estimatedHaramRevenue,
+    haramRevenue,
+    haramRevenueEstimated: dataSource === 'estimated',
     totalRevenue: income.revenue,
     haramDescription,
     methodology,
@@ -462,18 +532,32 @@ export function screenStock(profile, balanceSheet, income, options = {}) {
     statusReason = businessScreen.reason
   } else if (!financialScreen.allPass) {
     const failedRatios = financialScreen.ratios.filter(r => !r.pass)
-    const realFailures = failedRatios.filter(r => !r.error)
+    const realFailures = failedRatios.filter(r => !r.error && !r.estimated)
+    const estimatedFailures = failedRatios.filter(r => !r.error && r.estimated)
     const dataGaps = failedRatios.filter(r => r.error)
 
     if (realFailures.length > 0) {
       status = 'NON_COMPLIANT'
       statusReason = `Failed ${realFailures.length} financial ratio(s): ${realFailures.map(r => r.name).join(', ')}`
+    } else if (estimatedFailures.length > 0) {
+      // Only a proxy figure fails (non-operating income standing in for
+      // interest income) — not enough for a hard NON_COMPLIANT.
+      const r = estimatedFailures[0]
+      status = 'UNVERIFIED'
+      confidence = 'LOW'
+      statusReason = `The ${r.name} is estimated at ${r.ratioPercent} from non-operating income, above the ${r.thresholdPercent} limit — tap Verify to check reported interest income.`
     } else if (dataGaps.length >= 2) {
       // Two or more ratios have missing data — too unreliable to call.
       // Verify flow (Phase 3) can resolve via SEC EDGAR for US tickers.
       status = 'UNVERIFIED'
       confidence = 'LOW'
       statusReason = `Cannot verify ${dataGaps.length} of ${financialScreen.ratios.length} ratios due to missing financial data — tap Verify to re-fetch.`
+    } else if (businessScreen.status === 'CAUTION') {
+      // Mixed business with one data gap: the revenue mix still needs a
+      // human, so don't let the lenient single-gap rule below skip review.
+      status = 'REVIEW_REQUIRED'
+      confidence = 'LOW'
+      statusReason = `Business activity is mixed and the ${dataGaps[0].name} couldn't be computed from current data — the revenue mix requires human review.`
     } else {
       // Single data gap, rest pass. Preserve the lenient COMPLIANT verdict
       // introduced by commit 12a7528 (prevents false Needs-Review noise),
@@ -485,8 +569,8 @@ export function screenStock(profile, balanceSheet, income, options = {}) {
     }
   } else if (businessScreen.status === 'CAUTION') {
     // Mixed business activity (hotels, media, etc.) — passes the quantitative
-    // screens but requires human judgement of revenue mix. This is the
-    // *only* path to REVIEW_REQUIRED, so users see a small number of items
+    // screens but requires human judgement of revenue mix. These are the
+    // only paths to REVIEW_REQUIRED, so users see a small number of items
     // that genuinely need their attention rather than a noisy bucket.
     status = 'REVIEW_REQUIRED'
     statusReason = 'Business activity is mixed — passes financial screens but the revenue mix requires human review.'
@@ -503,8 +587,12 @@ export function screenStock(profile, balanceSheet, income, options = {}) {
       'Conventional AAOIFI leverage/liquidity ratios are shown below for transparency, but apply imperfectly to Islamic-finance balance sheets (deposits are Mudarabah/Wakala contracts, not interest-bearing debt).'
   }
 
-  const haramIncomeRatio = financialScreen.ratios.find(r => r.name === 'Haram Income Ratio')
-  const haramPercent = haramIncomeRatio?.ratio || 0
+  // null when the haram-income ratio couldn't be computed — purification is
+  // then unknown, not zero. Also null for Shariah-certified institutions:
+  // Yahoo labels their financing profit "interest income", but it isn't
+  // riba, and any purification is set by their own Shariah board.
+  const haramIncomeRatio = financialScreen.ratios.find(r => r.key === 'haramIncome')
+  const haramPercent = isShariahCertified ? null : haramIncomeRatio?.ratio ?? null
 
   return {
     ticker: profile.ticker,
@@ -527,14 +615,16 @@ export function screenStock(profile, balanceSheet, income, options = {}) {
     financialScreen,
 
     haramRevenuePercent: haramPercent,
+    haramRevenueEstimated: dataSource === 'estimated',
     purificationNote:
       haramPercent > 0
-        ? `${(haramPercent * 100).toFixed(2)}% of dividends should be donated to charity`
+        ? `${(haramPercent * 100).toFixed(2)}% of dividends should be donated to charity${dataSource === 'estimated' ? ' (estimate)' : ''}`
         : null,
 
     dataSources: {
       balanceSheetPeriod: balanceSheet.period,
       incomeStatementPeriod: income.period,
+      incomeBasis: income.basis || null,
       interestDataSource: dataSource,
     },
 

@@ -23,7 +23,7 @@ const SLIDES = [
     title: 'Know before you invest',
     titleHighlight: 'invest',
     body:
-      'Every stock comes with a full ruling: business activity, leverage, liquidity, receivables, and haram revenue. Plain English, no jargon.',
+      'Every stock comes with a full ruling: business activity, debt, cash and impermissible income. Plain English, no jargon.',
     Illustration: RulingIllustration,
   },
   {

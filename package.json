@@ -12,6 +12,7 @@
     "dev:api": "node --env-file=.env server/index.js",
     "build": "vite build",
     "preview": "vite preview",
+    "test": "node --test \"test/**/*.test.js\"",
     "android:build": "vite build --mode android && cap sync android",
     "android:open": "cap open android",
     "android:run": "npm run android:build && cap run android",

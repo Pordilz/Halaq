@@ -53,3 +53,12 @@
   color: var(--color-on-surface-variant);
   margin-top: var(--space-3);
 }
+
+.ratio-card__tag {
+  margin-left: var(--space-2);
+  padding: 0.125rem var(--space-2);
+  border-radius: var(--radius-full);
+  background-color: var(--color-caution-container);
+  color: var(--color-caution);
+  letter-spacing: 0.04em;
+}
