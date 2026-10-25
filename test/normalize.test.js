@@ -15,7 +15,7 @@ const screen = (ticker, raw = load(ticker), methodology = 'AAOIFI') => {
 }
 
 describe('normalizeScreeningPayload on recorded Yahoo data', () => {
-  for (const ticker of ['AAPL', 'MSFT', 'JPM', 'SBK.JO', 'SPUS']) {
+  for (const ticker of ['AAPL', 'MSFT', 'JPM', 'SBK.JO', 'SPUS', 'SHEL.L', 'ULVR.L', 'TSM', 'NESN.SW']) {
     test(`${ticker}: no NaN, and missing values are null rather than fabricated`, () => {
       const { d } = screen(ticker)
       for (const [section, obj] of Object.entries(d)) {
@@ -34,6 +34,11 @@ describe('normalizeScreeningPayload on recorded Yahoo data', () => {
     assert.equal(screen('SBK.JO').r.status, 'NON_COMPLIANT')
     // An ETF has no operating financials; it is screened via its holdings.
     assert.equal(screen('SPUS').r.status, 'UNVERIFIED')
+    // Trade in one currency, report in another (test/currency.test.js).
+    assert.equal(screen('SHEL.L').r.status, 'COMPLIANT')
+    assert.equal(screen('ULVR.L').r.status, 'COMPLIANT')
+    assert.equal(screen('TSM').r.status, 'COMPLIANT')
+    assert.equal(screen('NESN.SW').r.status, 'COMPLIANT')
   })
 
   test('TTM statement dates (Unix seconds from Yahoo) are real dates, not 1970', () => {

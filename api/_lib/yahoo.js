@@ -6,11 +6,17 @@
 
 import YahooFinance from 'yahoo-finance2';
 import { numOrNull, extractInterest } from './interest.js';
-import { byDateDesc, yahooDay } from './yahoo-dates.js';
+import { byDateDesc, yahooDate, yahooDay } from './yahoo-dates.js';
+import { majorCurrency, fxPair, toReportingCurrency } from '../../src/services/currency.js';
 
 const yahooFinance = new YahooFinance({
   suppressNotices: ['yahooSurvey'],
 });
+
+// Bump when the payload's meaning changes, so cached copies built by older
+// code are refetched (screening-cache.js). 2: market cap converted into the
+// reporting currency for the ratios.
+export const PAYLOAD_VERSION = 2;
 
 // Display fields only — missing becomes 0. Shariah-relevant fields use
 // numOrNull so "no data" can't be mistaken for "zero debt".
@@ -71,20 +77,24 @@ export async function fetchRawYahoo(ticker) {
   //   used by /api/trending and /api/quote, so the hero price on the stock
   //   detail page never disagrees with the trending list the user clicked
   //   through from.
-  const [quote, timeSeries, ttmFinancials, liveQuote] = await Promise.all([
-    yahooFinance.quoteSummary(
-      ticker,
-      {
-        modules: [
-          'assetProfile',
-          'summaryDetail',
-          'price',
-          'defaultKeyStatistics',
-          'financialData',
-        ],
-      },
-      { validateResult: false }
-    ),
+  // Plus, once quoteSummary says which currencies are involved, an FX quote
+  // when the listing trades in a different currency from the one it reports
+  // in (see normalizeScreeningPayload).
+  const quoteSummary = yahooFinance.quoteSummary(
+    ticker,
+    {
+      modules: [
+        'assetProfile',
+        'summaryDetail',
+        'price',
+        'defaultKeyStatistics',
+        'financialData',
+      ],
+    },
+    { validateResult: false }
+  );
+  const [quote, timeSeries, ttmFinancials, liveQuote, fx] = await Promise.all([
+    quoteSummary,
     yahooFinance.fundamentalsTimeSeries(
       ticker,
       {
@@ -110,9 +120,81 @@ export async function fetchRawYahoo(ticker) {
     // Don't fail the whole request if the live quote endpoint blips —
     // fall back to quoteSummary's slightly-staler price.
     fetchLiveQuote(ticker).catch(() => null),
+    // A failed FX quote leaves the market-cap ratios unavailable rather than
+    // failing the screen.
+    quoteSummary
+      .then(q => {
+        const { from, to } = currenciesOf(q);
+        return from && to && from !== to ? fetchFxRate(from, to) : null;
+      })
+      .catch(() => null),
   ]);
 
-  return { quote, timeSeries, ttmFinancials, liveQuote };
+  return { quote, timeSeries, ttmFinancials, liveQuote, fx };
+}
+
+/** Market-cap currency (major unit of the trading currency) and reporting currency. */
+function currenciesOf(quote) {
+  return {
+    from: majorCurrency(quote?.price?.currency).currency,
+    to: majorCurrency(quote?.financialData?.financialCurrency).currency,
+  };
+}
+
+// FX rates move far less than a screen's thresholds care about in ten
+// minutes, and an ETF X-ray screens several holdings in the same currency.
+const FX_TTL_MS = 10 * 60 * 1000;
+const fxMemo = new Map();
+
+/**
+ * The rate that converts `from` into `to` — Yahoo's GBPUSD=X is US dollars
+ * per pound — with the inverse pair as a fallback. Resolves
+ * { pair, from, to, rate, asOf }, or null when neither quote is usable.
+ */
+export async function fetchFxRate(from, to) {
+  const key = fxPair(from, to);
+  const hit = fxMemo.get(key);
+  if (hit && Date.now() - hit.at < FX_TTL_MS) return hit.fx;
+
+  let fx = await fetchFxQuote(from, to);
+  if (!fx) {
+    const inverse = await fetchFxQuote(to, from);
+    if (inverse) fx = { ...inverse, from, to, rate: 1 / inverse.rate };
+  }
+  if (fx) fxMemo.set(key, { fx, at: Date.now() });
+  return fx;
+}
+
+async function fetchFxQuote(from, to) {
+  const pair = fxPair(from, to);
+  const q = await yahooFinance
+    .quote(pair, { fields: ['regularMarketPrice', 'regularMarketTime', 'currency'] }, { validateResult: false })
+    .catch(() => null);
+  // An unknown pair resolves undefined rather than throwing.
+  const rate = Number(q?.regularMarketPrice);
+  if (!Number.isFinite(rate) || rate <= 0) return null;
+  if (q.currency && majorCurrency(q.currency).currency !== to) return null;
+  return { pair, from, to, rate, asOf: yahooDate(q.regularMarketTime)?.toISOString() ?? null };
+}
+
+/**
+ * How market cap gets into the reporting currency, as recorded on the
+ * payload (profile.fx) and shown with the verdict:
+ *   same        — trades and reports in one currency (pence vs pounds counts as one)
+ *   converted   — multiplied by `rate`, from Yahoo's `pair` quote at `asOf`
+ *   unavailable — the currencies differ and no usable rate was fetched
+ *   assumed     — Yahoo omitted one of the two currencies (typically funds,
+ *                 which have no financials); treated as the same, as before
+ */
+function resolveFx(quote, rawFx) {
+  const { from, to } = currenciesOf(quote);
+  if (!from || !to) return { status: 'assumed', from: from || to, to: to || from, rate: 1 };
+  if (from === to) return { status: 'same', from, to, rate: 1 };
+  const rate = Number(rawFx?.rate);
+  if (rawFx?.from === from && rawFx?.to === to && Number.isFinite(rate) && rate > 0) {
+    return { status: 'converted', from, to, rate, pair: rawFx.pair || fxPair(from, to), asOf: rawFx.asOf || null };
+  }
+  return { status: 'unavailable', from, to, rate: null };
 }
 
 /** One cheap Yahoo call: the live price + change. */
@@ -130,12 +212,20 @@ export function fetchLiveQuote(ticker) {
   );
 }
 
-export function normalizeScreeningPayload(ticker, { quote, timeSeries, ttmFinancials, liveQuote }) {
+export function normalizeScreeningPayload(ticker, { quote, timeSeries, ttmFinancials, liveQuote, fx: rawFx }) {
   const priceData = quote.price || {};
   const summaryDetail = quote.summaryDetail || {};
   const assetProfile = quote.assetProfile || {};
   const financialData = quote.financialData || {};
   const live = liveQuote || {};
+
+  // Statements are in the reporting currency; price.marketCap is in the
+  // trading currency's major unit (pounds for a pence-quoted London listing).
+  const currency = priceData.currency || 'USD';
+  const marketCap = num(priceData.marketCap);
+  const marketCapCurrency = majorCurrency(currency).currency;
+  const fx = resolveFx(quote, rawFx);
+  const sameCurrency = fx.status === 'same' || fx.status === 'assumed';
 
   // Prefer the live tick when available; fall back to quoteSummary, then
   // financialData.currentPrice as a final resort.
@@ -151,8 +241,18 @@ export function normalizeScreeningPayload(ticker, { quote, timeSeries, ttmFinanc
     exchange: priceData.exchangeName || priceData.exchange || '',
     // 'EQUITY', 'ETF', 'MUTUALFUND' … — funds are screened via their holdings.
     quoteType: priceData.quoteType || null,
-    marketCap: num(priceData.marketCap),
-    currency: priceData.currency || 'USD',
+    // For display, in marketCapCurrency.
+    marketCap,
+    marketCapCurrency,
+    // What the leverage and liquidity ratios divide by: market cap in the
+    // currency the balance sheet is reported in. null when the FX rate
+    // couldn't be fetched, so those ratios become data gaps rather than a
+    // mixed-currency figure.
+    marketCapInReportingCurrency: toReportingCurrency(marketCap, fx),
+    fx,
+    // Trading currency, the unit of the price fields ('GBp' = pence).
+    currency,
+    reportingCurrency: fx.to,
     description: assetProfile.longBusinessSummary || '',
     country: assetProfile.country || '',
     website: assetProfile.website || '',
@@ -169,10 +269,14 @@ export function normalizeScreeningPayload(ticker, { quote, timeSeries, ttmFinanc
     fiftyTwoWeekLow: num(summaryDetail.fiftyTwoWeekLow),
     fiftyTwoWeekHigh: num(summaryDetail.fiftyTwoWeekHigh),
     // Annual dividend per share — pre-fills the purification calculator.
+    // dividendRate is in marketCapCurrency (Shell: 1.16 = £1.16, not 116p);
+    // trailingAnnualDividendRate follows the reporting currency (Shell: $1.51),
+    // so it's only a fallback when the two currencies match.
     dividendRate: pick(
       numOrNull(summaryDetail.dividendRate),
-      numOrNull(summaryDetail.trailingAnnualDividendRate)
+      sameCurrency ? numOrNull(summaryDetail.trailingAnnualDividendRate) : null
     ),
+    dividendCurrency: marketCapCurrency,
   };
 
   const sortedSeries = [...(timeSeries || [])].sort(byDateDesc);
@@ -204,6 +308,7 @@ export function normalizeScreeningPayload(ticker, { quote, timeSeries, ttmFinanc
   const income = {
     period: yahooDay(incomeRowDate),
     basis: useTtm ? 'TTM' : 'ANNUAL',
+    currency: fx.to,
     revenue: totalRevenue,
     netIncome:
       num(incomeRow.netIncomeFromContinuingOperations) ||
@@ -245,6 +350,7 @@ export function normalizeScreeningPayload(ticker, { quote, timeSeries, ttmFinanc
 
   const balanceSheet = {
     period: yahooDay(latestDate),
+    currency: fx.to,
     totalDebt,
     cashAndShortTermInvestments: cash,
     cashAndCashEquivalents: num(lf.cashAndCashEquivalents),
@@ -258,7 +364,7 @@ export function normalizeScreeningPayload(ticker, { quote, timeSeries, ttmFinanc
       num(latestFinancials.totalDebt),
   };
 
-  return { profile, income, balanceSheet };
+  return { version: PAYLOAD_VERSION, profile, income, balanceSheet };
 }
 
 /**

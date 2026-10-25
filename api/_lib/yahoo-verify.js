@@ -28,26 +28,32 @@ function num(val) {
   return Number.isFinite(n) ? n : 0;
 }
 
+const UNAVAILABLE = { value: 0, monthsObserved: 0, source: 'unavailable' };
+
 /**
  * 24-month trailing average market cap.
  *
- * Fetches monthly closes for the last 24 months and multiplies by current
- * shares outstanding. Using last-known share count rather than per-month
- * share count is an approximation — but the typical alternative (treasury
- * buybacks, secondary offerings within the window) materially affects this
- * by less than the chart's noise floor for the screening threshold buckets
- * (33% leverage etc.). If we wanted higher fidelity we'd reconstruct shares
- * from monthly `basicAverageShares` in the fundamentals time-series.
+ * Scales today's market cap by the ratio of the average monthly close over
+ * the last 24 months to today's price — the same as average close × current
+ * shares outstanding. Holding the share count fixed is an approximation —
+ * but the typical alternative (treasury buybacks, secondary offerings within
+ * the window) materially affects this by less than the chart's noise floor
+ * for the screening threshold buckets (30% leverage etc.). If we wanted
+ * higher fidelity we'd reconstruct shares from monthly `basicAverageShares`
+ * in the fundamentals time-series.
+ *
+ * Units: `marketCap` is in the trading currency's major unit (pounds), while
+ * `price` and the chart closes are in its quote unit (pence for 'GBp'). Only
+ * the close ÷ price ratio is used, so the minor unit cancels and the result
+ * stays in market cap's currency. A chart in a different unit from `currency`
+ * is rejected rather than risk a 100× error.
  *
  * Returns { value, monthsObserved, source } so callers can detect cases
  * where Yahoo couldn't supply enough history (newly listed tickers, etc.)
  * and fall back to spot market cap with a confidence penalty.
  */
-export async function fetch24MonthAverageMarketCap(ticker, sharesOutstanding) {
-  const shares = num(sharesOutstanding);
-  if (shares <= 0) {
-    return { value: 0, monthsObserved: 0, source: 'unavailable' };
-  }
+export async function fetch24MonthAverageMarketCap(ticker, spot) {
+  if (!(num(spot?.marketCap) > 0 && num(spot?.price) > 0)) return UNAVAILABLE;
 
   const twentyFourMonthsAgo = new Date();
   twentyFourMonthsAgo.setMonth(twentyFourMonthsAgo.getMonth() - 24);
@@ -61,25 +67,32 @@ export async function fetch24MonthAverageMarketCap(ticker, sharesOutstanding) {
       },
       { validateResult: false }
     );
-
-    const quotes = Array.isArray(chart?.quotes) ? chart.quotes : [];
-    const validCloses = quotes
-      .map(q => num(q?.adjclose ?? q?.close))
-      .filter(c => c > 0);
-
-    if (validCloses.length === 0) {
-      return { value: 0, monthsObserved: 0, source: 'unavailable' };
-    }
-
-    const avgClose = validCloses.reduce((sum, c) => sum + c, 0) / validCloses.length;
-    return {
-      value: avgClose * shares,
-      monthsObserved: validCloses.length,
-      source: validCloses.length >= 18 ? 'yahoo-24m' : 'yahoo-partial',
-    };
+    return averageMarketCapFromChart(chart, spot);
   } catch {
-    return { value: 0, monthsObserved: 0, source: 'unavailable' };
+    return UNAVAILABLE;
   }
+}
+
+/** The pure part of fetch24MonthAverageMarketCap, for tests. */
+export function averageMarketCapFromChart(chart, { marketCap, price, currency }) {
+  const chartCurrency = chart?.meta?.currency;
+  if (chartCurrency && currency && chartCurrency !== currency) return UNAVAILABLE;
+
+  const quotes = Array.isArray(chart?.quotes) ? chart.quotes : [];
+  const validCloses = quotes
+    .map(q => num(q?.adjclose ?? q?.close))
+    .filter(c => c > 0);
+
+  if (validCloses.length === 0 || !(num(marketCap) > 0 && num(price) > 0)) {
+    return UNAVAILABLE;
+  }
+
+  const avgClose = validCloses.reduce((sum, c) => sum + c, 0) / validCloses.length;
+  return {
+    value: marketCap * (avgClose / price),
+    monthsObserved: validCloses.length,
+    source: validCloses.length >= 18 ? 'yahoo-24m' : 'yahoo-partial',
+  };
 }
 
 /**

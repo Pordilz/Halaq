@@ -131,8 +131,8 @@ function pickLatestAnnualFact(facts, tagPriority) {
 
     // Pick USD units when available; fall back to first unit listed.
     const units = concept.units || {};
-    const usdUnits = units['USD'];
-    const candidateUnits = usdUnits || units[Object.keys(units)[0] || ''];
+    const unit = units['USD'] ? 'USD' : Object.keys(units)[0] || '';
+    const candidateUnits = units[unit];
     if (!Array.isArray(candidateUnits)) continue;
 
     // 10-K annual filings have fp='FY'. Sort by `end` date desc and take
@@ -156,6 +156,7 @@ function pickLatestAnnualFact(facts, tagPriority) {
         period: fact.end,
         source: `edgar:${fact.form}`,
         tag,
+        unit,
       };
     }
   }
