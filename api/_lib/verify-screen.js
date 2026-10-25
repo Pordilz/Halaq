@@ -27,6 +27,7 @@ import { fetchScreeningPayload } from './yahoo.js';
 import { fetch24MonthAverageMarketCap, fetchTrailingTwelveMonthIncome } from './yahoo-verify.js';
 import { fetchEdgarFacts } from './edgar.js';
 import { screenStock } from '../../src/services/complianceEngine.js';
+import { toReportingCurrency } from '../../src/services/currency.js';
 
 const AGREEMENT_TOLERANCE = 0.05;
 
@@ -55,29 +56,27 @@ function pickWithProvenance(label, candidates) {
 export async function buildVerifiedScreening(ticker, methodology) {
   // Step 1: fetch the four data sources in parallel. Fast yahoo is the
   // baseline — every other source augments fields on top of it.
-  const [fast, avgCap, ttmIncome, edgar] = await Promise.all([
+  const [fast, avgCap, ttmIncome, edgarFacts] = await Promise.all([
     fetchScreeningPayload(ticker),
-    // 24m avg needs shares outstanding, which is in the fast payload —
-    // so we either chain (sequential) or pass shares=0 and let the helper
-    // return unavailable. Cleaner: do a quick second pass for the avg cap
-    // *after* fast resolves. But fast is already the slowest in parallel,
-    // so chaining off it doesn't save anything. Pre-fetch shares from the
-    // chart's most recent close × Yahoo's quote works as approximation —
-    // simplest is just to do it sequentially after fast resolves.
+    // The 24m avg needs today's market cap and price from the fast payload,
+    // so it runs after fast resolves (below). Fast is already the slowest
+    // call here, so chaining off it costs little.
     Promise.resolve(null),
     fetchTrailingTwelveMonthIncome(ticker).catch(() => null),
     fetchEdgarFacts(ticker).catch(() => null),
   ]);
 
-  // Shares outstanding for the avg-cap calc isn't in `fast.profile` (we
-  // didn't surface it); derive from marketCap / price as an approximation.
-  const sharesProxy =
-    fast?.profile?.marketCap && fast?.profile?.regularMarketPrice
-      ? fast.profile.marketCap / fast.profile.regularMarketPrice
-      : 0;
-  const avgCapResult = sharesProxy > 0
-    ? await fetch24MonthAverageMarketCap(ticker, sharesProxy).catch(() => null)
-    : null;
+  // The average is today's market cap scaled by average close ÷ today's
+  // price, so it comes back in the same currency as fast.profile.marketCap.
+  const avgCapResult = await fetch24MonthAverageMarketCap(ticker, {
+    marketCap: fast.profile.marketCap,
+    price: fast.profile.regularMarketPrice,
+    currency: fast.profile.currency,
+  }).catch(() => null);
+
+  // Statements are compared in the reporting currency. EDGAR facts are
+  // almost always USD; drop any that aren't in it rather than mix currencies.
+  const edgar = inReportingCurrency(edgarFacts, fast.profile.reportingCurrency);
 
   // Step 2: merge each Shariah-relevant field with provenance.
   // Only interest EARNED feeds the impermissible-income screen; interest paid
@@ -172,9 +171,14 @@ export async function buildVerifiedScreening(ticker, methodology) {
     fast.profile.marketCap && { value: fast.profile.marketCap, source: 'yahoo:spot' },
   ]);
 
+  // Both candidates are in fast.profile.marketCapCurrency; the ratios need the
+  // reporting currency, via the same FX record as the fast screen (null when
+  // the rate was unavailable, which leaves those ratios UNVERIFIED).
+  const mergedMarketCap = marketCapPick.value || fast.profile.marketCap;
   const mergedProfile = {
     ...fast.profile,
-    marketCap: marketCapPick.value || fast.profile.marketCap,
+    marketCap: mergedMarketCap,
+    marketCapInReportingCurrency: toReportingCurrency(mergedMarketCap, fast.profile.fx),
   };
 
   // Step 3: run the screen.
@@ -221,9 +225,9 @@ export async function buildVerifiedScreening(ticker, methodology) {
       usedTtm,
       usedAvgCap,
       mismatches: allMismatches,
-      marketCapBasis: avgCapResult?.value > 0
+      marketCapBasis: (avgCapResult?.value > 0
         ? `${avgCapResult.monthsObserved}-month trailing average`
-        : 'spot price',
+        : 'spot price') + fxNote(fast.profile.fx),
       incomeBasis: ttmIncome?.basis || 'ANNUAL',
       edgarEntity: edgar?.entityName || null,
       fieldProvenance: {
@@ -237,6 +241,20 @@ export async function buildVerifiedScreening(ticker, methodology) {
       },
     },
   };
+}
+
+function fxNote(fx) {
+  if (fx?.status === 'converted') return `, converted from ${fx.from} to ${fx.to} at ${fx.rate.toPrecision(5)}`;
+  if (fx?.status === 'unavailable') return `, not converted from ${fx.from} to ${fx.to} (no exchange rate)`;
+  return '';
+}
+
+export function inReportingCurrency(edgar, currency) {
+  if (!edgar?.facts || !currency) return edgar;
+  const facts = Object.fromEntries(
+    Object.entries(edgar.facts).map(([key, fact]) => [key, fact?.unit && fact.unit !== currency ? null : fact])
+  );
+  return { ...edgar, facts };
 }
 
 function collectSources(picks) {

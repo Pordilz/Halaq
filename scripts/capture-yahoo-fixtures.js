@@ -32,6 +32,8 @@ function trim(raw) {
     timeSeries: byDateDesc(raw.timeSeries).slice(0, 2),
     ttmFinancials: Array.isArray(raw.ttmFinancials) ? byDateDesc(raw.ttmFinancials).slice(0, 1) : raw.ttmFinancials,
     liveQuote: raw.liveQuote,
+    // The trading → reporting currency rate; null when the two match.
+    fx: raw.fx ?? null,
   };
 }
 

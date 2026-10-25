@@ -209,8 +209,18 @@ open. There is no paid data dependency.
    equity, which understates risk for some REITs.
 7. **Sukuk** are out of scope (treated as a fixed-income instrument distinct
    from equities).
-8. **Currency conversion.** Market cap is taken in the company's reporting
-   currency. We do not normalise to USD before applying ratios.
+8. **Currency conversion.** Debt, cash and receivables come in the company's
+   reporting currency, but market cap comes in the currency the listing trades
+   in: Shell reports in US dollars and trades in London in pence; TSMC's ADR
+   trades in dollars and reports in Taiwan dollars. Before the market-cap
+   ratios are computed, market cap is converted into the reporting currency at
+   Yahoo's spot rate (e.g. `GBPUSD=X`), and the verdict records the rate in
+   `dataSources.fx`. Minor units are normalised first (GBp, ZAc, ILA → ÷100;
+   KWF → ÷1000). If the rate can't be fetched, those ratios are left
+   uncomputed (UNVERIFIED) rather than mixing currencies. Remaining gaps: the
+   Verify path converts its 24-month average at today's rate rather than
+   month by month, and a cached screen keeps its rate for up to 12 hours.
+   Total-assets ratios (FTSE) and the income ratio are unaffected.
 
 ---
 

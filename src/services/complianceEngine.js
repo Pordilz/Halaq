@@ -301,7 +301,7 @@ const formatPercent = value => (value * 100).toFixed(2) + '%'
  * (`error` set) — never a 0% pass. `estimated` marks a ratio computed from a
  * proxy figure; the verdict won't hard-fail a stock on an estimate alone.
  */
-function calculateRatio(key, numerator, denominator, threshold, description, { estimated = false } = {}) {
+function calculateRatio(key, numerator, denominator, threshold, description, { estimated = false, denominatorError = null } = {}) {
   const base = {
     key,
     name: RATIO_NAMES[key],
@@ -314,7 +314,7 @@ function calculateRatio(key, numerator, denominator, threshold, description, { e
   }
 
   if (!denominator || denominator <= 0) {
-    return { ...base, pass: false, ratio: null, ratioPercent: 'N/A', error: 'Denominator unavailable' }
+    return { ...base, pass: false, ratio: null, ratioPercent: 'N/A', error: denominatorError || 'Denominator unavailable' }
   }
   if (numerator == null || !Number.isFinite(numerator)) {
     return { ...base, pass: false, ratio: null, ratioPercent: 'N/A', error: 'Data unavailable' }
@@ -327,6 +327,7 @@ function calculateRatio(key, numerator, denominator, threshold, description, { e
 export function screenFinancialRatios({
   totalDebt,
   marketCap,
+  marketCapError = null,
   totalAssets,
   cashAndInterestBearing,
   receivables,
@@ -341,6 +342,7 @@ export function screenFinancialRatios({
   const byAssets = cfg.denominator === 'totalAssets'
   const denominator = byAssets ? totalAssets : marketCap
   const denomLabel = byAssets ? 'Total Assets' : 'Market Cap'
+  const denominatorError = byAssets ? null : marketCapError
 
   const ratios = [
     calculateRatio(
@@ -348,14 +350,16 @@ export function screenFinancialRatios({
       totalDebt,
       denominator,
       t.leverage,
-      `Total Debt ÷ ${denomLabel} must be < ${formatPercent(t.leverage)}`
+      `Total Debt ÷ ${denomLabel} must be < ${formatPercent(t.leverage)}`,
+      { denominatorError }
     ),
     calculateRatio(
       'liquidity',
       cashAndInterestBearing,
       denominator,
       t.liquidity,
-      `(Cash + Interest-bearing Securities) ÷ ${denomLabel} must be < ${formatPercent(t.liquidity)}`
+      `(Cash + Interest-bearing Securities) ÷ ${denomLabel} must be < ${formatPercent(t.liquidity)}`,
+      { denominatorError }
     ),
   ]
 
@@ -372,7 +376,8 @@ export function screenFinancialRatios({
         numerator,
         denominator,
         t.receivables,
-        `${includeCash ? '(Accounts Receivable + Cash)' : 'Accounts Receivable'} ÷ ${denomLabel} must be < ${formatPercent(t.receivables)}`
+        `${includeCash ? '(Accounts Receivable + Cash)' : 'Accounts Receivable'} ÷ ${denomLabel} must be < ${formatPercent(t.receivables)}`,
+        { denominatorError }
       )
     )
   }
@@ -492,9 +497,20 @@ export function screenStock(profile, balanceSheet, income, options = {}) {
     unavailable: `Interest Income ÷ ${revenueLabel} must be < ${haramLimit} (interest income not available)`,
   }[dataSource]
 
+  // Debt and cash are in the reporting currency, so they're measured against
+  // market cap converted into it (api/_lib/yahoo.js). null there means the
+  // exchange rate was unavailable. Profiles without the field (hand-built
+  // ones, or payloads from before the conversion) are taken as one currency.
+  const fx = profile.fx || null
+  const ratioMarketCap = profile.marketCapInReportingCurrency !== undefined
+    ? profile.marketCapInReportingCurrency
+    : profile.marketCap
+  const fxUnavailable = fx?.status === 'unavailable'
+
   const financialScreen = screenFinancialRatios({
     totalDebt: balanceSheet.totalDebt,
-    marketCap: profile.marketCap,
+    marketCap: ratioMarketCap,
+    marketCapError: fxUnavailable ? `No ${fx.from}→${fx.to} exchange rate to convert market cap` : null,
     totalAssets: balanceSheet.totalAssets,
     cashAndInterestBearing: balanceSheet.cashAndShortTermInvestments,
     receivables: balanceSheet.netReceivables,
@@ -551,7 +567,9 @@ export function screenStock(profile, balanceSheet, income, options = {}) {
       // Verify flow (Phase 3) can resolve via SEC EDGAR for US tickers.
       status = 'UNVERIFIED'
       confidence = 'LOW'
-      statusReason = `Cannot verify ${dataGaps.length} of ${financialScreen.ratios.length} ratios due to missing financial data — tap Verify to re-fetch.`
+      statusReason = fxUnavailable && financialScreen.denominator === 'marketCap'
+        ? `Debt and cash are reported in ${fx.to} but market cap is in ${fx.from}, and the exchange rate couldn't be fetched — tap Verify to retry.`
+        : `Cannot verify ${dataGaps.length} of ${financialScreen.ratios.length} ratios due to missing financial data — tap Verify to re-fetch.`
     } else if (businessScreen.status === 'CAUTION') {
       // Mixed business with one data gap: the revenue mix still needs a
       // human, so don't let the lenient single-gap rule below skip review.
@@ -601,6 +619,7 @@ export function screenStock(profile, balanceSheet, income, options = {}) {
     industry: profile.industry,
     exchange: profile.exchange,
     marketCap: profile.marketCap,
+    marketCapCurrency: profile.marketCapCurrency || profile.currency,
     currency: profile.currency,
 
     methodology: financialScreen.methodology,
@@ -626,6 +645,12 @@ export function screenStock(profile, balanceSheet, income, options = {}) {
       incomeStatementPeriod: income.period,
       incomeBasis: income.basis || null,
       interestDataSource: dataSource,
+      // How market cap was put into the reporting currency for the ratios:
+      // { status: 'same' | 'converted' | 'unavailable' | 'assumed', from, to, rate, pair?, asOf? }
+      fx,
+      fxRate: fx?.status === 'converted' ? fx.rate : null,
+      reportingCurrency: profile.reportingCurrency || balanceSheet.currency || null,
+      marketCapInReportingCurrency: ratioMarketCap ?? null,
     },
 
     disclaimer:

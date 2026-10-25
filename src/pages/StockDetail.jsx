@@ -109,6 +109,7 @@ export default function StockDetail() {
           description: data.profile.description,
           currency,
           marketCap: compliance.marketCap,
+          marketCapCurrency: compliance.marketCapCurrency,
           price: formattedPrice,
           change: formattedChange,
           changePositive: Number.isFinite(changePct) ? changePct >= 0 : null,
@@ -128,6 +129,7 @@ export default function StockDetail() {
           haramRevenueEstimated: compliance.haramRevenueEstimated,
           isShariahCertified: compliance.isShariahCertified,
           dividendRate: data.profile.dividendRate,
+          dividendCurrency: data.profile.dividendCurrency || compliance.marketCapCurrency,
           // stale = Yahoo was unavailable and this is the last saved copy.
           stale: !!data.stale,
           dataAsOf: data.dataAsOf || null,
@@ -402,16 +404,17 @@ export default function StockDetail() {
 
       {/* Quick stats grid */}
       <section className="sd-stats">
-        <Stat label="Market cap" value={formatNumber(stock.marketCap, stock.currency)} />
+        <Stat label="Market cap" value={formatNumber(stock.marketCap, stock.marketCapCurrency)} />
         <Stat label="52-week range" value={
           stock.fiftyTwoWeekLow > 0 && stock.fiftyTwoWeekHigh > 0
             ? `${formatNumber(stock.fiftyTwoWeekLow, stock.currency, false)} – ${formatNumber(stock.fiftyTwoWeekHigh, stock.currency, false)}`
             : '—'
         } />
-        <Stat label="Total debt" value={formatNumber(stock.balanceSheet.totalDebt, stock.currency)} />
+        {/* Statements are in the reporting currency (Shell: US dollars, though it trades in pence). */}
+        <Stat label="Total debt" value={formatNumber(stock.balanceSheet.totalDebt, stock.balanceSheet.currency || stock.currency)} />
         <Stat
           label={stock.income.basis === 'TTM' ? 'Revenue (TTM)' : 'Revenue (FY)'}
-          value={formatNumber(stock.income.revenue, stock.currency)}
+          value={formatNumber(stock.income.revenue, stock.income.currency || stock.currency)}
         />
       </section>
 
@@ -651,6 +654,11 @@ function Ratios({ stock, isPro, navigate }) {
           <> {stock.methodology} measures debt and cash against a {stock.ratioBasis.marketCapAverageMonths}-month
           average market cap; this screen uses today's market cap, and Verify uses a 24-month average.</>
         )}
+        {stock.dataSources?.fx?.status === 'converted' && (
+          <> {stock.ticker} reports in {stock.dataSources.fx.to} but trades in {stock.dataSources.fx.from}, so
+          market cap is converted at {stock.dataSources.fx.rate.toPrecision(5)} {stock.dataSources.fx.to} per{' '}
+          {stock.dataSources.fx.from} before dividing.</>
+        )}
       </p>
       <div className="sd-ratios-grid">
         {stock.ratios.map(r => (
@@ -694,7 +702,10 @@ function Purification({ stock, isPro, navigate }) {
   )
   if (!isPro) return <PremiumGate navigate={navigate} body="Compute the exact dividend purification % owed under your methodology." />
 
-  const symbol = getCurrencySymbol(stock.currency || 'USD')
+  // Dividends per share come in the trading currency's major unit (pounds,
+  // not the pence a London price is quoted in).
+  const dividendCurrency = stock.dividendCurrency || stock.currency || 'USD'
+  const symbol = getCurrencySymbol(dividendCurrency)
   if (stock.isShariahCertified) {
     return (
       <div className="sd-card">
@@ -725,7 +736,7 @@ function Purification({ stock, isPro, navigate }) {
     shares,
     dividendPerShare,
     haramRevenuePercent: stock.haramRevenuePercent,
-    currency: stock.currency || 'USD',
+    currency: dividendCurrency,
   })
   const money = value => `${symbol}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 

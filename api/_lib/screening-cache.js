@@ -13,6 +13,10 @@
  * still fails, the last good copy up to 7 days old is served with
  * `stale: true`. Cache read/write errors — e.g. before migration 008 is
  * applied — count as misses, so the screen never depends on the cache.
+ * So do copies built by older code (a different PAYLOAD_VERSION): those
+ * predate the reporting-currency market cap and would screen cross-currency
+ * listings like SHEL.L on a mixed-currency ratio, so they're never served,
+ * even as a stale fallback.
  *
  * The verify path deliberately bypasses this: Verify always fetches fresh.
  */
@@ -23,6 +27,7 @@ import {
   normalizeScreeningPayload,
   classifyYahooError,
   isValidTicker,
+  PAYLOAD_VERSION,
 } from './yahoo.js';
 import { getSupabaseAdmin } from './supabase.js';
 
@@ -69,6 +74,8 @@ async function withOneRetry(fn, delayMs) {
 }
 
 // Shares outstanding don't move day to day, so market cap scales with price.
+// The exchange rate in the reporting-currency figure is kept as cached (up
+// to 12 hours old).
 export function withLivePrice(payload, live) {
   const price = Number(live?.regularMarketPrice);
   if (!Number.isFinite(price) || price <= 0) return payload;
@@ -79,8 +86,10 @@ export function withLivePrice(payload, live) {
   const changePercent = Number(live.regularMarketChangePercent);
   if (Number.isFinite(change)) profile.regularMarketChange = change;
   if (Number.isFinite(changePercent)) profile.regularMarketChangePercent = changePercent;
-  if (cachedPrice > 0 && profile.marketCap > 0) {
-    profile.marketCap = profile.marketCap * (price / cachedPrice);
+  if (cachedPrice > 0) {
+    for (const key of ['marketCap', 'marketCapInReportingCurrency']) {
+      if (profile[key] > 0) profile[key] = profile[key] * (price / cachedPrice);
+    }
   }
   return { ...payload, profile };
 }
@@ -118,6 +127,7 @@ export async function getScreeningPayload(rawTicker, {
       console.warn(`[screening-cache] read failed for ${ticker}: ${err.message}`);
     }
   }
+  if (cached && cached.payload?.version !== PAYLOAD_VERSION) cached = null;
   const asOf = at => new Date(at).toISOString();
 
   if (cached && t - cached.fetchedAt < FRESH_TTL_MS) {

@@ -128,6 +128,24 @@ describe('getScreeningPayload', () => {
     assert.equal((await getScreeningPayload('MSFT', opts)).profile.ticker, 'MSFT')
   })
 
+  test('a copy cached by older code is refetched, and never served as stale', async () => {
+    const t0 = 1_000_000_000_000
+    const seed = harness({ now: t0 })
+    await getScreeningPayload('MSFT', seed.opts)
+    // Before PAYLOAD_VERSION, payloads had no version and no reporting-currency market cap.
+    const { version, ...legacy } = seed.store.rows.get('MSFT').payload
+    seed.store.rows.set('MSFT', { payload: legacy, fetchedAt: t0 })
+
+    const fresh = harness({ store: seed.store, now: t0 + MEMORY_TTL_MS + 1 })
+    const p = await getScreeningPayload('MSFT', fresh.opts)
+    assert.equal(fresh.calls.raw, 1)
+    assert.equal(p.version, version)
+
+    seed.store.rows.set('MSFT', { payload: legacy, fetchedAt: t0 })
+    const down = harness({ store: seed.store, now: t0 + FRESH_TTL_MS + HOUR, raw: async () => { throw throttled() } })
+    await assert.rejects(getScreeningPayload('MSFT', down.opts), /Too Many Requests/)
+  })
+
   test('invalid tickers are rejected before any fetch', async () => {
     const { opts, calls } = harness()
     await assert.rejects(getScreeningPayload('../etc', opts), err => err.statusCode === 400)
@@ -140,4 +158,14 @@ test('withLivePrice ignores a missing or bad quote', () => {
   assert.equal(withLivePrice(payload, null), payload)
   assert.equal(withLivePrice(payload, { regularMarketPrice: 0 }), payload)
   assert.equal(withLivePrice(payload, { regularMarketPrice: 20 }).profile.marketCap, 2000)
+})
+
+test('withLivePrice scales the reporting-currency market cap too', () => {
+  const payload = { profile: { regularMarketPrice: 4000, marketCap: 1000, marketCapInReportingCurrency: 1300 } }
+  const p = withLivePrice(payload, { regularMarketPrice: 4400 }).profile
+  assert.ok(Math.abs(p.marketCap - 1100) < 1e-9)
+  assert.ok(Math.abs(p.marketCapInReportingCurrency - 1430) < 1e-9)
+  // Unavailable stays unavailable.
+  const none = { profile: { ...payload.profile, marketCapInReportingCurrency: null } }
+  assert.equal(withLivePrice(none, { regularMarketPrice: 4400 }).profile.marketCapInReportingCurrency, null)
 })
