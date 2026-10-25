@@ -7,6 +7,8 @@
     <meta name="theme-color" content="#0f1a27" media="(prefers-color-scheme: dark)" />
     <meta name="color-scheme" content="light dark" />
     <script>
+      // Entrance animations only hide content once scripts are running.
+      document.documentElement.classList.add('js')
       // Apply the saved theme before first paint (see src/lib/theme.js).
       try {
         var pref = localStorage.getItem('halaq_theme')

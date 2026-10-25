@@ -285,3 +285,29 @@ mobile, expanding via `.container` on desktop.
 - [ ] Has an empty / error state.
 - [ ] Has at least one `:focus-visible` test (tab through it).
 - [ ] Build size delta ≤ 5 KB gzipped.
+
+---
+
+## 17. Landing page (`/`)
+
+The public landing page has its own rules, built with tasteskill v2's "colour
+chapters" direction. The rest of the app follows sections 1–16.
+
+- Every section is one flat brand colour from edge to edge: paper, emerald,
+  mint, gold, night. Sections meet at hard edges, with no dividers.
+- Manrope only, in five sizes (`--lp-display`, `--lp-heading`, `--lp-lead`,
+  `--lp-body`, `--lp-small` in `Landing.css`). No eyebrows, no uppercase
+  micro-labels, no numbered steps.
+- Square buttons with one flat fill. No gradients, no shadows, no glass, no
+  hairline rules. Product fragments marked `data-ui` (the sample report, the
+  walkthrough cards, the feature close-ups) keep the app's own radii and
+  borders.
+- The sample reports come from `src/content/landingSamples.js`, a dated Yahoo
+  snapshot run through the real compliance engine. Keep `SAMPLES_AS_OF` in
+  step when you refresh it, and only use companies that report in the
+  currency they trade in.
+- The two museum pictures are Met Open Access (CC0) and credited in the
+  footer.
+- Everything below the hero is lazy-loaded
+  (`src/components/landing/LandingSections.jsx`), so the engine stays out of
+  the first bundle.

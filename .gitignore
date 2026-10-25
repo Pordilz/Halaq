@@ -34,3 +34,6 @@ android/app/google-services.json
 .agent/
 .agents/
 skills-lock.json
+
+# tasteskill working files (direction sheet, inspector screenshots)
+.taste-skill/
