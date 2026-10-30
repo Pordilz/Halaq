@@ -3,9 +3,7 @@
  * Query: ?q=apple → array of { symbol, name, exchange, type }
  */
 
-const ALLOWED_EXCHANGES = new Set([
-  'NMS', 'NYQ', 'NGM', 'PCX', 'BTS', 'ASE', 'NAS', 'JNB',
-]);
+import { pickSearchResults } from './_lib/search.js';
 
 export const config = { maxDuration: 10 };
 
@@ -42,20 +40,7 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    const quotes = (data?.quotes || [])
-      .filter(item =>
-        (item.quoteType === 'EQUITY' || item.quoteType === 'ETF') &&
-        (ALLOWED_EXCHANGES.has(item.exchange) || item.symbol?.endsWith('.JO'))
-      )
-      .slice(0, 8)
-      .map(item => ({
-        symbol: item.symbol,
-        name: item.shortname || item.longname || item.symbol,
-        exchange: item.exchDisp || item.exchange || '',
-        type: item.quoteType,
-      }));
-
-    return res.status(200).json(quotes);
+    return res.status(200).json(pickSearchResults(data?.quotes));
   } catch (err) {
     if (err?.name !== 'AbortError') {
       console.error('[Search] Error:', err.message);
