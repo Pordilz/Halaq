@@ -1,7 +1,11 @@
+/* When the row is too narrow for name and badge side by side, the actions
+   wrap onto their own line instead of crushing the name. It depends on the
+   row's width, so it also holds in the narrow column beside a side panel. */
 .stock-row-card {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-2) var(--space-4);
   padding: var(--space-4) var(--space-5);
   cursor: pointer;
   background-color: transparent;
@@ -35,7 +39,7 @@
 }
 
 .stock-row-card__info {
-  flex: 1;
+  flex: 999 1 10rem;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -76,6 +80,7 @@
   color: var(--color-on-surface-variant);
   font-weight: var(--font-weight-subheading);
   letter-spacing: 0.02em;
+  overflow-wrap: anywhere;
 }
 
 .stock-row-card__changed {
@@ -88,22 +93,22 @@
   color: var(--color-caution);
   font-size: var(--text-micro);
   font-weight: var(--font-weight-subheading);
+  white-space: nowrap;
 }
 
 .stock-row-card__actions {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  flex-shrink: 0;
-  /* Auto-width so the optional Verify button has room without squeezing
-     the badge. Mobile keeps auto-width via the override at the bottom. */
-  justify-content: flex-end;
+  flex: 1 0 auto;
+  max-width: 100%;
+  justify-content: space-between;
 }
 
 .stock-row-card__badge-wrapper {
   display: flex;
-  justify-content: flex-end;
   min-width: 0;
+  margin-right: auto;
 }
 
 .stock-row-card__bookmark-btn {

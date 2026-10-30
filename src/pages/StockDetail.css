@@ -515,24 +515,22 @@
   background-color: var(--color-surface);
 }
 
-.sd-bus--tertiary { background-color: var(--color-tertiary-fixed); border-color: rgba(0, 104, 55, 0.2); }
-.sd-bus--error { background-color: var(--color-error-container); border-color: rgba(185, 28, 28, 0.2); }
-.sd-bus--caution { background-color: var(--color-caution-container); border-color: rgba(146, 64, 14, 0.2); }
+/* Each field sets its own ink: these fills stay light or dark regardless of
+   the theme's body text colour. */
+.sd-bus--tertiary { background-color: var(--color-tertiary-fixed); color: var(--color-on-tertiary-fixed); }
+.sd-bus--error { background-color: var(--color-error-container); color: var(--color-on-error-container); }
+.sd-bus--caution { background-color: var(--color-caution-container); color: var(--color-on-caution-container); }
 
 .sd-bus__icon {
   width: 2.25rem;
   height: 2.25rem;
   border-radius: var(--radius-full);
-  background-color: rgb(var(--glass-rgb) / 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  color: inherit;
 }
-
-.sd-bus--tertiary .sd-bus__icon { color: var(--color-tertiary); }
-.sd-bus--error .sd-bus__icon { color: var(--color-error); }
-.sd-bus--caution .sd-bus__icon { color: var(--color-caution); }
 
 .sd-bus strong {
   display: block;
@@ -542,7 +540,7 @@
 
 .sd-bus p {
   font-size: var(--text-body-sm);
-  color: var(--color-on-surface-variant);
+  color: inherit;
   line-height: 1.5;
 }
 
