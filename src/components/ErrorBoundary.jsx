@@ -1,5 +1,6 @@
 import React from 'react'
 import MaterialIcon from './MaterialIcon'
+import { isChunkLoadError, reloadForNewBuild } from '../lib/chunkReload'
 
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -12,6 +13,8 @@ export default class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, info) {
+    // A page chunk from a previous deploy: reload into the current build.
+    if (isChunkLoadError(error) && reloadForNewBuild()) return
     if (typeof console !== 'undefined') {
       console.error('[Halaq] Unhandled UI error:', error, info)
     }
