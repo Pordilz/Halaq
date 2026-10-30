@@ -131,7 +131,7 @@ export default function Legal() {
 
   // Always call hooks before any conditional return so the order is stable.
   useDocumentTitle(
-    doc ? `${doc.title} — Halaq` : 'Legal — Halaq',
+    doc ? doc.title : 'Legal',
     doc?.intro || 'Halaq legal documents.'
   )
 
@@ -141,12 +141,8 @@ export default function Legal() {
 
   return (
     <div className="legal-page container animate-entrance">
-      <Link to="/" className="legal-back">
-        <MaterialIcon name="arrow_back" size={18} /> Back to home
-      </Link>
-
       <header className="legal-header">
-        <h1 className="text-h1">{doc.title}</h1>
+        <h1 className="legal-title">{doc.title}</h1>
         <p className="legal-meta">Last reviewed: {TODAY_REVIEW}</p>
         <p className="legal-intro">{doc.intro}</p>
       </header>

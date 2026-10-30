@@ -42,12 +42,11 @@ All colours live as CSS variables in `src/index.css`. **Never hardcode hex.**
 | Tertiary         | `--color-tertiary`                  | `#006837` | Compliant state                       |
 | Caution          | `--color-caution`                   | `#92400e` | Doubtful state                        |
 | Error            | `--color-error`                     | `#b91c1c` | Non-compliant state, destructive      |
-| Surface          | `--color-surface`                   | `#f8f9fb` | Page background                       |
+| Surface          | `--color-surface`                   | `#f1f4f8` | Page background, one step below cards |
 | Surface lowest   | `--color-surface-container-lowest`  | `#ffffff` | Cards, panels                         |
 | On-surface       | `--color-on-surface`                | `#0f1a27` | Body text (NEVER `#000`)              |
 | On-surface var.  | `--color-on-surface-variant`        | `#3a4a5c` | Secondary text                        |
 | Outline          | `--color-outline`                   | `#627080` | Tertiary text                         |
-| Outline var. 15% | `--color-outline-variant-15`        | rgba    | Hairline dividers                     |
 
 State colours map 1:1 to compliance status:
 - COMPLIANT → tertiary
@@ -67,9 +66,9 @@ Family: `Manrope` (variable, 400/500/600/700/800).
 | `--text-h2`      | 1.75 rem   | 700    | Section titles, card heroes        |
 | `--text-h3`      | 1.375 rem  | 600    | Sub-section titles                 |
 | `--text-body-lg` | 1 rem      | 400    | Body copy                          |
-| `--text-body-sm` | 0.875 rem  | 400/500 | Compact body, list items          |
-| `--text-label`   | 0.75 rem   | 600    | Uppercase eyebrows                 |
-| `--text-micro`   | 0.625 rem  | 600    | Tags, status chips                 |
+| `--text-body-sm` | 0.9375 rem | 400/500 | Compact body, list items          |
+| `--text-label`   | 0.8125 rem | 600    | Field labels, sentence case        |
+| `--text-micro`   | 0.8125 rem | 600    | Tags, status chips. Nothing smaller |
 
 Tabular numbers: any column of numeric data must use
 `font-variant-numeric: tabular-nums` (`.tabular-nums` utility) so digits align.
@@ -99,12 +98,11 @@ inside components. Common rhythm:
 | `--radius-3xl`   | 32 px      | Hero cards, large surfaces            |
 | `--radius-full`  | pill       | Buttons, chips, dots                  |
 
-Shadows are **whisper-soft**:
+Nothing at rest casts a shadow. Surfaces separate by a step in tone.
 
-- `--shadow-standard` for resting state
-- `--shadow-floating` for elevated/modal state
-
-Never combine card shadows with other card shadows nested inside — pick one.
+- `--shadow-standard` is `none`; don't add resting shadows or glows.
+- `--shadow-floating` is only for what really floats: menus, popovers, dialogs.
+- Focus rings on form fields are fine. No gradients, no backdrop blur.
 
 ---
 
@@ -121,12 +119,12 @@ Use the `.btn` system. **Do not write inline button styles.**
 
 | Variant           | Use                                            |
 | ----------------- | ---------------------------------------------- |
-| `.btn-primary`    | Primary action (gradient)                      |
+| `.btn-primary`    | Primary action (flat `--color-brand`)          |
 | `.btn-secondary`  | Secondary action                               |
 | `.btn-ghost`      | Tertiary, low-emphasis                         |
 | `.btn-outline`    | On surfaces where ghost is too quiet           |
 | `.btn-danger`     | Destructive                                    |
-| `.btn-on-glass`   | On dark / coloured surfaces (e.g. hero card)   |
+| `.btn-on-glass`   | On coloured fields (e.g. hero card), no blur   |
 
 Rules:
 
@@ -141,13 +139,12 @@ Rules:
 
 ### Card panel
 Background `--color-surface-container-lowest`, radius `--radius-2xl`, shadow
-`--shadow-standard`. Sectioned content uses internal hairlines (1 px
-`--color-outline-variant-15`), not nested cards.
+no shadow. Sections inside a card separate by space, not rules or nested cards.
 
 ### List panel (e.g. Screener results, Watchlist, Profile settings)
 - One outer card.
 - Each row is full-bleed with horizontal padding `var(--space-5)` / `var(--space-6)`.
-- Rows are separated by 1 px hairlines, not gaps and not double-shadows.
+- Rows separate by padding and a hover tone, with no rules. Real `<table>`s may keep lines.
 
 ### Status badge
 Use `<ComplianceBadge status>` for compliance state. Never inline.
@@ -291,7 +288,8 @@ mobile, expanding via `.container` on desktop.
 ## 17. Landing page (`/`)
 
 The public landing page has its own rules, built with tasteskill v2's "colour
-chapters" direction. The rest of the app follows sections 1–16.
+chapters" direction. `/upgrade` reuses its stepped plan tiles and sign-in its flat
+fields. The rest of the app follows sections 1–16 and keeps fully round buttons.
 
 - Every section is one flat brand colour from edge to edge: paper, emerald,
   mint, gold, night. Sections meet at hard edges, with no dividers.

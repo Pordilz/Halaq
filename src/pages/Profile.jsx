@@ -514,9 +514,8 @@ export default function Profile() {
 
               <ol className="methodology-card__list">
                 <li>
-                  <span className="methodology-card__step">01</span>
                   <div>
-                    <strong>Business activity (qualitative)</strong>
+                    <strong>First, the business it is in</strong>
                     <span>
                       Companies whose primary line of business is in conventional banking,
                       insurance, alcohol, gambling, tobacco, adult entertainment, pork or
@@ -526,9 +525,8 @@ export default function Profile() {
                   </div>
                 </li>
                 <li>
-                  <span className="methodology-card__step">02</span>
                   <div>
-                    <strong>Financial ratios (quantitative)</strong>
+                    <strong>Then, its financial ratios</strong>
                     <span>
                       AAOIFI (default) tests three ratios from the latest financials:
                       total debt ÷ market cap (&lt;30%), cash + interest-bearing securities ÷

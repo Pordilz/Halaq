@@ -48,9 +48,9 @@
   --color-on-caution-container: #78350f;
 
   /* Surfaces — The depth stack */
-  --color-surface: #f8f9fb;
+  --color-surface: #f1f4f8;
   --color-surface-dim: #d0d8e4;
-  --color-surface-bright: #f8f9fb;
+  --color-surface-bright: #f1f4f8;
   --color-surface-container-lowest: #ffffff;
   --color-surface-container-low: #eef2f9;
   --color-surface-container: #e4ecf7;
@@ -68,7 +68,7 @@
   --color-outline: #627080;
   --color-outline-variant: #b8c8d8;
   --color-outline-variant-15: rgba(184, 200, 216, 0.15); /* Ghost borders */
-  --color-background: #f8f9fb;
+  --color-background: #f1f4f8;
   --color-on-background: #0f1a27;
 
   /* Utilities */
@@ -87,9 +87,9 @@
   --text-h2: clamp(1.375rem, 4vw, 1.75rem);        /* was 1.75rem */
   --text-h3: 1.375rem;      /* 600 weight */
   --text-body-lg: 1rem;     /* 400 weight */
-  --text-body-sm: 0.875rem; /* 400 weight */
-  --text-label: 0.75rem;    /* 600 weight, tracking-widest, uppercase */
-  --text-micro: 0.625rem;   /* 600 weight */
+  --text-body-sm: 0.9375rem; /* 15px, 400 weight */
+  --text-label: 0.8125rem;  /* 13px, 600 weight, sentence case */
+  --text-micro: 0.8125rem;  /* 13px: nothing readable goes smaller */
 
   --font-weight-body: 400;
   --font-weight-label: 500;
@@ -108,9 +108,16 @@
   --radius-full: 9999px;
 
   /* ---- Shadows ---- */
-  /* Whisper shadows only. Never announce depth. */
-  --shadow-standard: 0 10px 40px rgba(15, 26, 39, 0.05);
+  /* Nothing at rest casts a shadow: surfaces separate by a tone step.
+     --shadow-floating is for things that really float (menus, dialogs). */
+  --shadow-standard: none;
   --shadow-floating: 0 10px 40px rgba(15, 26, 39, 0.12);
+
+  /* ---- Brand fill ---- */
+  /* The one action colour, the same in both themes (white text on it). */
+  --color-brand: #1a6b47;
+  --color-brand-strong: #0d5233;
+  --color-on-brand: #ffffff;
 
   /* ---- Tints (space-separated RGB, used as rgb(var(--x) / alpha)) ---- */
   /* Translucent washes on page surfaces. Dark mode swaps the base colour so
@@ -206,7 +213,7 @@
   --color-background: #0f141a;
   --color-on-background: #e3e8ef;
 
-  --shadow-standard: 0 10px 40px rgba(0, 0, 0, 0.35);
+  --shadow-standard: none;
   --shadow-floating: 0 10px 40px rgba(0, 0, 0, 0.5);
 
   --primary-rgb: 125 217 168;
@@ -241,7 +248,7 @@ body {
   font-size: var(--text-body-lg);
   font-weight: var(--font-weight-body);
   line-height: 1.6;
-  min-height: 100vh;
+  min-height: 100vh; /* taste-skill-ignore: fallback for old Android WebViews without dvh */
   min-height: 100dvh;
 }
 
@@ -275,9 +282,6 @@ ul, ol {
 /* Trackings */
 .tracking-tight {
   letter-spacing: -0.025em;
-}
-.tracking-widest {
-  letter-spacing: 0.1em;
 }
 
 /* =============================================
@@ -335,11 +339,9 @@ ul, ol {
 }
 .text-body-lg { font-size: var(--text-body-lg); }
 .text-body-sm { font-size: var(--text-body-sm); }
-.text-label { 
-  font-size: var(--text-label); 
-  font-weight: var(--font-weight-subheading); 
-  text-transform: uppercase; 
-  letter-spacing: 0.1em; 
+.text-label {
+  font-size: var(--text-label);
+  font-weight: var(--font-weight-subheading);
 }
 .text-micro { font-size: var(--text-micro); font-weight: var(--font-weight-subheading); }
 
@@ -480,12 +482,15 @@ ul, ol {
   gap: var(--space-3);
 }
 .status-screen--loader { min-height: 60vh; color: var(--color-on-surface-variant); }
-.status-screen__code {
-  font-size: 6rem;
+.status-screen--missing { align-items: flex-start; text-align: left; max-width: 48rem; }
+.status-screen--missing .status-screen__actions { justify-content: flex-start; align-items: center; }
+.status-screen--missing .btn-ghost { padding-inline: 0; }
+.status-screen__title {
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
   font-weight: var(--font-weight-display);
-  color: var(--color-primary);
-  opacity: 0.15;
   line-height: 1;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
 }
 .status-screen__body { max-width: 30rem; margin-bottom: var(--space-5); }
 .status-screen__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-3); }
@@ -507,7 +512,6 @@ ul, ol {
 .text-center { text-align: center; }
 .text-right { text-align: right; }
 .text-left { text-align: left; }
-.uppercase { text-transform: uppercase; }
 .italic { font-style: italic; }
 .line-clamp-3 { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
 .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -530,7 +534,6 @@ ul, ol {
 
 /* Sizing Utilities (extra) */
 .h-full { height: 100%; }
-.h-screen { height: 100vh; }
 .w-12 { width: 3rem; }
 .w-16 { width: 4rem; }
 .w-32 { width: 8rem; }
@@ -538,7 +541,6 @@ ul, ol {
 .w-80 { width: 20rem; }
 .h-12 { height: 3rem; }
 .h-16 { height: 4rem; }
-.min-h-screen { min-height: 100vh; }
 
 /* Spacing Utilities (extra) */
 .p-2 { padding: var(--space-2); }
@@ -614,7 +616,7 @@ input.input-field, select.input-field, textarea.input-field {
   padding: 0 var(--space-4);
   height: 3rem; /* 48px min tap target */
   width: 100%;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
 }
 
 input.input-field:focus {
@@ -629,56 +631,25 @@ input.input-field:focus {
   border-color: var(--color-outline-variant-15);
 }
 
-/* Rule 3: Glassmorphism */
+/* Rule 3: Bars are solid. Fixed headers and the bottom nav sit on the page
+   ground (or one step up), never on a blur. */
 .glass-panel {
-  background: rgb(var(--glass-surface-rgb) / 0.88);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background-color: var(--color-surface);
 }
 
 .glass-panel-dark {
-  background: rgb(var(--glass-rgb) / 0.92);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background-color: var(--color-surface-container-lowest);
 }
 
-/* Rule 4: Shadows */
+/* Rule 4: Cards are a tone step above the ground, with no shadow. */
 .card-standard {
-  box-shadow: var(--shadow-standard);
   background-color: var(--color-surface-container-lowest);
   border-radius: var(--radius-2xl);
   border: none;
 }
 
 .card-floating {
-  box-shadow: var(--shadow-floating);
-}
-
-/* Ambient Glow */
-.ambient-glow-mint {
-  position: fixed;
-  bottom: -10%;
-  right: -5%;
-  width: 320px;
-  height: 320px;
-  background-color: rgb(var(--tint-primary-rgb) / 0.15); /* primary-fixed/15 */
-  border-radius: var(--radius-full);
-  filter: blur(90px);
-  z-index: -10;
-  pointer-events: none;
-}
-
-.ambient-glow-gold {
-  position: fixed;
-  top: 10%;
-  left: -8%;
-  width: 260px;
-  height: 260px;
-  background-color: rgb(var(--tint-secondary-rgb) / 0.12); /* secondary-fixed/12 */
-  border-radius: var(--radius-full);
-  filter: blur(70px);
-  z-index: -10;
-  pointer-events: none;
+  box-shadow: var(--shadow-floating); /* taste-skill-ignore: overlay class for menus and dialogs */
 }
 
 /* Rule 5: Buttons — consistent baseline so text never overlaps borders */
@@ -704,7 +675,6 @@ input.input-field:focus {
   transition:
     transform var(--transition-fast),
     background-color var(--transition-fast),
-    box-shadow var(--transition-fast),
     opacity var(--transition-fast),
     border-color var(--transition-fast);
 }
@@ -735,7 +705,6 @@ input.input-field:focus {
   height: 2.25rem;
   padding: 0 0.875rem;
   font-size: var(--text-micro);
-  letter-spacing: 0.02em;
 }
 
 .btn--block {
@@ -743,17 +712,13 @@ input.input-field:focus {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #1a6b47 0%, #22875a 100%);
-  color: var(--color-white);
-  box-shadow: 0 4px 12px rgb(var(--primary-rgb) / 0.18);
+  background-color: var(--color-brand);
+  color: var(--color-on-brand);
 }
 
-.btn-primary:hover:not(:disabled) {
-  box-shadow: 0 6px 18px rgb(var(--primary-rgb) / 0.28);
-}
-
+.btn-primary:hover:not(:disabled),
 .btn-primary:active {
-  background: linear-gradient(135deg, #165b3c 0%, #1d744d 100%);
+  background-color: var(--color-brand-strong);
 }
 
 .btn-secondary {
@@ -797,8 +762,6 @@ input.input-field:focus {
 .btn-on-glass {
   background-color: rgba(255, 255, 255, 0.18);
   color: var(--color-white);
-  border-color: rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(6px);
 }
 
 .btn-on-glass:hover:not(:disabled) {

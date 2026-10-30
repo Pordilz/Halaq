@@ -4,7 +4,7 @@
 
 .layout {
   display: flex;
-  min-height: 100vh;
+  min-height: 100vh; /* taste-skill-ignore: fallback for old Android WebViews without dvh */
   min-height: 100dvh;
 }
 
@@ -59,7 +59,7 @@
   color: var(--color-on-surface-variant);
   font-weight: var(--font-weight-subheading);
   font-size: var(--text-body-sm);
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
 .nav-item:hover {
@@ -87,19 +87,11 @@
   border-radius: var(--radius-full);
 }
 
-.nav-divider {
-  height: 1px;
-  background-color: var(--color-surface-container-high);
-  margin: var(--space-4) var(--space-4);
-}
-
 .nav-section-title {
-  padding: 0 var(--space-4) var(--space-2);
+  padding: var(--space-6) var(--space-4) var(--space-2);
   font-size: var(--text-micro);
   font-weight: var(--font-weight-heading);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--color-outline);
+  color: var(--color-on-surface-variant);
 }
 
 .sidebar-footer {
@@ -117,21 +109,6 @@
   padding: 0 var(--space-8);
   align-items: center;
   justify-content: space-between;
-}
-
-.topbar-context {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  line-height: 1.2;
-}
-
-.topbar-eyebrow {
-  font-size: var(--text-micro);
-  font-weight: var(--font-weight-heading);
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--color-outline);
 }
 
 .topbar-page {
@@ -162,16 +139,15 @@
   width: 320px;
   background-color: var(--color-surface-container-lowest);
   border-radius: var(--radius-2xl);
-  box-shadow: var(--shadow-floating);
+  box-shadow: var(--shadow-floating); /* taste-skill-ignore: the notifications popover floats */
   z-index: 100;
   overflow: hidden;
   animation: fadeSlideDown 180ms ease;
 }
 
 .notif-popover__header {
-  padding: var(--space-4) var(--space-5);
+  padding: var(--space-4) var(--space-5) 0;
   font-weight: var(--font-weight-heading);
-  border-bottom: 1px solid var(--color-outline-variant-15);
 }
 
 .notif-popover__empty {
@@ -187,7 +163,7 @@
 
 .notif-popover__hint {
   font-size: var(--text-micro);
-  color: var(--color-outline);
+  color: var(--color-on-surface-variant);
   max-width: 240px;
 }
 
@@ -215,20 +191,19 @@
   width: 2.5rem;
   height: 2.5rem;
   border-radius: var(--radius-full);
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-container) 100%);
-  color: var(--color-white);
+  background-color: var(--color-brand);
+  color: var(--color-on-brand);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: var(--font-weight-display);
   font-size: var(--text-body-sm);
   letter-spacing: -0.02em;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-  box-shadow: 0 2px 8px rgb(var(--primary-rgb) / 0.18);
+  transition: transform var(--transition-fast), background-color var(--transition-fast);
 }
 
 .avatar-chip:hover {
-  box-shadow: 0 4px 12px rgb(var(--primary-rgb) / 0.28);
+  background-color: var(--color-brand-strong);
 }
 
 .avatar-chip:active {
@@ -298,10 +273,9 @@
 .mobile-bottom-nav {
   display: flex;
   align-items: flex-start;
-  padding-top: var(--space-3);
-  padding-bottom: max(2rem, env(safe-area-inset-bottom));
-  border-top-left-radius: var(--radius-2xl);
-  border-top-right-radius: var(--radius-2xl);
+  padding-top: var(--space-2);
+  padding-bottom: max(var(--space-3), env(safe-area-inset-bottom));
+  background-color: var(--color-surface-container-lowest);
 }
 
 .mobile-nav-item {
@@ -311,8 +285,9 @@
   align-items: center;
   justify-content: center;
   gap: 2px;
-  color: var(--color-outline);
-  transition: all var(--transition-fast);
+  min-height: 48px;
+  color: var(--color-on-surface-variant);
+  transition: color var(--transition-fast), transform var(--transition-fast);
   position: relative;
   padding: var(--space-2) 0;
 }
@@ -330,10 +305,8 @@
 }
 
 .mobile-nav-label {
-  font-size: 10px;
+  font-size: var(--text-micro);
   font-weight: var(--font-weight-subheading);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
 .mobile-nav-indicator {
@@ -355,14 +328,16 @@
 
 .main-auth {
   width: 100%;
-  min-height: 100vh;
+  min-height: 100vh; /* taste-skill-ignore: fallback for old Android WebViews without dvh */
   min-height: 100dvh;
 }
 
 /* -------------------------------------
    MEDIA QUERIES
 -------------------------------------- */
-@media (min-width: 768px) {
+/* The desktop shell starts at 1024px. Below that, tablets get the phone
+   shell and the full width for content instead of a 512px column. */
+@media (min-width: 1024px) {
   .desktop-sidebar {
     display: flex;
   }
@@ -386,10 +361,10 @@
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
   .main-content {
-    padding-top: 6rem; /* pt-24 */
-    padding-bottom: 11rem; /* pb-44 */
+    padding-top: 5.5rem;
+    padding-bottom: 7.5rem;
     /* Container class handles px-5 */
   }
 }

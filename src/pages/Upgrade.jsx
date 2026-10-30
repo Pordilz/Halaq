@@ -5,52 +5,43 @@ import { createCheckoutSession } from '../services/halaqApi'
 import MaterialIcon from '../components/MaterialIcon'
 import './Upgrade.css'
 
+// What each tier actually unlocks in the code: Pro and Scholar share
+// isPro (AuthContext), so both get every Pro feature.
 const PLANS = [
   {
     id: 'free',
     name: 'Free',
-    tagline: 'Start screening today',
     price: '$0',
-    cadence: 'forever',
-    features: [
-      '50 stock screens per day',
-      'Basic compliance ruling',
-      'Save up to 20 watchlist stocks',
-      'AAOIFI methodology',
+    lines: [
+      '50 screens a day, 10 without an account',
+      'AAOIFI verdicts for any listed stock',
+      'A watchlist, re-screened every day',
+      'Verify for saved stocks that need a second look',
     ],
-    cta: 'Current plan',
-    disabled: true,
+    cta: 'Create an account',
   },
   {
     id: 'pro',
     name: 'Pro',
-    tagline: 'For active investors',
     price: '$9',
-    cadence: '/month',
-    highlighted: true,
-    features: [
-      'Unlimited stock screens',
-      'Full ratio breakdown & purification math',
-      'Batch screening (up to 20 tickers)',
-      'PDF compliance reports',
-      'Email alerts on compliance changes',
+    cadence: 'a month',
+    lines: [
+      'Unlimited screens',
+      'The full ratio and business breakdown',
+      'Purification calculator',
+      'Any of AAOIFI, S&P, Dow Jones and FTSE',
+      'Batch screening, up to 20 tickers',
+      'ETF X-Ray',
     ],
-    cta: 'Upgrade to Pro',
+    cta: 'Choose Pro',
   },
   {
     id: 'scholar',
     name: 'Scholar',
-    tagline: 'For advisers & professionals',
     price: '$29',
-    cadence: '/month',
-    features: [
-      'Everything in Pro',
-      'Multiple methodologies (AAOIFI, DJIM, S&P, FTSE)',
-      'ETF X-Ray (when released)',
-      'AI Shariah companion (when released)',
-      'Priority email support',
-    ],
-    cta: 'Upgrade to Scholar',
+    cadence: 'a month',
+    lines: ['For advisers who screen for others.', 'Everything in Pro, with priority email support.'],
+    cta: 'Choose Scholar',
   },
 ]
 
@@ -81,9 +72,10 @@ export default function Upgrade() {
   return (
     <div className="upgrade-page container animate-entrance">
       <header className="upgrade-page__header">
-        <h1 className="text-h1 mb-2">Pick the plan that fits you</h1>
-        <p className="text-on-surface-variant text-body-lg">
-          Start free. Upgrade only when you need deeper insight or batch tools. Cancel anytime.
+        <h1 className="upgrade-page__title">Free, or $9 a month</h1>
+        <p className="upgrade-page__lead">
+          Start free. Pro adds every standard, the full breakdown, and the tools for funds and long
+          lists. Cancel any time.
         </p>
       </header>
 
@@ -93,59 +85,56 @@ export default function Upgrade() {
         </div>
       )}
 
-      <div className="upgrade-page__grid">
-        {PLANS.map((plan) => {
-          const isCurrent = tier === plan.id
-          const isFocused = focusedTier === plan.id
+      <div className="upgrade-page__plans">
+        {PLANS.map((plan, i) => {
+          // tier defaults to 'free' before sign-in, so only a signed-in user has a current plan.
+          const isCurrent = !!user && (tier || 'free') === plan.id
           return (
             <article
               key={plan.id}
-              className={[
-                'plan-card card-standard',
-                plan.highlighted ? 'plan-card--highlight' : '',
-                isFocused ? 'plan-card--focused' : '',
-              ].filter(Boolean).join(' ')}
+              className={`plan-tile plan-tile--${i}${focusedTier === plan.id ? ' is-focused' : ''}`}
             >
-              {plan.highlighted && (
-                <span className="plan-card__ribbon">Most popular</span>
-              )}
-              <header className="plan-card__head">
-                <h2 className="plan-card__name">{plan.name}</h2>
-                <p className="plan-card__tagline">{plan.tagline}</p>
-              </header>
-              <div className="plan-card__price">
-                <span className="plan-card__amount">{plan.price}</span>
-                <span className="plan-card__cadence">{plan.cadence}</span>
-              </div>
-              <ul className="plan-card__features">
-                {plan.features.map((f) => (
-                  <li key={f}>
-                    <MaterialIcon name="check_circle" fill size={18} className="text-primary" />
-                    <span>{f}</span>
-                  </li>
-                ))}
+              <h2 className="plan-tile__name">{plan.name}</h2>
+              <p className="plan-tile__price">
+                {plan.price}
+                {plan.cadence && <span> {plan.cadence}</span>}
+              </p>
+              <ul className="plan-tile__lines">
+                {plan.lines.map(line => <li key={line}>{line}</li>)}
               </ul>
               <button
-                className={`btn ${plan.highlighted ? 'btn-primary' : 'btn-secondary'} plan-card__cta`}
-                disabled={plan.disabled || isCurrent || loadingTier === plan.id}
-                onClick={() => handleUpgrade(plan.id)}
+                type="button"
+                className="plan-tile__action"
+                disabled={isCurrent || loadingTier === plan.id}
+                onClick={() => (plan.id === 'free' ? navigate(user ? '/screener' : '/signup') : handleUpgrade(plan.id))}
               >
-                {loadingTier === plan.id ? (
-                  <MaterialIcon name="refresh" size={18} className="spinner" />
-                ) : isCurrent ? (
-                  'Current plan'
-                ) : (
-                  plan.cta
-                )}
+                {loadingTier === plan.id ? 'Opening checkout…' : isCurrent ? 'Your current plan' : plan.cta}
               </button>
             </article>
           )
         })}
       </div>
 
-      <p className="upgrade-page__fineprint">
-        Billing handled securely by Lemon Squeezy. VAT/sales tax included where applicable.
-      </p>
+      <section className="upgrade-page__terms" aria-label="Billing">
+        <div>
+          <h2>Cancelling</h2>
+          <p>
+            Paid plans renew each month until you cancel. Cancel from Profile at any time and you keep
+            access to the end of the month you paid for.
+          </p>
+        </div>
+        <div>
+          <h2>Refunds</h2>
+          <p>
+            New subscribers can ask for a full refund within 14 days of their first payment by
+            emailing <a href="mailto:qromatech@gmail.com">qromatech@gmail.com</a>.
+          </p>
+        </div>
+        <div>
+          <h2>Billing</h2>
+          <p>Payments are handled by Lemon Squeezy, in US dollars, with VAT or sales tax included where it applies.</p>
+        </div>
+      </section>
     </div>
   )
 }

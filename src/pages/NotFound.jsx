@@ -1,20 +1,19 @@
-import { useNavigate } from 'react-router'
-import MaterialIcon from '../components/MaterialIcon'
+import { Link } from 'react-router'
+import useDocumentTitle from '../hooks/useDocumentTitle'
 
 export default function NotFound() {
-  const navigate = useNavigate()
+  useDocumentTitle('Page not found', 'This page does not exist on Halaq.')
 
   return (
-    <div className="container status-screen">
-      <div className="status-screen__code" aria-hidden="true">404</div>
-      <MaterialIcon name="explore_off" size={48} className="text-outline-variant" />
-      <h1 className="text-h2">Page not found</h1>
-      <p className="status-screen__body text-on-surface-variant text-body-lg">
-        The page you're looking for doesn't exist or has been moved.
+    <div className="container status-screen status-screen--missing">
+      <h1 className="status-screen__title">This page isn’t here</h1>
+      <p className="status-screen__body text-body-lg">
+        The link may be old, or the address mistyped. You can screen any stock from the screener.
       </p>
-      <button type="button" className="btn btn-primary" onClick={() => navigate('/screener')}>
-        Back to Screener
-      </button>
+      <div className="status-screen__actions">
+        <Link to="/screener" className="btn btn-primary btn--lg">Screen a stock</Link>
+        <Link to="/" className="btn btn-ghost btn--lg">Go to the home page</Link>
+      </div>
     </div>
   )
 }

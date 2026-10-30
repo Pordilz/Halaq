@@ -6,8 +6,6 @@
   align-items: flex-end;
   justify-content: center;
   background-color: rgb(var(--glass-surface-rgb) / 0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
 }
 
 .setup-flow__sheet {
@@ -16,7 +14,7 @@
   padding: var(--space-8);
   border-radius: var(--radius-3xl) var(--radius-3xl) 0 0;
   background-color: var(--color-surface-container-lowest);
-  box-shadow: var(--shadow-floating);
+  box-shadow: var(--shadow-floating); /* taste-skill-ignore: a modal dialog floats */
 }
 
 .setup-flow__step {

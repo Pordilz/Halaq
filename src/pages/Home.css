@@ -5,34 +5,13 @@
 
 /* Hero */
 .home-hero {
-  background: linear-gradient(135deg, #1a6b47 0%, #22875a 100%);
+  background-color: var(--color-brand);
   border-radius: var(--radius-3xl);
   padding: var(--space-8) var(--space-6);
   color: var(--color-white);
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-10);
   position: relative;
   overflow: hidden;
-}
-
-.home-hero::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: radial-gradient(circle at 20% 100%, rgba(255, 255, 255, 0.18), transparent 60%),
-    radial-gradient(circle at 80% 0%, rgba(255, 215, 110, 0.16), transparent 50%);
-  pointer-events: none;
-  border-radius: inherit;
-}
-
-.home-hero__eyebrow {
-  position: relative;
-  display: inline-block;
-  font-size: var(--text-micro);
-  font-weight: var(--font-weight-heading);
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: rgba(255, 255, 255, 0.78);
-  margin-bottom: var(--space-2);
 }
 
 .home-hero__title {
@@ -70,17 +49,15 @@
 .home-hero__actions .btn-primary {
   background: var(--color-white);
   color: var(--color-on-primary-fixed-variant);
-  box-shadow: 0 6px 18px rgba(15, 26, 39, 0.18);
 }
 
 .home-hero__actions .btn-primary:hover:not(:disabled) {
-  box-shadow: 0 8px 24px rgba(15, 26, 39, 0.28);
-  background: var(--color-white);
+  background: var(--color-primary-fixed);
 }
 
 .home-hero__actions .btn-ghost {
   color: var(--color-white);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background-color: rgba(255, 255, 255, 0.16);
 }
 
 .home-hero__actions .btn-ghost:hover:not(:disabled) {
@@ -102,7 +79,6 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  box-shadow: var(--shadow-standard);
   position: relative;
 }
 
@@ -135,8 +111,6 @@
 .home-stat__label {
   font-size: var(--text-micro);
   font-weight: var(--font-weight-heading);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
   color: var(--color-outline);
 }
 
@@ -172,15 +146,8 @@
   height: 6px;
   border-radius: 50%;
   background: var(--color-tertiary);
-  box-shadow: 0 0 0 0 rgba(0, 128, 69, 0.6);
-  animation: home-live-pulse 1.8s ease-out infinite;
   vertical-align: 1px;
   margin: 0 2px;
-}
-
-@keyframes home-live-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 128, 69, 0.5); }
-  60% { box-shadow: 0 0 0 6px rgba(0, 128, 69, 0); }
 }
 
 .home-quote-status {
@@ -214,7 +181,6 @@
 
 .home-tile {
   background-color: var(--color-surface-container-lowest);
-  border: 1px solid var(--color-outline-variant-15);
   border-radius: var(--radius-2xl);
   padding: var(--space-4) var(--space-5);
   display: flex;
@@ -222,12 +188,11 @@
   gap: 4px;
   text-align: left;
   cursor: pointer;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+  transition: transform var(--transition-fast), background-color var(--transition-fast);
 }
 
 .home-tile:hover {
-  border-color: var(--color-primary);
-  box-shadow: 0 8px 24px rgb(var(--primary-rgb) / 0.10);
+  background-color: var(--color-surface-container-low);
 }
 
 .home-tile:active {
@@ -308,7 +273,6 @@
   flex-direction: column;
   align-items: center;
   gap: var(--space-3);
-  box-shadow: var(--shadow-standard);
 }
 
 .home-empty h3 {
@@ -335,7 +299,6 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
-  box-shadow: var(--shadow-standard);
   flex-wrap: wrap;
 }
 
@@ -378,7 +341,7 @@
     margin-right: 0;
     margin-top: 0;
     border-radius: var(--radius-2xl);
-    /* Generous horizontal inset so neither the heading nor the eyebrow
+    /* Generous horizontal inset so the heading doesn't
        can ever sit under the corner curve. Bigger bottom padding so the
        action buttons get breathing room from the rounded corners. Also
        respects notched-screen safe areas. */
@@ -396,12 +359,6 @@
     hyphens: none;
   }
 
-  /* Slightly louder eyebrow so the cap-letter doesn't visually merge with
-     the corner curve. */
-  .home-hero__eyebrow {
-    letter-spacing: 0.16em;
-    margin-bottom: var(--space-3);
-  }
 }
 
 /* Very narrow phones (iPhone SE-class, &lt; 360px viewport) — shave the

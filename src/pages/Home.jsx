@@ -139,10 +139,9 @@ export default function Home() {
   return (
     <div className="home-page container animate-entrance">
       <header className="home-hero">
-        <span className="home-hero__eyebrow">{greeting}</span>
-        <h1 className="home-hero__title">{firstName}, here's your portfolio.</h1>
+        <h1 className="home-hero__title">{greeting}, {firstName}</h1>
         <p className="home-hero__sub">
-          Live prices update every minute. Compliance status follows the {profile?.methodology || 'AAOIFI'} methodology.
+          Your saved stocks, with prices that refresh every minute and verdicts under {profile?.methodology || 'AAOIFI'}.
         </p>
         <div className="home-hero__actions">
           <button type="button" className="btn btn-primary" onClick={() => navigate('/screener')}>
@@ -166,7 +165,7 @@ export default function Home() {
       <section className="home-section">
         <header className="home-section__header">
           <div>
-            <h2 className="home-section__title">Watchlist · live prices</h2>
+            <h2 className="home-section__title">Watchlist</h2>
             <p className="home-section__sub">
               {watchlist.length === 0
                 ? 'Save a stock to see live prices here.'
@@ -224,18 +223,17 @@ export default function Home() {
         <header className="home-section__header">
           <div>
             <h2 className="home-section__title">Plan</h2>
-            <p className="home-section__sub">You're on the {tier.toUpperCase()} plan.</p>
+            <p className="home-section__sub">You're on the {tier.charAt(0).toUpperCase() + tier.slice(1)} plan.</p>
           </div>
         </header>
         <div className="home-plan-card">
           <div>
             <div className="home-plan-card__title">
-              <MaterialIcon name={isPro ? 'workspace_premium' : 'rocket_launch'} className="text-primary" size={22} />
               {isPro ? 'You\'re unlocked' : 'Upgrade for unlimited screens'}
             </div>
             <p className="home-plan-card__copy">
               {isPro
-                ? 'Unlimited screens, batch tools, methodology switching and PDF reports.'
+                ? 'Unlimited screens, every standard, the full breakdown, batch screening and ETF X-Ray.'
                 : 'Free tier includes 50 screens per day. Pro unlocks unlimited screens and the full ratio breakdown.'}
             </p>
           </div>

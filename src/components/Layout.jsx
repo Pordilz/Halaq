@@ -103,7 +103,6 @@ export default function Layout({ children }) {
 
           {user && (
             <>
-              <div className="nav-divider" />
               <div className="nav-section-title">Premium tools</div>
               {PREMIUM_TOOLS.map(item => {
                 const active = location.pathname.startsWith(item.to)
@@ -131,10 +130,7 @@ export default function Layout({ children }) {
 
       {/* ---------- Desktop topbar (no global search) ---------- */}
       <header className="desktop-topbar glass-panel">
-        <div className="topbar-context">
-          <span className="topbar-eyebrow">Halaq</span>
-          <span className="topbar-page">{topbarTitle(location.pathname)}</span>
-        </div>
+        <p className="topbar-page">{topbarTitle(location.pathname)}</p>
         <div className="topbar-actions" ref={notifRef}>
           <button
             type="button"

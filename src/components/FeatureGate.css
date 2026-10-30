@@ -30,8 +30,6 @@
   border-radius: var(--radius-full);
   font-size: var(--text-micro);
   font-weight: var(--font-weight-display);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
   line-height: 1;
 }
 

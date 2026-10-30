@@ -1,144 +1,151 @@
+/* Plans that step up: three flat colour tiles whose heights rise like a bar
+   chart, the same composition as the landing page's pricing. */
+
 .upgrade-page {
   padding-top: var(--space-6);
   padding-bottom: var(--space-12);
 }
 
 .upgrade-page__header {
+  max-width: 40rem;
   margin-bottom: var(--space-8);
-  max-width: 36rem;
+}
+
+.upgrade-page__title {
+  font-size: clamp(2.25rem, 5vw, 3.5rem);
+  font-weight: var(--font-weight-display);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+}
+
+.upgrade-page__lead {
+  margin-top: var(--space-4);
+  max-width: 34em;
+  font-size: var(--text-body-lg);
+  color: var(--color-on-surface);
 }
 
 .upgrade-page__error {
-  background-color: var(--color-error-container);
-  color: var(--color-on-error-container);
-  border-radius: var(--radius-xl);
-  padding: var(--space-3) var(--space-4);
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  margin-bottom: var(--space-6);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-xl);
+  background-color: var(--color-error-container);
+  color: var(--color-on-error-container);
   font-size: var(--text-body-sm);
   font-weight: var(--font-weight-subheading);
-  margin-bottom: var(--space-6);
 }
 
-.upgrade-page__grid {
+.upgrade-page__plans {
   display: grid;
   grid-template-columns: 1fr;
-  gap: var(--space-4);
+  gap: 8px;
 }
 
-.plan-card {
-  position: relative;
-  padding: var(--space-8) var(--space-7);
+.plan-tile {
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
-  border: 1px solid var(--color-outline-variant-15);
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+  padding: var(--space-7) var(--space-7) 0;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  transition: transform var(--transition-fast);
 }
 
-.plan-card--highlight {
-  border-color: var(--color-primary);
-  box-shadow: 0 16px 48px rgb(var(--primary-rgb) / 0.18);
-}
+/* Free: mint. Pro: brand green. Scholar: the ink colour, which inverts in
+   dark mode. Inks are fixed per field so contrast holds in both themes. */
+.plan-tile--0 { background-color: var(--color-primary-fixed); color: var(--color-on-primary-fixed); }
+.plan-tile--1 { background-color: var(--color-brand); color: var(--color-on-brand); }
+.plan-tile--2 { background-color: var(--color-on-surface); color: var(--color-surface); }
 
-.plan-card--focused {
-  transform: translateY(-4px);
-}
+.plan-tile.is-focused { transform: translateY(-6px); }
 
-/* Ribbon sits at the top of the card in normal flow — not absolutely
-   positioned. This means it can never overlap the title, regardless of
-   what other tokens or padding adjustments happen elsewhere. */
-.plan-card__ribbon {
-  align-self: flex-start;
-  background-color: var(--color-primary);
-  color: var(--color-on-primary);
-  padding: 0.3rem 0.75rem;
-  border-radius: var(--radius-full);
-  font-size: 0.6875rem;
-  font-weight: var(--font-weight-heading);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  line-height: 1;
-}
-
-.plan-card__head {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.plan-card__name {
+.plan-tile__name {
   font-size: var(--text-h3);
   font-weight: var(--font-weight-display);
   letter-spacing: -0.02em;
 }
 
-.plan-card__tagline {
-  color: var(--color-on-surface-variant);
-  font-size: var(--text-body-sm);
-}
-
-.plan-card__price {
-  display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
-}
-
-.plan-card__amount {
-  font-size: 2.75rem;
+.plan-tile__price {
+  margin-top: var(--space-1);
+  font-size: clamp(2.5rem, 4vw, 3.5rem);
   font-weight: var(--font-weight-display);
-  letter-spacing: -0.03em;
-  line-height: 1;
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
 }
 
-.plan-card__cadence {
-  color: var(--color-on-surface-variant);
+.plan-tile__price span {
   font-size: var(--text-body-sm);
+  font-weight: var(--font-weight-subheading);
+  letter-spacing: 0;
 }
 
-.plan-card__features {
-  list-style: none;
+.plan-tile__lines {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-5) 0 var(--space-7);
   padding: 0;
-  margin: 0;
+  list-style: none;
+  font-size: var(--text-body-lg);
+  line-height: 1.4;
+}
+
+/* The bottom strip, one tone darker than its tile, is the whole button. */
+.plan-tile__action {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
+  align-items: center;
+  min-height: 4rem;
+  margin: auto calc(-1 * var(--space-7)) 0;
+  padding: 0 var(--space-7);
+  border: 0;
+  background-color: rgba(0, 0, 0, 0.18);
+  color: inherit;
+  font: inherit;
+  font-size: var(--text-body-lg);
+  font-weight: var(--font-weight-heading);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
 }
 
-.plan-card__features li {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.625rem;
-  /* Reserve a tiny right gutter so long bullets like "Email alerts on
-     compliance changes" never run flush against the card edge. */
-  padding-right: 0.25rem;
-  font-size: var(--text-body-sm);
-  color: var(--color-on-surface);
-  line-height: 1.45;
+.plan-tile__action:hover:not(:disabled) { background-color: rgba(0, 0, 0, 0.28); }
+.plan-tile__action:active:not(:disabled) { background-color: rgba(0, 0, 0, 0.34); }
+.plan-tile__action:disabled { cursor: default; }
+.plan-tile__action:focus-visible { outline: 3px solid currentColor; outline-offset: -6px; }
+
+.upgrade-page__terms {
+  display: grid;
+  gap: var(--space-6);
+  margin-top: var(--space-12);
 }
 
-.plan-card__features li .material-symbols-outlined {
-  margin-top: 1px;
-  flex-shrink: 0;
+.upgrade-page__terms h2 {
+  font-size: var(--text-h3);
+  font-weight: var(--font-weight-heading);
+  letter-spacing: -0.015em;
 }
 
-.plan-card__cta {
-  margin-top: auto;
-  width: 100%;
+.upgrade-page__terms p {
+  margin-top: var(--space-2);
+  max-width: 34em;
+  font-size: var(--text-body-lg);
+  line-height: 1.55;
 }
 
-.upgrade-page__fineprint {
-  margin-top: var(--space-8);
-  text-align: center;
-  font-size: var(--text-body-sm);
-  color: var(--color-on-surface-variant);
-}
+.upgrade-page__terms a { color: var(--color-primary); font-weight: var(--font-weight-subheading); }
 
 @media (min-width: 900px) {
-  .upgrade-page__grid {
+  .upgrade-page__plans {
     grid-template-columns: repeat(3, 1fr);
-    align-items: stretch;
-    gap: var(--space-6);
+    align-items: end;
   }
+
+  .plan-tile--0 { min-height: 25rem; }
+  .plan-tile--1 { min-height: 31rem; }
+  .plan-tile--2 { min-height: 37rem; }
+
+  .upgrade-page__terms { grid-template-columns: repeat(3, 1fr); }
 }

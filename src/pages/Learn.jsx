@@ -25,14 +25,13 @@ export default function Learn() {
 
   return (
     <div className="learn-page container animate-entrance">
-      <div className="learn-hero mb-8">
-        <h1 className="text-h1 mb-2">Knowledge centre</h1>
-        <p className="text-on-surface-variant text-body-lg max-w-xl">
-          Plain-English explanations of the methodology behind every Halaq verdict — drawn from
-          AAOIFI standards, leading scholars, and peer-reviewed against the major Muslim
-          investing apps.
+      <header className="learn-header">
+        <h1 className="learn-header__title">Learn</h1>
+        <p className="learn-header__lead">
+          Plain-English explanations of how Halaq reaches a verdict, from the published AAOIFI,
+          S&amp;P, Dow Jones and FTSE methodologies.
         </p>
-      </div>
+      </header>
 
       <div className="categories-strip mb-6">
         {CATEGORIES.map(cat => (
@@ -47,36 +46,28 @@ export default function Learn() {
         ))}
       </div>
 
-      <div className="articles-grid">
+      <ul className="article-index">
         {filtered.map(a => (
-          <button
-            type="button"
-            key={a.id}
-            className="article-card card-standard"
-            onClick={() => {
-              // Reset scroll BEFORE the article mounts so the browser doesn't
-              // paint a single frame with the list's scroll position
-              // applied to the new article — that single frame is what made
-              // articles "open halfway through" visually.
-              window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
-              setOpenId(a.id)
-            }}
-          >
-            <div className="article-icon-wrapper">
-              <MaterialIcon name={a.icon} size={22} className="text-primary" />
-            </div>
-            <div className="article-meta">
-              <span className="article-category">{a.category}</span>
-              <span className="article-time">· {a.readTime}</span>
-            </div>
-            <h3>{a.title}</h3>
-            <p>{a.summary}</p>
-            <span className="article-card__cta">
-              Read article <MaterialIcon name="arrow_forward" size={14} />
-            </span>
-          </button>
+          <li key={a.id}>
+            <button
+              type="button"
+              className="article-index__row"
+              onClick={() => {
+                // Reset scroll BEFORE the article mounts so the browser doesn't
+                // paint a single frame with the list's scroll position
+                // applied to the new article — that single frame is what made
+                // articles "open halfway through" visually.
+                window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+                setOpenId(a.id)
+              }}
+            >
+              <span className="article-index__title">{a.title}</span>
+              <span className="article-index__summary">{a.summary}</span>
+              <span className="article-index__meta">{a.category}, {a.readTime}</span>
+            </button>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   )
 }
@@ -98,9 +89,9 @@ function ArticleView({ article, onBack }) {
       </button>
 
       <article className="article-view">
-        <span className="article-view__eyebrow">{article.category} · {article.readTime}</span>
         <h1 className="article-view__title">{article.title}</h1>
         <p className="article-view__lede">{article.summary}</p>
+        <p className="article-view__meta">{article.category}, {article.readTime}</p>
 
         {article.sections.map(s => (
           <section key={s.h} className="article-view__section">

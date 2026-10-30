@@ -150,44 +150,26 @@ export default function Login() {
 
   return (
     <div className="auth-shell">
-      <div className="auth-shell__split auth-shell__split--login">
+      <div className="auth-shell__split">
         {/* Brand panel — login: returning-user proof */}
-        <aside className="auth-shell__brand auth-shell__brand--login">
+        <aside className="auth-shell__brand">
           <Link to="/" className="auth-shell__logo" aria-label="Halaq home">
-            <Logo size={28} color="#ffffff" title="Halaq" />
+            <Logo size={28} color="#ffffff" title="" />
             <span>Halaq</span>
           </Link>
 
           <div className="auth-shell__brand-body">
-            <span className="auth-shell__brand-eyebrow">Welcome back</span>
-            <h2 className="auth-shell__hero">Pick up where you left off.</h2>
+            <h2 className="auth-shell__hero">Welcome back</h2>
             <p className="auth-shell__hero-sub">
-              Your watchlist, alerts, and methodology preferences are exactly where
-              you parked them.
+              Your watchlist and your chosen standard are where you left them.
             </p>
           </div>
 
-          <div className="auth-shell__highlight">
-            <MaterialIcon name="bookmarks" fill size={20} />
-            <div>
-              <strong>Watchlist · live prices</strong>
-              <span>Compliance and last price refresh every minute.</span>
-            </div>
-          </div>
-          <div className="auth-shell__highlight">
-            <MaterialIcon name="notifications_active" fill size={20} />
-            <div>
-              <strong>Status alerts</strong>
-              <span>Be the first to know if a holding flips compliance.</span>
-            </div>
-          </div>
-          <div className="auth-shell__highlight">
-            <MaterialIcon name="lock" fill size={20} />
-            <div>
-              <strong>Privacy-first</strong>
-              <span>We never sell your data. Your screens stay yours.</span>
-            </div>
-          </div>
+          <ul className="auth-shell__facts">
+            <li>Saved stocks are re-screened every day.</li>
+            <li>When a verdict changes, your watchlist shows it.</li>
+            <li>We never sell your data.</li>
+          </ul>
         </aside>
 
         <div className="auth-shell__panel auth-shell__panel--locked">
@@ -223,7 +205,7 @@ export default function Login() {
                     {resendStatus === 'sending'
                       ? 'Sending…'
                       : resendStatus === 'sent'
-                        ? 'Email sent ✓'
+                        ? 'Email sent'
                         : 'Resend confirmation email'}
                   </button>
                 </div>

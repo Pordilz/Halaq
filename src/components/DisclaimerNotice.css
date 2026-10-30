@@ -1,6 +1,5 @@
 .disclaimer-notice {
-  background-color: rgb(var(--tint-caution-rgb) / 0.5);
-  border: 1px solid rgba(146, 64, 14, 0.15);
+  background-color: rgb(var(--tint-caution-rgb) / 0.6);
   border-radius: var(--radius-2xl);
   display: flex;
   align-items: flex-start;

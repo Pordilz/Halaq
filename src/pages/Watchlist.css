@@ -49,8 +49,6 @@
 
 .stat-label {
   font-size: var(--text-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
   color: var(--color-outline);
   font-weight: var(--font-weight-heading);
 }
@@ -102,12 +100,10 @@
 .watchlist-list {
   background-color: var(--color-surface-container-lowest);
   border-radius: var(--radius-2xl);
-  box-shadow: var(--shadow-standard);
   overflow: hidden;
 }
 
 .watchlist-list > * + * {
-  border-top: 1px solid var(--color-outline-variant-15);
 }
 
 /* ---------- Empty state ---------- */
@@ -208,8 +204,8 @@
 
 .watchlist-changes__foot {
   margin-top: var(--space-4);
-  font-size: var(--text-micro);
-  color: var(--color-outline);
+  font-size: var(--text-body-sm);
+  color: var(--color-on-surface-variant);
 }
 
 .watchlist-loading {

@@ -3,7 +3,6 @@
   align-items: center;
   border-radius: var(--radius-full);
   font-weight: var(--font-weight-heading);
-  letter-spacing: 0.025em;
 }
 
 .compliance-badge--sm {

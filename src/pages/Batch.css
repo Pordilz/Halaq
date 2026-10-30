@@ -3,6 +3,11 @@
   padding-bottom: var(--space-16);
 }
 
+.batch-header {
+  max-width: 42rem;
+  margin-bottom: var(--space-8);
+}
+
 .batch-form {
   max-width: 700px;
   margin: 0 auto var(--space-10);
@@ -12,7 +17,6 @@
   background: var(--color-surface-container-lowest);
   border-radius: var(--radius-2xl);
   padding: var(--space-6);
-  box-shadow: var(--shadow-standard);
 }
 
 .batch-input {
@@ -20,26 +24,24 @@
   padding: var(--space-4) var(--space-5);
   border: 1px solid transparent;
   border-radius: var(--radius-xl);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: var(--text-body-sm);
+  font-size: var(--text-body-lg);
+  font-variant-numeric: tabular-nums;
   background: var(--color-surface-container);
   color: var(--color-on-surface);
   resize: vertical;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast), opacity var(--transition-fast);
   min-height: 7.5rem;
   line-height: 1.6;
 }
 
 .batch-input::placeholder {
   color: var(--color-outline);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 .batch-input:focus {
   outline: none;
   border-color: var(--color-primary);
   background: var(--color-surface-container-lowest);
-  box-shadow: 0 4px 20px rgb(var(--primary-rgb) / 0.10);
 }
 
 .batch-form .btn {
@@ -51,7 +53,6 @@
   overflow-x: auto;
   border-radius: var(--radius-2xl);
   background: var(--color-surface-container-lowest);
-  box-shadow: var(--shadow-standard);
 }
 
 .batch-table {
@@ -65,7 +66,6 @@
 .batch-table th,
 .batch-table td {
   padding: var(--space-4) var(--space-5);
-  border-bottom: 1px solid var(--color-outline-variant-15);
   white-space: nowrap;
   font-size: var(--text-body-sm);
   vertical-align: middle;
@@ -74,8 +74,6 @@
 .batch-table th {
   background: var(--color-surface-container-low);
   font-size: var(--text-micro);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
   color: var(--color-outline);
   font-weight: var(--font-weight-heading);
 }

@@ -977,7 +977,7 @@
   .lp-tile__cap strong { font-size: var(--lp-body); }
   [data-ui].lp-ui { font-size: 40px; }
   [data-ui].lp-ui--switch { font-size: 22px; }
-  [data-ui].lp-ui--change { font-size: 24px; }
+  [data-ui].lp-ui--change { font-size: 19px; }
   [data-ui].lp-ui--batch { font-size: 17px; }
   [data-ui].lp-ui--gap { font-size: 30px; }
   [data-ui].lp-ui--fund { font-size: 48px; }

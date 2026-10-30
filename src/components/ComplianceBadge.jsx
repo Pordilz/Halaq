@@ -8,31 +8,31 @@ import './ComplianceBadge.css'
 // from "we just couldn't fetch the data."
 const STATUS_CONFIG = {
   COMPLIANT: {
-    label: 'COMPLIANT',
+    label: 'Compliant',
     icon: 'check_circle',
     className: 'compliance-badge--compliant',
     tooltip: 'Passes both the business-activity screen and all financial ratios under the current methodology.',
   },
   NON_COMPLIANT: {
-    label: 'NON-COMPLIANT',
+    label: 'Non-compliant',
     icon: 'cancel',
     className: 'compliance-badge--non-compliant',
     tooltip: 'Fails the business-activity screen (e.g. conventional bank, alcohol, gambling) or at least one financial ratio is over its threshold.',
   },
   REVIEW_REQUIRED: {
-    label: 'REVIEW REQUIRED',
+    label: 'Needs review',
     icon: 'rule',
     className: 'compliance-badge--review',
     tooltip: 'Passes all financial ratios but operates in a mixed-business industry (hotels, media, etc.) where some revenue may be non-permissible. Verify the revenue mix before acting.',
   },
   UNVERIFIED: {
-    label: 'UNVERIFIED',
+    label: 'Unverified',
     icon: 'sync_problem',
     className: 'compliance-badge--unverified',
     tooltip: 'Halaq could not fetch enough reliable data to give a confident verdict — typically a missing balance-sheet line item. Tap Verify to re-fetch from official filings (SEC EDGAR for US tickers).',
   },
   PENDING: {
-    label: 'PENDING',
+    label: 'Pending',
     icon: 'schedule',
     className: 'compliance-badge--pending',
     tooltip: 'Compliance check has not run yet for this stock.',
@@ -41,7 +41,7 @@ const STATUS_CONFIG = {
   // through to UNVERIFIED rendering. Migration 007 backfills them on the
   // server; this guard keeps the UI safe in the interim.
   DOUBTFUL: {
-    label: 'UNVERIFIED',
+    label: 'Unverified',
     icon: 'sync_problem',
     className: 'compliance-badge--unverified',
     tooltip: 'Halaq could not fetch enough reliable data to give a confident verdict. Tap Verify to re-fetch from official filings.',

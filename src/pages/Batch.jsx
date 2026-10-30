@@ -82,9 +82,9 @@ export default function Batch() {
   return (
     <div className="batch-page">
       <div className="container">
-        <div className="text-center mb-10 max-w-2xl mx-auto animate-fade-in-up">
+        <div className="batch-header animate-fade-in-up">
           <h1 className="text-h1 mb-3">Batch Screening</h1>
-          <p className="text-on-surface-variant text-body-lg">Screen up to 20 tickers at once. Enter JSE or US tickers separated by commas, spaces, or newlines.</p>
+          <p className="text-on-surface-variant text-body-lg">Screen up to 20 tickers at once. Separate them with commas, spaces or new lines.</p>
         </div>
 
         <form onSubmit={handleBatch} className="batch-form animate-fade-in-up delay-1">

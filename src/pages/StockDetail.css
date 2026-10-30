@@ -40,7 +40,6 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-4);
-  box-shadow: var(--shadow-standard);
   margin-bottom: var(--space-4);
   flex-wrap: wrap;
 }
@@ -68,21 +67,9 @@
 }
 
 .sd-hero__meta {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
   font-size: var(--text-body-sm);
   color: var(--color-on-surface-variant);
   font-weight: var(--font-weight-label);
-}
-
-.sd-dot {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--color-outline-variant);
-  display: inline-block;
 }
 
 .sd-hero__right {
@@ -130,9 +117,10 @@
   flex-wrap: wrap;
 }
 
-.sd-banner--compliant { background: linear-gradient(135deg, #006837 0%, #008045 100%); }
-.sd-banner--non { background: linear-gradient(135deg, #b91c1c 0%, #ef4444 100%); }
-.sd-banner--doubtful { background: linear-gradient(135deg, #92400e 0%, #b45309 100%); }
+/* Flat status fields, the same in both themes (white text on each). */
+.sd-banner--compliant { background-color: #006837; }
+.sd-banner--non { background-color: #b91c1c; }
+.sd-banner--doubtful { background-color: #92400e; }
 
 .sd-banner__icon {
   width: 3rem;
@@ -156,8 +144,6 @@
 .sd-banner__label {
   font-size: var(--text-micro);
   font-weight: var(--font-weight-heading);
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
   opacity: 0.86;
 }
 
@@ -229,14 +215,11 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  border: 1px solid var(--color-outline-variant-15);
 }
 
 .sd-stat__label {
   font-size: var(--text-micro);
   font-weight: var(--font-weight-heading);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
   color: var(--color-outline);
 }
 
@@ -252,24 +235,21 @@
 }
 
 /* ---------- Tabs ---------- */
+/* Four equal tabs that always fit, so nothing hides off the edge on a phone. */
 .sd-tabs {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(4, auto);
   gap: 0.25rem;
   background-color: var(--color-surface-container-lowest);
   border-radius: var(--radius-full);
   padding: 0.25rem;
   margin-bottom: var(--space-5);
-  box-shadow: var(--shadow-standard);
-  overflow-x: auto;
-  scrollbar-width: none;
 }
 
-.sd-tabs::-webkit-scrollbar { display: none; }
-
 .sd-tab {
-  flex: 1;
-  min-width: max-content;
-  padding: 0.625rem 1rem;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.25rem;
   border-radius: var(--radius-full);
   background: transparent;
   border: none;
@@ -284,8 +264,16 @@
 .sd-tab:hover { color: var(--color-on-surface); }
 
 .sd-tab.is-active {
-  background-color: var(--color-primary);
-  color: var(--color-on-primary);
+  background-color: var(--color-brand);
+  color: var(--color-on-brand);
+}
+
+@media (max-width: 420px) {
+  .sd-tab { font-size: var(--text-micro); padding-inline: 0.5rem; }
+}
+
+@media (max-width: 767px) {
+  .sd-hero__right { width: 100%; text-align: left; }
 }
 
 /* ---------- Pane ---------- */
@@ -299,7 +287,6 @@
   background-color: var(--color-surface-container-lowest);
   border-radius: var(--radius-2xl);
   padding: var(--space-6);
-  box-shadow: var(--shadow-standard);
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
@@ -334,7 +321,6 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  border: 1px solid var(--color-outline-variant-15);
   position: relative;
   min-width: 0;
 }
@@ -365,8 +351,6 @@
 .sd-cell__label {
   font-size: var(--text-micro);
   font-weight: var(--font-weight-heading);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
   color: var(--color-outline);
   line-height: 1.25;
   /* Use word-break, NOT overflow-wrap: anywhere — anywhere would happily
@@ -415,7 +399,6 @@
   background-color: var(--color-surface);
   border-radius: var(--radius-xl);
   padding: var(--space-4) var(--space-5);
-  border: 1px solid var(--color-outline-variant-15);
 }
 
 .sd-about h4 {
@@ -428,6 +411,7 @@
   /* Always start as block so the transition between collapsed/expanded
      is visually unambiguous. Specificity also wins against `.sd-about p`. */
   display: block;
+  max-width: 68ch;
   color: var(--color-on-surface);
   line-height: 1.55;
   overflow-wrap: break-word;
@@ -529,7 +513,6 @@
   padding: var(--space-4);
   border-radius: var(--radius-xl);
   background-color: var(--color-surface);
-  border: 1px solid var(--color-outline-variant-15);
 }
 
 .sd-bus--tertiary { background-color: var(--color-tertiary-fixed); border-color: rgba(0, 104, 55, 0.2); }
@@ -570,14 +553,11 @@
   justify-content: space-between;
   gap: var(--space-3);
   padding-bottom: var(--space-3);
-  border-bottom: 1px solid var(--color-outline-variant-15);
 }
 
 .sd-pur__label {
   font-size: var(--text-micro);
   font-weight: var(--font-weight-heading);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
   color: var(--color-outline);
 }
 
@@ -617,8 +597,6 @@
   gap: var(--space-1);
   font-size: var(--text-micro);
   font-weight: var(--font-weight-heading);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
   color: var(--color-outline);
 }
 
@@ -650,7 +628,6 @@
   align-items: center;
   text-align: center;
   gap: var(--space-3);
-  box-shadow: var(--shadow-standard);
 }
 
 .sd-gate p {
@@ -668,7 +645,6 @@
   display: flex;
   gap: 0.5rem;
   background-color: var(--color-surface-container-lowest);
-  border-top: 1px solid var(--color-outline-variant-15);
   z-index: 50;
 }
 

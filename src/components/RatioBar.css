@@ -7,8 +7,6 @@
 .ratio-card__label {
   font-size: var(--text-micro);
   font-weight: var(--font-weight-heading);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
   color: var(--color-on-surface-variant);
 }
 

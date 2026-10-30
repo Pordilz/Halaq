@@ -141,55 +141,29 @@ export default function Signup() {
 
   return (
     <div className="auth-shell">
-      <div className="auth-shell__split auth-shell__split--signup">
+      <div className="auth-shell__split">
         {/* Brand panel — signup: outcome-focused proof */}
-        <aside className="auth-shell__brand auth-shell__brand--signup">
+        <aside className="auth-shell__brand">
           <Link to="/" className="auth-shell__logo" aria-label="Halaq home">
-            <Logo size={28} color="#ffffff" title="Halaq" />
+            <Logo size={28} color="#ffffff" title="" />
             <span>Halaq</span>
           </Link>
 
           <div className="auth-shell__brand-body">
-            <span className="auth-shell__brand-eyebrow">Free forever</span>
-            <h2 className="auth-shell__hero">Invest with a clear conscience.</h2>
+            <h2 className="auth-shell__hero">Free to start</h2>
             <p className="auth-shell__hero-sub">
-              Halaq is the Shariah stock screener for Muslim investors who refuse
-              to compromise — built on AAOIFI methodology and peer-reviewed
-              against the leading Muslim investing apps.
+              50 screens a day, a watchlist that is re-screened daily, and AAOIFI verdicts
+              with every number shown.
             </p>
           </div>
 
-          <ul className="auth-shell__bullets">
-            <li>
-              <span className="auth-shell__bullet-icon">
-                <MaterialIcon name="check_circle" fill size={18} />
-              </span>
-              <div>
-                <strong>10,000+ stocks screened</strong>
-                <span>JSE & US equities, full ratio breakdowns.</span>
-              </div>
-            </li>
-            <li>
-              <span className="auth-shell__bullet-icon">
-                <MaterialIcon name="check_circle" fill size={18} />
-              </span>
-              <div>
-                <strong>AAOIFI · DJIM · S&amp;P · FTSE</strong>
-                <span>Switch methodology to match your scholar.</span>
-              </div>
-            </li>
-            <li>
-              <span className="auth-shell__bullet-icon">
-                <MaterialIcon name="check_circle" fill size={18} />
-              </span>
-              <div>
-                <strong>Purification math, done</strong>
-                <span>We compute the haram-revenue % per dividend.</span>
-              </div>
-            </li>
+          <ul className="auth-shell__facts">
+            <li>Debt, cash and interest income, measured against each standard’s line.</li>
+            <li>Purification worked out from the company’s own interest income.</li>
+            <li>Pro adds S&amp;P, Dow Jones and FTSE, batch screening and ETF X-Ray.</li>
           </ul>
 
-          <p className="auth-shell__brand-foot">No credit card. No data sold. No compromise.</p>
+          <p className="auth-shell__brand-foot">No credit card, and we never sell your data.</p>
         </aside>
 
         <div className="auth-shell__panel auth-shell__panel--locked">
@@ -202,7 +176,7 @@ export default function Signup() {
             </header>
 
             <h1 className="auth-shell__title">Create account</h1>
-            <p className="auth-shell__sub">Free forever — no credit card.</p>
+            <p className="auth-shell__sub">Free, with no credit card.</p>
 
             <form onSubmit={handleSubmit} className="auth-shell__form" noValidate>
               {error && (

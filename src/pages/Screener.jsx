@@ -200,7 +200,7 @@ export default function Screener() {
       <div className="screener-hero">
         <h1 className="text-h1 mb-2">Find halal stocks</h1>
         <p className="text-on-surface-variant text-body-lg mb-6">
-          Screen JSE and US equities against AAOIFI standards in seconds.
+          Search any listed company and see its verdict, with every number behind it.
         </p>
 
         <div className="search-section-row max-w-2xl">
@@ -453,7 +453,7 @@ function TrendingPanel({ items, loading, error, isInWatchlist, toggleWatchlist, 
       </div>
 
       <div className="results-panel__footer">
-        <span>Prices via Yahoo Finance · refreshed on the edge every minute.</span>
+        <span>Prices from Yahoo Finance, refreshed every minute.</span>
       </div>
     </div>
   )

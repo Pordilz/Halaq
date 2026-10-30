@@ -20,11 +20,11 @@ import './StockDetail.css'
 // gaps — auto-resolvable via the Verify flow). DOUBTFUL is kept as a
 // deprecated alias so cached client state still renders sensibly.
 const STATUS_TONE = {
-  COMPLIANT: { className: 'sd-banner--compliant', icon: 'check_circle', label: 'COMPLIANT' },
-  NON_COMPLIANT: { className: 'sd-banner--non', icon: 'cancel', label: 'NON-COMPLIANT' },
-  REVIEW_REQUIRED: { className: 'sd-banner--doubtful', icon: 'rule', label: 'REVIEW REQUIRED' },
-  UNVERIFIED: { className: 'sd-banner--doubtful', icon: 'sync_problem', label: 'UNVERIFIED' },
-  DOUBTFUL: { className: 'sd-banner--doubtful', icon: 'sync_problem', label: 'UNVERIFIED' },
+  COMPLIANT: { className: 'sd-banner--compliant', icon: 'check_circle', label: 'Compliant' },
+  NON_COMPLIANT: { className: 'sd-banner--non', icon: 'cancel', label: 'Non-compliant' },
+  REVIEW_REQUIRED: { className: 'sd-banner--doubtful', icon: 'rule', label: 'Needs review' },
+  UNVERIFIED: { className: 'sd-banner--doubtful', icon: 'sync_problem', label: 'Unverified' },
+  DOUBTFUL: { className: 'sd-banner--doubtful', icon: 'sync_problem', label: 'Unverified' },
 }
 
 const TABS = [
@@ -291,19 +291,7 @@ export default function StockDetail() {
           <span className="sd-hero__ticker">{stock.ticker}</span>
           <h1 className="sd-hero__name">{stock.name}</h1>
           <div className="sd-hero__meta">
-            {stock.industry || stock.sector || 'Sector unavailable'}
-            {stock.exchange && (
-              <>
-                <span className="sd-dot" />
-                {stock.exchange}
-              </>
-            )}
-            {stock.country && (
-              <>
-                <span className="sd-dot" />
-                {stock.country}
-              </>
-            )}
+            {[stock.industry || stock.sector || 'Sector unavailable', stock.exchange, stock.country].filter(Boolean).join(', ')}
           </div>
         </div>
         {stock.price && (

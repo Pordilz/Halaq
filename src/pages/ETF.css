@@ -13,13 +13,14 @@
   gap: var(--space-2);
 }
 
+.etf-header p { max-width: 62ch; }
+
 /* Search */
 .etf-search {
   display: flex;
   align-items: center;
   gap: var(--space-3);
   background-color: var(--color-surface-container-lowest);
-  border: 1px solid var(--color-outline-variant);
   border-radius: var(--radius-full);
   padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
   color: var(--color-outline);
@@ -43,7 +44,6 @@
 .etf-card {
   background-color: var(--color-surface-container-lowest);
   border-radius: var(--radius-2xl);
-  box-shadow: var(--shadow-standard);
   padding: var(--space-5);
   display: flex;
   flex-direction: column;
@@ -101,8 +101,6 @@
 .etf-fund__ticker {
   font-size: var(--text-micro);
   font-weight: var(--font-weight-heading);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
   color: var(--color-outline);
 }
 
@@ -186,8 +184,6 @@
   text-align: left;
   font-size: var(--text-micro);
   font-weight: var(--font-weight-heading);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
   color: var(--color-outline);
   padding: var(--space-2) var(--space-2);
   border-bottom: 1px solid var(--color-outline-variant);
