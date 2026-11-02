@@ -18,12 +18,17 @@
     "android:run": "npm run android:build && cap run android",
     "android:assets": "npx --yes @capacitor/assets@3 generate --android",
     "android:apk": "npm run android:build && cd android && ./gradlew assembleRelease",
-    "android:aab": "npm run android:build && cd android && ./gradlew bundleRelease"
+    "android:aab": "npm run android:build && cd android && ./gradlew bundleRelease",
+    "ios:build": "vite build --mode ios && cap sync ios",
+    "ios:open": "cap open ios",
+    "ios:run": "npm run ios:build && cap run ios"
   },
   "dependencies": {
     "@capacitor/android": "^7.6.9",
     "@capacitor/app": "^7.1.2",
     "@capacitor/core": "^7.6.9",
+    "@capacitor/ios": "^7.6.10",
+    "@capacitor/keyboard": "^7.0.6",
     "@capacitor/splash-screen": "^7.0.5",
     "@capacitor/status-bar": "^7.0.6",
     "@lemonsqueezy/lemonsqueezy.js": "^4.0.0",

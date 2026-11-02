@@ -37,3 +37,4 @@ skills-lock.json
 
 # tasteskill working files (direction sheet, inspector screenshots)
 .taste-skill/
+.env.ios
