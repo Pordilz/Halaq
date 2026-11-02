@@ -1,0 +1,35 @@
+# Weekly check for changes in the boycott and accountability lists behind
+# the ethics check. When one has changed it opens (or updates) an issue
+# listing what changed, so src/content/boycotts.json can be refreshed by hand.
+name: Ethics lists
+
+on:
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - id: check
+        run: node scripts/check-ethics-sources.mjs
+      - if: steps.check.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh label create ethics-lists --color 1a6b47 --description "Boycott list changes" 2>/dev/null || true
+          existing=$(gh issue list --label ethics-lists --state open --json number --jq '.[0].number')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body-file ethics-sources-report.md
+          else
+            gh issue create --title "Ethics lists have changed" --label ethics-lists --body-file ethics-sources-report.md
+          fi
