@@ -12,7 +12,7 @@ import DisclaimerNotice from '../components/DisclaimerNotice'
 import useDocumentTitle from '../hooks/useDocumentTitle'
 import './Jobs.css'
 
-const VERDICT_ICON = { compliant: 'check_circle', review: 'rule', non: 'cancel' }
+const VERDICT_ICON = { compliant: 'check_circle', review: 'rule', non: 'cancel', none: 'help' }
 
 const STOCK_STATUS = {
   COMPLIANT: 'compliant',
@@ -60,6 +60,7 @@ export default function Jobs() {
   const [listings, setListings] = useState([])
   const [ticker, setTicker] = useState('')
   const [employer, setEmployer] = useState({ loading: false, data: null, error: null })
+  const [lookingUp, setLookingUp] = useState(false)
   const reportRef = useRef(null)
   // Only the latest read and lookup may update the page; an older one that
   // answers late is dropped.
@@ -71,6 +72,7 @@ export default function Jobs() {
     setListings([])
     setTicker('')
     if (!name.trim()) return
+    setLookingUp(true)
     let results = []
     try {
       results = await searchCompany(name)
@@ -78,6 +80,7 @@ export default function Jobs() {
       results = []
     }
     if (id !== lookupId.current) return
+    setLookingUp(false)
     setListings(results.filter(r => r.type !== 'ETF'))
     const match = pickEmployerListing(name, results, normalizeCompanyName)
     setTicker(match?.symbol || '')
@@ -184,11 +187,20 @@ export default function Jobs() {
       name: [companyName, employer.data?.name].filter(Boolean).join(' '),
       host: posting.url ? hostTerms(posting.url) : '',
       isJob: posting.isJob,
+      // Something to go on: a stock listing, or a posting or website that
+      // describes a named company. A bare name or a blocked site has neither.
+      employerKnown: !!employer.data || (!!companyName && posting.text.length >= 400),
     })
   }, [posting, employer.data, companyName])
 
+  // Until the company lookup finishes, a verdict would only flash and change.
+  const checking = lookingUp || employer.loading
+
   const employerName = employer.data?.name || companyName
   const ethics = useEthics({ name: employerName, ticker, aliases: companyName && companyName !== employerName ? [companyName] : [] })
+  // A company we know nothing about isn't "not listed" either, unless a list
+  // does name it (private companies like Ahava are on them).
+  const unknownAndUnlisted = !checking && job?.verdict === 'NO_INFORMATION' && !ethics?.summary?.listed
 
   return (
     <div className="jobs-page container animate-entrance">
@@ -273,14 +285,29 @@ export default function Jobs() {
             setTicker={setTicker}
           />
 
-          <div className={`jobs-verdict jobs-verdict--${job.tone}`}>
-            <MaterialIcon name={VERDICT_ICON[job.tone]} fill size={30} />
-            <div>
-              <span className="jobs-verdict__label">Working here</span>
-              <span className="jobs-verdict__value">{job.label}</span>
-              <span className="jobs-verdict__reason">{job.reason}</span>
+          {checking ? (
+            <div className="jobs-verdict jobs-verdict--none" aria-busy="true">
+              <MaterialIcon name="hourglass_empty" size={30} />
+              <div>
+                <span className="jobs-verdict__label">Working here</span>
+                <span className="jobs-verdict__value">Checking the company…</span>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className={`jobs-verdict jobs-verdict--${job.tone}`}>
+              <MaterialIcon name={VERDICT_ICON[job.tone]} fill size={30} />
+              <div>
+                <span className="jobs-verdict__label">Working here</span>
+                <span className="jobs-verdict__value">{job.label}</span>
+                <span className="jobs-verdict__reason">{job.reason}</span>
+                {job.verdict === 'NO_INFORMATION' && (
+                  <span className="jobs-verdict__reason">
+                    {posting.isJob ? 'Check the employer’s name above, pick its stock listing if it has one, or paste the full posting with its “About us” section.' : 'Check the spelling, pick its stock listing above if it has one, or paste one of its job postings.'}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="jobs-indicators">
             <Indicator
@@ -291,61 +318,66 @@ export default function Jobs() {
             <Indicator
               label="Employer’s business"
               value={
-                employer.loading ? 'Checking'
+                checking ? 'Checking'
+                  : job.verdict === 'NO_INFORMATION' ? 'No information'
                   : job.employerCore.length ? 'Prohibited'
                     : employer.data?.business?.status === 'CAUTION' || job.employerMentions.length ? 'Mostly permissible'
                       : employer.data || posting.text.length > 400 || job.employerCore.length ? 'Permissible' : 'Not identified'
               }
-              tone={job.employerCore.length ? 'error' : employer.data?.business?.status === 'CAUTION' || job.employerMentions.length ? 'caution' : 'ok'}
+              tone={checking || job.verdict === 'NO_INFORMATION' ? 'none' : job.employerCore.length ? 'error' : employer.data?.business?.status === 'CAUTION' || job.employerMentions.length ? 'caution' : 'ok'}
             />
             <Indicator
               label="Boycott lists"
-              value={employerName ? ethicsHeadline(ethics?.summary) : 'Not checked'}
-              tone={ethics?.summary?.listed ? 'caution' : 'ok'}
+              value={!employerName ? 'Not checked' : unknownAndUnlisted ? 'No information' : ethicsHeadline(ethics?.summary)}
+              tone={unknownAndUnlisted ? 'none' : ethics?.summary?.listed ? 'caution' : 'ok'}
             />
           </div>
 
-          <section className="jobs-card">
-            <h3>Rulings that apply</h3>
-            {job.rulings.length === 0 ? (
-              <div className="jobs-ruling">
-                <p>{GENERAL_PRINCIPLE.summary}</p>
-                <Evidence refs={GENERAL_PRINCIPLE.evidence} />
-              </div>
-            ) : (
-              job.rulings.map(r => (
-                <article key={r.id} className="jobs-ruling">
-                  <div className="jobs-ruling__head">
-                    <strong>{r.label}</strong>
-                    <span className={`jobs-chip jobs-chip--${r.appliesTo}`}>{APPLIES_TO[r.appliesTo]}</span>
-                  </div>
-                  <p>{r.summary}</p>
-                  {r.appliesTo !== 'role' && <p>{r.employer}</p>}
-                  <Evidence refs={r.evidence} />
-                </article>
-              ))
-            )}
-            {job.islamicFinance && (
-              <p className="jobs-card__note">
-                The posting describes Islamic finance or halal products, so banking and insurance terms weren’t
-                counted against it. Check that the products are certified by a Shariah board.
-              </p>
-            )}
-          </section>
+          {!checking && job.verdict !== 'NO_INFORMATION' && (
+            <section className="jobs-card">
+              <h3>Rulings that apply</h3>
+              {job.rulings.length === 0 ? (
+                <div className="jobs-ruling">
+                  <p>{GENERAL_PRINCIPLE.summary}</p>
+                  <Evidence refs={GENERAL_PRINCIPLE.evidence} />
+                </div>
+              ) : (
+                job.rulings.map(r => (
+                  <article key={r.id} className="jobs-ruling">
+                    <div className="jobs-ruling__head">
+                      <strong>{r.label}</strong>
+                      <span className={`jobs-chip jobs-chip--${r.appliesTo}`}>{APPLIES_TO[r.appliesTo]}</span>
+                    </div>
+                    <p>{r.summary}</p>
+                    {r.appliesTo !== 'role' && <p>{r.employer}</p>}
+                    <Evidence refs={r.evidence} />
+                  </article>
+                ))
+              )}
+              {job.islamicFinance && (
+                <p className="jobs-card__note">
+                  The posting describes Islamic finance or halal products, so banking and insurance terms weren’t
+                  counted against it. Check that the products are certified by a Shariah board.
+                </p>
+              )}
+            </section>
+          )}
 
           <section className="jobs-card">
             <h3>The employer</h3>
             <EmployerProfile employer={employer} companyName={companyName} posting={posting} />
           </section>
 
-          <section className="jobs-card">
-            <h3>Ethics and boycotts</h3>
-            {employerName ? (
-              <EthicsPanel name={employerName} ticker={ticker} country={employer.data?.country} ethics={ethics} />
-            ) : (
-              <p className="jobs-card__copy">Add the employer’s name above to check it against the boycott lists.</p>
-            )}
-          </section>
+          {!unknownAndUnlisted && (
+            <section className="jobs-card">
+              <h3>Ethics and boycotts</h3>
+              {employerName ? (
+                <EthicsPanel name={employerName} ticker={ticker} country={employer.data?.country} ethics={ethics} />
+              ) : (
+                <p className="jobs-card__copy">Add the employer’s name above to check it against the boycott lists.</p>
+              )}
+            </section>
+          )}
 
           {job.benefits.length > 0 && (
             <section className="jobs-card">

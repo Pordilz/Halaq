@@ -206,6 +206,10 @@
 .jobs-verdict--compliant { background-color: #006837; }
 .jobs-verdict--review { background-color: #92400e; }
 .jobs-verdict--non { background-color: #b91c1c; }
+.jobs-verdict--none {
+  background-color: var(--color-surface-container-high);
+  color: var(--color-on-surface);
+}
 
 .jobs-verdict__label {
   font-size: var(--text-micro);

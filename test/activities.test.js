@@ -120,3 +120,14 @@ test('Islamic banks are not read as conventional banks by name', async () => {
   assert.deepEqual(screenEmployerName({ name: 'Al Rayan Bank' }), [])
   assert.deepEqual(screenEmployerName({ name: 'Barclays' }), ['riba'])
 })
+
+test('an employer that can’t be found gets no verdict, unless the role decides it', () => {
+  const unknown = screenJob({ name: 'Zqxv Holdings', isJob: false, employerKnown: false })
+  assert.equal(unknown.verdict, 'NO_INFORMATION')
+  assert.equal(unknown.label, 'No information')
+  assert.equal(screenJob({ title: 'Data Analyst', text: 'Analyse data.', employerKnown: false }).verdict, 'NO_INFORMATION')
+  // A prohibited role is prohibited whoever employs it.
+  assert.equal(screenJob({ title: 'Bartender', text: '', employerKnown: false }).verdict, 'NOT_PERMISSIBLE')
+  // Anything found about the business is information.
+  assert.equal(screenJob({ name: 'bet365', isJob: false, employerKnown: false }).verdict, 'DIFFER')
+})

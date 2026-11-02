@@ -216,6 +216,7 @@ export const JOB_VERDICTS = {
   CAUTION: { label: 'Permissible with care', tone: 'review' },
   DIFFER: { label: 'Scholars differ', tone: 'review' },
   NOT_PERMISSIBLE: { label: 'Not permissible', tone: 'non' },
+  NO_INFORMATION: { label: 'No information', tone: 'none' },
 }
 
 /**
@@ -225,8 +226,11 @@ export const JOB_VERDICTS = {
  * @param {string} [input.industry]       Employer's industry, when it is listed
  * @param {string} [input.businessStatus] screenBusinessActivity status for the employer
  * @param {string} [input.description]    Employer's business description, when it is listed
+ * @param {boolean} [input.employerKnown] Whether there's anything to go on about the employer:
+ *   a stock listing, or a posting or website that describes it. Without it,
+ *   and with nothing found, there is no verdict rather than a clean one.
  */
-export function screenJob({ title = '', text = '', industry = '', businessStatus = null, description = '', name = '', host = '', isJob = true }) {
+export function screenJob({ title = '', text = '', industry = '', businessStatus = null, description = '', name = '', host = '', isJob = true, employerKnown = true }) {
   const role = isJob ? screenRole(title) : []
   const read = screenEmployerText(`${title}\n${text}`)
   const fromText = isJob
@@ -287,6 +291,11 @@ export function screenJob({ title = '', text = '', industry = '', businessStatus
     reason = employerMentions.length
       ? `${isJob ? 'The role is permissible. ' : ''}The ${isJob ? 'employer' : 'business'} is involved in ${activityLabels(employerMentions)} in some way; check whether that is part of the business or only a mention.`
       : `${isJob ? 'The role is permissible. ' : ''}The business is mostly permissible, with some income from prohibited sources.`
+  } else if (!employerKnown) {
+    verdict = 'NO_INFORMATION'
+    reason = isJob
+      ? 'We couldn’t find information about this employer, so there’s no verdict. The job title itself isn’t prohibited.'
+      : 'We couldn’t find information about this business, so there’s no verdict.'
   } else {
     verdict = 'PERMISSIBLE'
     reason = isJob
