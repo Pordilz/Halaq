@@ -213,7 +213,8 @@ export default function Screener() {
               aria-label="Search stocks"
               value={query}
               onChange={e => setQuery(e.target.value)}
-              autoFocus
+              // On touch screens focusing on load opens the keyboard over the page.
+              autoFocus={typeof window !== 'undefined' && window.matchMedia?.('(hover: hover) and (pointer: fine)').matches}
             />
             {query.length > 0 && (
               <button

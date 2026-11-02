@@ -142,7 +142,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 28px;
+  padding: calc(28px + env(safe-area-inset-top, 0px)) 28px 28px;
 }
 
 .lp-nav__brand {
@@ -939,7 +939,7 @@
   .lp { --lp-body: 17px; --lp-small: 15px; --lp-lead: 22px; --lp-heading: 9vw; --lp-display: 15.5vw; }
 
   .lp-hero { --seam: 46%; min-height: 560px; }
-  .lp-nav { padding: 16px; }
+  .lp-nav { padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 16px; }
   .lp-nav__actions { gap: 16px; }
   .lp-btn { min-height: 44px; padding: 0 16px; }
   .lp-hero__sentence { inset-inline: 16px; bottom: 24px; text-align: left; }

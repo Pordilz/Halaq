@@ -493,7 +493,7 @@
 
 @media (max-width: 640px) {
   .trending-row {
-    grid-template-columns: 3.5rem 1fr auto 2.5rem;
+    grid-template-columns: 4.25rem 1fr auto 2.5rem;
   }
   .trending-row__change {
     display: none;
@@ -533,6 +533,5 @@
 
   .search-input {
     height: 3rem;
-    font-size: var(--text-body-sm);
   }
 }

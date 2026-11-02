@@ -270,6 +270,14 @@ input, select, textarea {
   color: inherit;
 }
 
+/* iOS zooms the page into any focused field set below 16px, and the zoom
+   sticks after the keyboard closes. Touch screens get 16px fields. */
+@media (pointer: coarse) {
+  :is(input, select, textarea):not([type='checkbox'], [type='radio']) {
+    font-size: max(16px, 1em) !important;
+  }
+}
+
 ul, ol {
   list-style: none;
 }

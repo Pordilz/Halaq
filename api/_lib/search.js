@@ -20,7 +20,8 @@ export function pickSearchResults(quotes) {
   const primary = listed.filter(item => !SECONDARY_VENUES.has(item.exchange));
   return (primary.length ? primary : listed).slice(0, MAX_RESULTS).map(item => ({
     symbol: item.symbol,
-    name: item.shortname || item.longname || item.symbol,
+    // longname is the company's full name ("Nestlé S.A."), shortname an exchange code ("NESTLE N").
+    name: item.longname || item.shortname || item.symbol,
     exchange: item.exchDisp || item.exchange || '',
     type: item.quoteType,
   }));

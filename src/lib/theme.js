@@ -45,7 +45,8 @@ export function watchSystemTheme() {
   return () => darkQuery?.removeEventListener?.('change', onChange)
 }
 
-// Android app only: match the native status bar to the page.
+// Native apps: match the status bar to the page. On iOS the bar is
+// transparent over the page, so only its text colour (style) applies.
 async function syncStatusBar(theme) {
   try {
     const { Capacitor } = await import('@capacitor/core')
@@ -53,7 +54,9 @@ async function syncStatusBar(theme) {
     const { StatusBar, Style } = await import('@capacitor/status-bar')
     // Style.Dark = light icons for a dark bar; Style.Light = dark icons.
     await StatusBar.setStyle({ style: theme === 'dark' ? Style.Dark : Style.Light })
-    await StatusBar.setBackgroundColor({ color: theme === 'dark' ? '#0f141a' : '#f8f9fb' })
+    if (Capacitor.getPlatform() === 'android') {
+      await StatusBar.setBackgroundColor({ color: theme === 'dark' ? '#0f141a' : '#f1f4f8' })
+    }
   } catch {
     // Plugin unavailable — keep the capacitor.config.json defaults.
   }

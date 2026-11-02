@@ -29,6 +29,23 @@ export default function Layout({ children }) {
   // Hide shell completely on landing/auth pages
   const isAuthPage = ['/', '/login', '/signup'].includes(location.pathname)
 
+  // While typing on a touch screen the keyboard takes the bottom of the
+  // screen, so the tab bar steps aside rather than sitting on top of it.
+  useEffect(() => {
+    if (!window.matchMedia?.('(pointer: coarse)').matches) return undefined
+    const isField = el => el?.matches?.('input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]), textarea, select, [contenteditable="true"]')
+    const sync = () => document.documentElement.classList.toggle('is-typing', isField(document.activeElement))
+    // Focus has moved by the next tick, so read it then.
+    const syncLater = () => setTimeout(sync, 0)
+    document.addEventListener('focusin', sync)
+    document.addEventListener('focusout', syncLater)
+    return () => {
+      document.removeEventListener('focusin', sync)
+      document.removeEventListener('focusout', syncLater)
+      document.documentElement.classList.remove('is-typing')
+    }
+  }, [])
+
   // Close notifications dropdown on outside click / Escape
   useEffect(() => {
     if (!notifOpen) return
