@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router'
 import { apiUrl } from '../lib/apiBase'
 import { fetchAllScreeningData } from '../services/yahooFinanceApi'
 import { screenStock } from '../services/complianceEngine'
-import { screenJob, readPostingText, looksLikeUrl, pickEmployerListing, GENERAL_PRINCIPLE } from '../services/jobEngine'
+import { screenJob, readPostingText, looksLikeUrl, pickEmployerListing, isJobPosting, hostTerms, GENERAL_PRINCIPLE } from '../services/jobEngine'
 import { normalizeCompanyName } from '../services/ethics'
 import EthicsPanel, { useEthics, ethicsHeadline } from '../components/EthicsPanel'
 import ScreenerSwitch from '../components/ScreenerSwitch'
@@ -29,6 +29,17 @@ async function readPostingLink(url) {
   const body = await res.json().catch(() => ({}))
   if (!res.ok) throw Object.assign(new Error(body.error || 'We couldn’t read that posting.'), { code: body.code })
   return body
+}
+
+/** hentai.com, careers.bet365.com → bet365.com: the site's own name. */
+function siteName(url) {
+  try {
+    const labels = new URL(url).hostname.replace(/^www\./, '').split('.')
+    const keep = labels.length > 2 && labels.at(-2).length <= 3 ? 3 : 2
+    return labels.slice(-keep).join('.')
+  } catch {
+    return ''
+  }
 }
 
 async function searchCompany(name) {
@@ -81,14 +92,26 @@ export default function Jobs() {
     try {
       let next
       if (looksLikeUrl(value)) {
-        next = await readPostingLink(value)
+        const url = /^https?:\/\//i.test(value) ? value : `https://${value}`
+        try {
+          next = await readPostingLink(url)
+          if (!next.company) next.company = readPostingText(next.text).company || siteName(url)
+        } catch (err) {
+          // A site that won't be read (bet365, LinkedIn) still has a name
+          // and an address worth screening.
+          next = { title: '', company: siteName(url), text: '', url, source: 'unread', industry: '', readError: err.message }
+        }
         if (id !== runId.current) return
-        if (!next.company) next.company = readPostingText(next.text).company
         setParams({ url: value }, { replace: true })
+      } else if (!value.includes('\n') && value.length <= 80 && !isJobPosting({ text: value })) {
+        // A company name on its own: screen the business.
+        next = { title: '', company: value, text: '', url: '', source: 'name', industry: '' }
+        if (params.get('url')) setParams({}, { replace: true })
       } else {
         next = { ...readPostingText(value), url: '', source: 'pasted', industry: '' }
         if (params.get('url')) setParams({}, { replace: true })
       }
+      next.isJob = !['unread', 'name'].includes(next.source) && isJobPosting(next)
       setPosting(next)
       setCompanyName(next.company || '')
       setPhase('ready')
@@ -158,8 +181,11 @@ export default function Jobs() {
       industry: employer.data?.industry || posting.industry || '',
       businessStatus: employer.data?.business?.status || null,
       description: employer.data?.description || '',
+      name: [companyName, employer.data?.name].filter(Boolean).join(' '),
+      host: posting.url ? hostTerms(posting.url) : '',
+      isJob: posting.isJob,
     })
-  }, [posting, employer.data])
+  }, [posting, employer.data, companyName])
 
   const employerName = employer.data?.name || companyName
   const ethics = useEthics({ name: employerName, ticker, aliases: companyName && companyName !== employerName ? [companyName] : [] })
@@ -213,7 +239,7 @@ export default function Jobs() {
       {phase === 'ready' && posting && job && (
         <div className="jobs-report" ref={reportRef}>
           <header className="jobs-head">
-            <h2>{posting.title || 'Untitled role'}</h2>
+            <h2>{posting.isJob ? posting.title || 'Untitled role' : employerName || 'This business'}</h2>
             <p>
               {[employerName, posting.location].filter(Boolean).join(', ') || 'Employer not found in the posting'}
               {posting.url && (
@@ -224,6 +250,19 @@ export default function Jobs() {
               )}
             </p>
           </header>
+
+          {!posting.isJob && (
+            <div className="jobs-notice" role="status">
+              <MaterialIcon name="info" size={20} />
+              <p>
+                {posting.source === 'unread'
+                  ? `We couldn’t read that page (${posting.readError?.replace(/\.$/, '') || 'it was blocked'}), so this screens the business from its name and web address.`
+                  : posting.source === 'name'
+                    ? 'This screens the business by its name. Paste a job posting to have the role checked too.'
+                    : 'This page doesn’t look like a job posting, so this screens the business behind it.'}
+              </p>
+            </div>
+          )}
 
           <EmployerPicker
             companyName={companyName}
@@ -246,8 +285,8 @@ export default function Jobs() {
           <div className="jobs-indicators">
             <Indicator
               label="The role"
-              value={job.role.length ? (job.verdict === 'NOT_PERMISSIBLE' ? 'Prohibited' : 'Scholars differ') : 'Permissible'}
-              tone={job.role.length ? (job.verdict === 'NOT_PERMISSIBLE' ? 'error' : 'caution') : 'ok'}
+              value={!posting.isJob ? 'No role given' : job.role.length ? (job.role.some(id => job.rulings.find(r => r.id === id)?.severity === 'prohibited') ? 'Prohibited' : 'Scholars differ') : 'Permissible'}
+              tone={!posting.isJob ? 'none' : job.role.length ? (job.role.some(id => job.rulings.find(r => r.id === id)?.severity === 'prohibited') ? 'error' : 'caution') : 'ok'}
             />
             <Indicator
               label="Employer’s business"
@@ -255,13 +294,13 @@ export default function Jobs() {
                 employer.loading ? 'Checking'
                   : job.employerCore.length ? 'Prohibited'
                     : employer.data?.business?.status === 'CAUTION' || job.employerMentions.length ? 'Mostly permissible'
-                      : employer.data || posting.text.length > 400 ? 'Permissible' : 'Not identified'
+                      : employer.data || posting.text.length > 400 || job.employerCore.length ? 'Permissible' : 'Not identified'
               }
               tone={job.employerCore.length ? 'error' : employer.data?.business?.status === 'CAUTION' || job.employerMentions.length ? 'caution' : 'ok'}
             />
             <Indicator
               label="Boycott lists"
-              value={ethicsHeadline(ethics?.summary)}
+              value={employerName ? ethicsHeadline(ethics?.summary) : 'Not checked'}
               tone={ethics?.summary?.listed ? 'caution' : 'ok'}
             />
           </div>

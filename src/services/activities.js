@@ -145,7 +145,8 @@ export const ACTIVITIES = {
       /\badult (content|entertainment|industry|film|performer|model)\b/,
       /\bporn/,
       /\b(cam|webcam) (model|performer)\b/,
-      /\b(stripper|exotic dancer|pole dancer|escort)\b/,
+      /\b(stripper|exotic dancer|pole dancer)\b/,
+      /^escorts?$|\bescort (girl|agency|model)\b/,
       /\bsex (shop|store|worker)\b/,
     ],
     text: [/\badult (content|entertainment|films?|industry|store)\b/, /\bpornograph(y|ic)\b/, /\bstrip clubs?\b/, /\bgentlemen'?s clubs?\b/, /\bwebcam models?\b/, /\bsex (toys?|shop|store)\b/, /\bescort (agency|services)\b/],
@@ -159,7 +160,7 @@ export const ACTIVITIES = {
       'Most contemporary scholars hold that smoking and recreational drugs are prohibited because of the harm they cause, which makes selling and promoting them prohibited too. Some older opinions held tobacco to be disliked rather than prohibited.',
     evidence: ['Quran 2:195', 'Sunan Ibn Majah 2340'],
     employer: 'Scholars differ on roles at a tobacco or cannabis company that have no part in the product itself.',
-    role: [/\btobacco(nist)?\b/, /\bcigar(ette)?s?\b/, /\bvap(e|ing)\b/, /\bcannabis\b/, /\bbudtender\b/, /\bdispensary\b/, /\b(shisha|hookah)\b/, /\bsmoke shop\b/],
+    role: [/\btobacco(nist)?\b/, /\bcigar(ette)?s?\b/, /\bvap(e|ing)\b/, /\bcannabis\b/, /\bbudtender\b/, /\bcannabis dispensary\b/, /\b(shisha|hookah)\b/, /\bsmoke shop\b/],
     text: [/\btobacco\b/, /\bcigarettes?\b/, /\bvap(e|es|ing)\b/, /\bnicotine\b/, /\bcannabis\b/, /\bmarijuana\b/, /\b(shisha|hookah)\b/],
     describe: [/\b(tobacco|cigarettes?|cigars?|e-?cigarettes?|vapou?r products|vaping|nicotine|cannabis|marijuana|heated tobacco)\b/],
   },
@@ -216,17 +217,101 @@ export const ACTIVITIES = {
   },
 
   fortune: {
-    label: 'Fortune-telling',
+    label: 'Fortune-telling and magic',
     severity: 'prohibited',
     hardEmployer: true,
-    summary: 'Claiming knowledge of the unseen through astrology, tarot or psychic readings is prohibited, and so is earning from it.',
-    evidence: ['Quran 27:65', 'Sahih Muslim 2230'],
-    employer: 'A company built on fortune-telling is not a permissible employer.',
-    role: [/\b(psychic|tarot|astrolog(er|y)|clairvoyant|medium reader|fortune teller)\b/],
-    text: [/\b(psychic|tarot|astrology|horoscopes?|fortune telling)\b/],
+    summary:
+      'Claiming knowledge of the unseen through astrology, tarot or psychic readings is prohibited, and so is earning from it. Magic and spells are prohibited in the Quran.',
+    evidence: ['Quran 27:65', 'Quran 2:102', 'Sahih Muslim 2230'],
+    employer: 'A company built on fortune-telling or magic is not a permissible employer.',
+    role: [/\b(psychic|tarot|astrolog(er|y)|clairvoyant|medium reader|fortune teller|numerologist|palm reader|spell ?caster|witch(craft)?)\b/],
+    text: [/\b(psychic|tarot|astrology|horoscopes?|fortune telling|numerology|palm reading|black magic|witchcraft|spells?|occult|clairvoyan(t|ce))\b/],
     describe: [/\b(astrology|horoscopes?|psychic readings?|tarot)\b/],
   },
 }
+
+// ── Wider vocabularies ──────────────────────────────────────────────────
+
+/**
+ * Words a business's own site or posting uses when the activity is what it
+ * sells. Each strong hit counts twice, so a page that is plainly an adult
+ * site, a casino or a brewery reads as that business on two of them.
+ */
+const STRONG = {
+  adult: [
+    /\bporn/, /\bhentai\b/, /\bxxx\b/, /\bnsfw\b/, /\bsexually explicit\b/, /\bexplicit (sexual|content|videos?|images)\b/,
+    /\bsexual activity\b/, /\bnudity\b/, /\bnude\b/, /\badult (website|site|videos?|movies?|cams?|chat)\b/,
+    /\bage[- ]restricted (material|content|videos?)\b/, /\bcam ?girls?\b/, /\bescort (agency|agencies|services|girls?)\b/, /\bfetish\b/, /\berotic(a)?\b/, /\bhook ?ups?\b/,
+    /\bonlyfans\b/, /\bsex (videos?|chat|cams?|dating)\b/,
+  ],
+  gambling: [/\bcasino\b/, /\bjackpots?\b/, /\b(slot machines|online slots|slot games)\b/, /\broulette\b/, /\bblackjack\b/, /\bpoker\b/, /\bsports ?book\b/, /\bplace (a |your )?bets?\b/, /\bfree spins\b/, /\b(betting|best|boosted) odds\b/, /\bgamble\b/],
+  alcohol: [/\bwhisk(e)?y\b/, /\bvodka\b/, /\btequila\b/, /\bgin\b/, /\brum\b/, /\blagers?\b/, /\bales?\b/, /\bcraft beer\b/, /\bliquor\b/, /\bbrewery\b/, /\bdistillery\b/, /\bwinery\b/],
+  tobacco: [/\bcigars?\b/, /\be-?cigarettes?\b/, /\bvapes?\b/, /\bthc\b/, /\bcannabis dispensar(y|ies)\b/, /\bpsilocybin\b/, /\bmagic mushrooms\b/, /\bkratom\b/],
+  weapons: [/\bguns?\b/, /\bfirearms?\b/, /\bammo\b/, /\bammunition\b/, /\bpistols?\b/, /\brifles?\b/, /\bshotguns?\b/],
+  speculation: [/\bbinary options\b/, /\bcopy trading\b/, /\bleverage(d)? (trading|up to)\b/, /\b(trade|trading) (cfds|forex|fx)\b/],
+  riba: [/\bpayday loans?\b/, /\b(representative apr|[1-9]\d*(\.\d+)?% apr)\b/, /\bborrow (up to|from)\b/, /\bpersonal loans?\b/, /\bloan calculator\b/],
+  fortune: [/\bhoroscopes?\b/, /\btarot readings?\b/, /\bpsychic readings?\b/, /\blove spells?\b/],
+  music: [/\b(stream|listen to) music\b/, /\bplaylists?\b/, /\bconcert tickets\b/],
+  pork: [/\bpork\b/, /\bbacon\b/],
+}
+
+/**
+ * Names that tell you the business on their own: brands and the words a
+ * company or website name is built from. Matched against the employer's
+ * name and the link's address. `brands` count wherever they appear;
+ * `words` only count when the company isn't a listing with a known industry,
+ * since a listed "Bank of …" is better judged by its industry.
+ */
+const NAMES = {
+  adult: {
+    brands: /\b(pornhub|xvideos|xhamster|xnxx|redtube|youporn|brazzers|onlyfans|fansly|manyvids|chaturbate|stripchat|bongacams|livejasmin|myfreecams|camsoda|cam4|aylo|mindgeek|playboy|hustler|adultfriendfinder|ashley ?madison|nhentai|e-?hentai|rule ?34|spankbang|eporner|tube8|clips4sale|naughty ?america|bangbros|realitykings|vivid entertainment)\b/,
+    words: /\b(porn\w*|hentai\w*|xxx\w*|nsfw|sex|sexcams?|sexchat|sexshop|erotic\w*|fetish|escort (agency|services)|camgirls?|nudes?|stripclub|gentlemen'?s club|brothel|adult(cams?|chat|videos?|store|toys?))\b/,
+  },
+  gambling: {
+    brands: /\b(bet365|william ?hill|ladbrokes|coral|paddy ?power|betfair|sky ?bet|betway|betfred|unibet|888(casino|poker|sport)?|pokerstars|draftkings|fanduel|betmgm|caesars (sportsbook|casino)|entain|flutter|kindred|evoke|bovada|bwin|partypoker|ggpoker|national lottery|camelot|allwyn|gamesys|playtech|evolution gaming|light ?& ?wonder|scientific games|international game technology|las vegas sands|wynn|mgm resorts|genting|crown resorts|tabcorp|sportsbet|stake\.com|roobet|bc\.game|rollbit|duelbits|ladbrokes coral|betvictor|boylesports|mr ?green|leovegas|casumo)\b/,
+    words: /\b(casinos?|bet(ting|s)?|bookmakers?|bookies|poker|slots|bingo|lotter(y|ies)|sportsbooks?|wager\w*|jackpot\w*|roulette|blackjack|gambling)\b/,
+  },
+  alcohol: {
+    brands: /\b(diageo|ab ?inbev|anheuser-?busch|heineken|carlsberg|molson coors|pernod ricard|brown-?forman|constellation brands|campari|r[eé]my cointreau|beam suntory|suntory|bacardi|asahi|kirin|sapporo|brewdog|guinness|budweiser|corona|smirnoff|johnnie walker|jack daniel'?s|jameson|absolut|moet hennessy|treasury wine|accolade wines|greene king|marston'?s|mitchells (& |and )?butlers|wetherspoon|fuller'?s|stonegate|young'?s)\b/,
+    words: /\b(brew(ery|eries|ing|ers?|dog)|distill(ery|eries|ers?)|winer(y|ies)|wines?|vineyards?|beers?|liquors?|pubs?|taverns?|cocktail bars?|wine bars?|whisk(e)?y|vodka|tequila)\b/,
+  },
+  tobacco: {
+    brands: /\b(philip morris|british american tobacco|imperial brands|japan tobacco|altria|juul|vuse|iqos|marlboro|elf ?bar|lost mary|curaleaf|tilray|canopy growth|aurora cannabis|trulieve|cronos group|swedish match|scandinavian tobacco)\b/,
+    words: /\b(tobacco\w*|cigars?|cigarettes?|vapes?|vaping|smoke ?shop|shisha|hookah|cannabis|marijuana|thc)\b/,
+  },
+  riba: {
+    brands: /\b(barclays|hsbc|lloyds|natwest|santander|jp ?morgan|chase|bank of america|wells fargo|citi(group|bank)?|goldman sachs|morgan stanley|capital one|american express|amex|monzo|starling|revolut|nationwide building society|halifax|tsb|metro bank|virgin money|wonga|quickquid|provident financial|amigo loans|oakam|lending ?club|sofi|upstart|rocket mortgage|quicken loans|ocwen|onemain|credit karma)\b/,
+    words: /\b(banks?|banking|bancorp|bancshares|lenders?|lending|loans?|mortgages?|payday|pawn\w*|credit union|building society|savings and loan)\b/,
+  },
+  insurance: {
+    brands: /\b(aviva|axa|allianz|prudential|legal (& |and )?general|zurich|geico|state farm|progressive|allstate|metlife|aig|chubb|lloyd'?s of london|admiral|direct line|hiscox|aon|marsh|willis towers watson|munich re|swiss re|hannover re|aflac|travelers|liberty mutual|nationwide mutual)\b/,
+    words: /\b(insurance|insurers?|assurance|reinsurance|underwriters?)\b/,
+  },
+  speculation: {
+    brands: /\b(etoro|plus500|ig group|cmc markets|pepperstone|oanda|forex\.com|avatrade|xm\.com|exness|ic markets|deriv|iq ?option|pocket option)\b/,
+    words: /\b(forex|cfds?|binary options|spread betting)\b/,
+  },
+  weapons: {
+    brands: /\b(lockheed( martin)?|raytheon|rtx|bae systems|northrop( grumman)?|general dynamics|elbit|rafael|israel aerospace|rheinmetall|thales|leonardo|saab|kongsberg|mbda|smith (& |and )?wesson|sturm,? ruger|ruger|colt|glock|sig sauer|heckler (& |and )?koch|remington|winchester|beretta|anduril|l3 ?harris|huntington ingalls|nammo|fn herstal|hanwha aerospace|kraus-?maffei|nexter|knds|bharat dynamics|norinco|rostec|kalashnikov|olin)\b/,
+    words: /\b(guns?|gunsmiths?|firearms?|arms (dealer|manufacturer)|ammo|ammunition|munitions?|armou?ry|defen[cs]e systems|missiles?|tactical arms)\b/,
+  },
+  fortune: {
+    brands: /\b(co[–-]?star astrology|kasamba|keen psychics?|california psychics|psychic source)\b/,
+    words: /\b(psychics?|tarot|astrolog\w*|horoscopes?|fortune ?tell\w*|clairvoyan\w*|witchcraft|spells|occult)\b/,
+  },
+  music: {
+    brands: /\b(universal music|sony music|warner music|spotify|deezer|soundcloud|tidal|live nation|ticketmaster|bmg rights)\b/,
+    words: /\b(record labels?|music (group|publishing|streaming))\b/,
+  },
+  pork: {
+    brands: /\b(smithfield|wh group|t[oö]nnies|danish crown|vion|tulip|cranswick|hormel)\b/,
+    words: /\b(pork|bacon|hogs?|piggery|swine)\b/,
+  },
+  indiscriminate: { brands: null, words: /\b(cluster munitions?|landmines?|nuclear weapons?|chemical weapons?|biological weapons?)\b/ },
+}
+
+for (const [id, patterns] of Object.entries(STRONG)) ACTIVITIES[id].strong = patterns
+for (const [id, names] of Object.entries(NAMES)) ACTIVITIES[id].names = names
 
 export const ACTIVITY_IDS = Object.keys(ACTIVITIES)
 

@@ -48,7 +48,9 @@ const NOISE = [
   /\bbank holidays?\b/g,
   /\b(bank|banking) (account|details|transfer|statement)s?\b/g,
   /\b(food|blood|data|piggy|time|river|west|south|left|right) banks?\b/g,
-  /\b(health|medical|dental|vision|life|travel|pet|income protection|private medical|national|group life|disability|critical illness|employer liability|professional indemnity) insurance\b/g,
+  // Insurance offered as a perk, including lists ("medical, dental and
+  // vision insurance", "life & accident insurance").
+  /\b(health|medical|rx|dental|vision|life|accident|ancillary|supplemental|travel|pet|income protection|private medical|national|group|disability|critical illness|employer liability|professional indemnity|car|home|renters?)\b[^.\n]{0,24}\binsurance\b/g,
   /\binsurance (benefits?|scheme|plan|policy|number)s?\b/g,
   /\b(season ticket|student|interest[- ]free|cycle to work|tech|laptop) loans?\b/g,
   /\b(high|team) spirits\b/g,
@@ -56,6 +58,15 @@ const NOISE = [
   /\bwine and dine\b/g,
   /\bconcert tickets?\b/g,
   /\bweapons? of choice\b/g,
+  /\b(prisoner|security|police|vehicle|convoy|patient|medical|custody) escort(s|ing)?\b/g,
+  /\b(glue|nail|heat|spray|staple|massage|caulk(ing)?) guns?\b/g,
+  /\b(must be|aged?|over) 18\b/g,
+  /\b(time|interview|delivery|booking|appointment) slots?\b/g,
+  /\b(against (all )?the odds|at odds|odds are)\b/g,
+  /\bweed (control|killer|removal)s?\b/g,
+  /\b(juice|salad|snack|protein|chocolate|candy|granola|cereal|energy|nail|brow|lash|oxygen|coffee|espresso|sandwich|hot|tool|space|breakfast|sushi) bars?\b/g,
+  /\b(kindred|team|community|free) spirits?\b/g,
+  /\bpharmacy dispensary\b/g,
 ]
 
 const withoutNoise = text => NOISE.reduce((t, re) => t.replace(re, ' '), text)
@@ -71,7 +82,7 @@ function countHits(text, patterns) {
 
 /** Activities the job title itself is part of. */
 export function screenRole(title) {
-  const t = lower(title)
+  const t = withoutNoise(lower(title))
   if (!t || ISLAMIC_FINANCE.test(t)) return []
   const found = ACTIVITY_IDS.filter(id => ACTIVITIES[id].role?.some(p => p.test(t)))
   // An indiscriminate-weapons role is also a weapons role; name it once.
@@ -87,14 +98,70 @@ export function screenEmployerText(text) {
   const islamic = ISLAMIC_FINANCE.test(t)
   const core = []
   const mentions = []
+  // A company's own site is long and touches many topics in passing, so
+  // there only the words it sells with decide its business.
+  const strongCore = []
   for (const id of ACTIVITY_IDS) {
     if (islamic && ISLAMIC_EXEMPT.has(id)) continue
-    const hits = countHits(t, ACTIVITIES[id].text || [])
+    const strong = countHits(t, ACTIVITIES[id].strong || [])
+    const hits = countHits(t, ACTIVITIES[id].text || []) + 2 * strong
     // Indiscriminate weapons are core on a single mention.
     if (hits >= EMPLOYER_MIN_HITS || (id === 'indiscriminate' && hits > 0)) core.push(id)
     else if (hits > 0) mentions.push(id)
+    if (strong >= 2 || (id === 'indiscriminate' && hits > 0)) strongCore.push(id)
   }
-  return { core, mentions, islamicFinance: islamic }
+  return { core, mentions, strongCore, islamicFinance: islamic }
+}
+
+// Islamic banks and insurers whose names carry a conventional word.
+const ISLAMIC_NAMES = /\b(islami[ck]?|al ?rajhi|al ?rayan|meezan|kuwait finance house|al ?baraka|alinma|al ?bilad|aljazira|boubyan|masraf|gatehouse|wahed|takaful|sukuk|shariah?|halal)\b/
+
+/** The words in a link's address: careers.bet365.com → "careers bet365". */
+export function hostWords(url) {
+  try {
+    const host = new URL(/^https?:\/\//i.test(url) ? url : `https://${url}`).hostname.replace(/^www\./, '')
+    const labels = host.split('.')
+    return labels.slice(0, Math.max(1, labels.length - (labels.length > 2 && labels.at(-2).length <= 3 ? 2 : 1))).join(' ').replace(/-/g, ' ')
+  } catch {
+    return ''
+  }
+}
+
+/** The address's words and the full host name, for name screening. */
+export function hostTerms(url) {
+  try {
+    const host = new URL(/^https?:\/\//i.test(url) ? url : `https://${url}`).hostname.replace(/^www\./, '')
+    return `${hostWords(url)} ${host}`
+  } catch {
+    return ''
+  }
+}
+
+/**
+ * Activities the employer's name (or the site's address) gives away: a
+ * brand like bet365 or Pornhub, or a name built on a word like "brewery".
+ * Bare words are skipped for a listed company with a known industry.
+ */
+export function screenEmployerName({ name = '', host = '', industryKnown = false }) {
+  const t = withoutNoise(lower(`${name} ${host}`))
+  if (!t.trim()) return []
+  const islamic = ISLAMIC_NAMES.test(t)
+  return ACTIVITY_IDS.filter(id => {
+    const n = ACTIVITIES[id].names
+    if (!n) return false
+    if (islamic && ISLAMIC_EXEMPT.has(id)) return false
+    return n.brands?.test(t) || (!industryKnown && n.words?.test(t))
+  })
+}
+
+// Words that show a page is a job posting rather than, say, a company's
+// shop front.
+const JOB_WORDS = /\b(responsibilit(y|ies)|requirements|qualifications|experience|apply|salary|benefits|candidates?|you will|we are looking for|about the role|the role|skills|full[- ]time|part[- ]time|hiring|vacanc(y|ies)|job description|per (hour|annum|year))\b/g
+
+/** True when a read page (or pasted text) is a job posting. */
+export function isJobPosting({ source = '', text = '' }) {
+  if (['greenhouse', 'lever', 'schema'].includes(source)) return true
+  return new Set(lower(text).match(JOB_WORDS) || []).size >= 3
 }
 
 /** The activity a Yahoo industry is, and whether it is the core business. */
@@ -159,9 +226,12 @@ export const JOB_VERDICTS = {
  * @param {string} [input.businessStatus] screenBusinessActivity status for the employer
  * @param {string} [input.description]    Employer's business description, when it is listed
  */
-export function screenJob({ title = '', text = '', industry = '', businessStatus = null, description = '' }) {
-  const role = screenRole(title)
-  const fromText = screenEmployerText(`${title}\n${text}`)
+export function screenJob({ title = '', text = '', industry = '', businessStatus = null, description = '', name = '', host = '', isJob = true }) {
+  const role = isJob ? screenRole(title) : []
+  const read = screenEmployerText(`${title}\n${text}`)
+  const fromText = isJob
+    ? read
+    : { ...read, core: read.strongCore, mentions: [...read.core, ...read.mentions].filter(id => !read.strongCore.includes(id)) }
   const fromIndustry = industryActivity(industry)
 
   // A listed employer's industry outranks what the posting text suggests:
@@ -178,6 +248,10 @@ export function screenJob({ title = '', text = '', industry = '', businessStatus
       ? fromText.core.filter(id => id === 'indiscriminate' || corroborated.includes(id))
       : fromText.core
   if (described.includes('indiscriminate') && !employerCore.includes('indiscriminate')) employerCore.push('indiscriminate')
+  // The employer's name or the site's address can say it outright.
+  for (const id of screenEmployerName({ name, host: host || '', industryKnown: !!industry })) {
+    if (!employerCore.includes(id)) employerCore.push(id)
+  }
   const employerMentions = [
     ...(fromIndustry && !fromIndustry.core ? [fromIndustry.id] : []),
     ...(industry ? fromText.core : []),
@@ -196,21 +270,28 @@ export function screenJob({ title = '', text = '', industry = '', businessStatus
     reason = `The role itself involves ${activityLabels(prohibitedRole)}.`
   } else if (hardCore.length) {
     verdict = 'NOT_PERMISSIBLE'
-    reason = `The employer’s business is ${activityLabels(hardCore)}, which no role can serve.`
+    reason = `The ${isJob ? 'employer’s ' : ''}business is ${activityLabels(hardCore)}, which no role can serve.`
   } else if (differRole.length) {
     verdict = 'DIFFER'
     reason = `The role itself involves ${activityLabels(differRole)}, where scholars differ.`
   } else if (employerCore.length) {
     verdict = 'DIFFER'
-    reason = `The role isn’t prohibited in itself, but the employer’s core business is ${activityLabels(employerCore)}.`
+    const prohibited = employerCore.filter(id => ACTIVITIES[id].severity === 'prohibited')
+    reason = isJob
+      ? `The role isn’t prohibited in itself, but the employer’s core business is ${activityLabels(employerCore)}.`
+      : prohibited.length
+        ? `This business is ${activityLabels(employerCore)}. Any job directly in ${prohibited.length > 1 ? 'them' : 'it'} is not permissible; scholars differ on roles away from it.`
+        : `This business is ${activityLabels(employerCore)}, where scholars differ.`
   } else if (businessStatus === 'CAUTION' || employerMentions.length) {
     verdict = 'CAUTION'
     reason = employerMentions.length
-      ? `The role is permissible. The employer is involved in ${activityLabels(employerMentions)} in some way; check whether that is part of the business or only a mention.`
-      : 'The role is permissible. The employer’s business is mostly permissible, with some income from prohibited sources.'
+      ? `${isJob ? 'The role is permissible. ' : ''}The ${isJob ? 'employer' : 'business'} is involved in ${activityLabels(employerMentions)} in some way; check whether that is part of the business or only a mention.`
+      : `${isJob ? 'The role is permissible. ' : ''}The business is mostly permissible, with some income from prohibited sources.`
   } else {
     verdict = 'PERMISSIBLE'
-    reason = 'Nothing in the role or the employer’s business is prohibited.'
+    reason = isJob
+      ? 'Nothing in the role or the employer’s business is prohibited.'
+      : 'Nothing we could find about this business is prohibited.'
   }
 
   const ids = [...new Set([...role, ...employerCore, ...employerMentions])]
@@ -218,6 +299,7 @@ export function screenJob({ title = '', text = '', industry = '', businessStatus
     verdict,
     ...JOB_VERDICTS[verdict],
     reason,
+    isJob,
     role,
     employerCore,
     employerMentions,
@@ -285,7 +367,7 @@ export function readPostingText(raw) {
 /** True when the input is a single link rather than posting text. */
 export function looksLikeUrl(input) {
   const s = String(input || '').trim()
-  return /^https?:\/\/\S+$/i.test(s) || /^(www\.)?[a-z0-9-]+(\.[a-z0-9-]+)+\/\S*$/i.test(s)
+  return /^https?:\/\/\S+$/i.test(s) || /^(www\.)?[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}(\/\S*)?$/i.test(s)
 }
 
 // ── Matching the employer to a listing ──────────────────────────────────

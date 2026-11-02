@@ -78,3 +78,45 @@ test('a defence employer whose posting and description both centre on weapons is
   assert.deepEqual(job.employerCore, ['weapons'])
   assert.equal(job.verdict, 'DIFFER')
 })
+
+test('an adult site is caught by its address, its name and its own wording', async () => {
+  const { screenEmployerName, hostWords, isJobPosting, looksLikeUrl } = await import('../src/services/jobEngine.js')
+  assert.equal(looksLikeUrl('hentai.com'), true)
+  assert.equal(hostWords('https://www.hentai.com/videos'), 'hentai')
+  assert.equal(hostWords('careers.bet365.co.uk'), 'careers bet365')
+  assert.deepEqual(screenEmployerName({ host: 'hentai' }), ['adult'])
+  assert.deepEqual(screenEmployerName({ name: 'Pornhub' }), ['adult'])
+  assert.deepEqual(screenEmployerName({ host: 'careers bet365' }), ['gambling'])
+  const page = 'This is an adult website. It contains nudity and explicit depictions of sexual activity. Watch free hentai.'
+  assert.equal(isJobPosting({ source: 'page', text: page }), false)
+  const job = screenJob({ title: 'Hentai.com', text: page, host: 'hentai', isJob: false })
+  assert.equal(job.verdict, 'NOT_PERMISSIBLE')
+  assert.deepEqual(job.role, [])
+})
+
+test('a business with no job is ruled on as a business', () => {
+  assert.equal(screenJob({ name: 'BrewDog', isJob: false }).verdict, 'DIFFER')
+  assert.match(screenJob({ name: 'bet365', isJob: false }).reason, /Any job directly in it is not permissible/)
+  assert.equal(screenJob({ name: 'Acme Software', isJob: false }).verdict, 'PERMISSIBLE')
+})
+
+test('everyday job-ad phrases are not read as restricted activities', () => {
+  for (const [title, text] of [
+    ['Prisoner Escort Officer', 'Escort prisoners between courts. Must be 18 or over.'],
+    ['Pharmacy Dispensary Assistant', 'Work in our hospital pharmacy dispensary.'],
+    ['Retail Assistant', 'Choose your interview slots. Against the odds, we grew. Must be 18+. Apr 2026 start.'],
+    ['Gardener', 'Weed control and mowing across our sites.'],
+    ['Barista', 'Work in our juice bar and coffee bar.'],
+    ['Care Assistant', 'Join Kindred Spirits Care, a family care home.'],
+    ['Maintenance Technician', 'Use glue guns and nail guns safely.'],
+  ]) {
+    const job = screenJob({ title, text })
+    assert.equal(job.verdict, 'PERMISSIBLE', `${title}: ${job.reason}`)
+  }
+})
+
+test('Islamic banks are not read as conventional banks by name', async () => {
+  const { screenEmployerName } = await import('../src/services/jobEngine.js')
+  assert.deepEqual(screenEmployerName({ name: 'Al Rayan Bank' }), [])
+  assert.deepEqual(screenEmployerName({ name: 'Barclays' }), ['riba'])
+})

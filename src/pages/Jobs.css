@@ -119,6 +119,27 @@
   color: var(--color-primary);
 }
 
+/* Why the report screens a business rather than a role */
+.jobs-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-xl);
+  background-color: var(--color-surface-container-high);
+  color: var(--color-on-surface);
+}
+
+.jobs-notice p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.jobs-notice .material-symbols-outlined {
+  flex-shrink: 0;
+  color: var(--color-primary);
+}
+
 /* Employer name and listing */
 .jobs-employer {
   display: flex;
