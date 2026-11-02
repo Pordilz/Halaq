@@ -128,6 +128,8 @@ export default function StockDetail() {
           business: compliance.businessScreen,
           // null = couldn't be computed (no interest income data), not 0%.
           haramRevenuePercent: compliance.haramRevenuePercent,
+          purificationApplies: compliance.purificationApplies,
+          purificationRate: compliance.purificationRate,
           haramRevenueEstimated: compliance.haramRevenueEstimated,
           isShariahCertified: compliance.isShariahCertified,
           dividendRate: data.profile.dividendRate,
@@ -489,7 +491,7 @@ function PremiumGate({ navigate, body }) {
 
 function Overview({ stock, isPro, navigate, verification, confidence, onReverify, reverifying, onShowEthics }) {
   const ethics = useEthics({ name: stock.name, ticker: stock.ticker })
-  const haramPct = stock.haramRevenuePercent == null ? null : stock.haramRevenuePercent * 100
+  const haramPct = stock.purificationRate == null ? null : stock.purificationRate * 100
   // Friendly label for the verdict in the summary sentence. Matches what
   // the banner badge shows so the page reads consistently.
   const verdictWords = {
@@ -513,7 +515,8 @@ function Overview({ stock, isPro, navigate, verification, confidence, onReverify
       <p className="sd-card__copy">
         <strong>{stock.name}</strong> is currently <strong>{verdictWords}</strong>{' '}
         under {stock.methodology}, based on financials reported{' '}
-        {stock.dataSources.balanceSheetPeriod ? `up to ${stock.dataSources.balanceSheetPeriod}` : 'recently'}.
+        {stock.dataSources.balanceSheetPeriod ? `up to ${stock.dataSources.balanceSheetPeriod}` : 'recently'}
+        {stock.dataSources.balanceSheetPeriod && ', the latest period the company has published. US companies report every quarter; many European and Asian companies report every six months, so their figures can be up to six months old'}.
       </p>
 
       <div className="sd-overview-grid">
@@ -533,7 +536,7 @@ function Overview({ stock, isPro, navigate, verification, confidence, onReverify
           tone={haramPct == null ? 'neutral' : haramPct < 1 ? 'tertiary' : haramPct < 5 ? 'caution' : 'error'}
           icon="volunteer_activism"
           label={stock.haramRevenueEstimated ? 'Purification rate (est.)' : 'Purification rate'}
-          value={haramPct == null ? '—' : `${haramPct.toFixed(2)}%`}
+          value={!stock.purificationApplies ? 'Not applicable' : haramPct == null ? '—' : `${haramPct.toFixed(2)}%`}
         />
         <OverviewCell
           tone={!ethics ? 'neutral' : ethics.summary?.listed ? 'caution' : 'tertiary'}
@@ -700,7 +703,7 @@ function Purification({ stock, isPro, navigate }) {
   const [dividendPerShare, setDividendPerShare] = useState(
     stock.dividendRate > 0 ? String(stock.dividendRate) : ''
   )
-  if (!isPro) return <PremiumGate navigate={navigate} body="Compute the exact dividend purification % owed under your methodology." />
+  if (!isPro) return <PremiumGate navigate={navigate} body={`The purification rate is on the Overview tab. Pro works out what you owe on your own ${stock.ticker} holding, from your shares and the dividend.`} />
 
   // Dividends per share come in the trading currency's major unit (pounds,
   // not the pence a London price is quoted in).
@@ -718,7 +721,19 @@ function Purification({ stock, isPro, navigate }) {
       </div>
     )
   }
-  if (stock.haramRevenuePercent == null) {
+  if (!stock.purificationApplies) {
+    return (
+      <div className="sd-card">
+        <h3 className="sd-card__title">Dividend purification</h3>
+        <p className="sd-card__copy">
+          Purification is for holdings you may keep. {stock.ticker} is non-compliant, so the guidance
+          is to sell it rather than purify its dividends: AAOIFI allows purifying only the small
+          impermissible share of an otherwise permissible company.
+        </p>
+      </div>
+    )
+  }
+  if (stock.purificationRate == null) {
     return (
       <div className="sd-card">
         <h3 className="sd-card__title">Dividend purification</h3>
@@ -731,11 +746,11 @@ function Purification({ stock, isPro, navigate }) {
     )
   }
 
-  const pct = stock.haramRevenuePercent * 100
+  const pct = stock.purificationRate * 100
   const holding = calculateHoldingPurification({
     shares,
     dividendPerShare,
-    haramRevenuePercent: stock.haramRevenuePercent,
+    haramRevenuePercent: stock.purificationRate,
     currency: dividendCurrency,
   })
   const money = value => `${symbol}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`

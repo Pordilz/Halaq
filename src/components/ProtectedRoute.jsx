@@ -2,7 +2,12 @@ import { Navigate, useLocation } from 'react-router'
 import { useAuth } from '../contexts/AuthContext'
 import AppLoader from './AppLoader'
 
-export function ProtectedRoute({ children, requireTier }) {
+/**
+ * `signedOutTo` sends signed-out visitors somewhere other than the login page:
+ * /home is the signed-in dashboard, and a visitor who lands on it should see
+ * the public home page instead.
+ */
+export function ProtectedRoute({ children, requireTier, signedOutTo }) {
   const { user, loading, isPro, isScholar } = useAuth()
   const location = useLocation()
 
@@ -11,6 +16,7 @@ export function ProtectedRoute({ children, requireTier }) {
   }
 
   if (!user) {
+    if (signedOutTo) return <Navigate to={signedOutTo} replace />
     return (
       <Navigate
         to={`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`}

@@ -658,9 +658,15 @@ export function screenStock(profile, balanceSheet, income, options = {}) {
 
     haramRevenuePercent: haramPercent,
     haramRevenueEstimated: dataSource === 'estimated',
+    // Purification is for holdings you may keep. A non-compliant stock is to
+    // be sold, not purified, and a bank's interest income can exceed what
+    // Yahoo reports as revenue (JPM read 101.58%), so the rate is capped at
+    // 100% and only given where it applies.
+    purificationApplies: status !== 'NON_COMPLIANT',
+    purificationRate: status !== 'NON_COMPLIANT' && haramPercent != null ? Math.min(haramPercent, 1) : null,
     purificationNote:
-      haramPercent > 0
-        ? `${(haramPercent * 100).toFixed(2)}% of dividends should be donated to charity${dataSource === 'estimated' ? ' (estimate)' : ''}`
+      status !== 'NON_COMPLIANT' && haramPercent > 0
+        ? `${(Math.min(haramPercent, 1) * 100).toFixed(2)}% of dividends should be donated to charity${dataSource === 'estimated' ? ' (estimate)' : ''}`
         : null,
 
     dataSources: {

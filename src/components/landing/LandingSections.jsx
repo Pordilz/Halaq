@@ -77,7 +77,7 @@ const QUESTIONS = [
   },
   {
     q: 'Where do the numbers come from?',
-    a: 'Yahoo Finance: the latest balance sheet and the last twelve months of income. Every report shows the date of its statements and of the price it used.',
+    a: 'Yahoo Finance: the latest balance sheet and the last twelve months of income. Every report shows the date of its statements and of the price it used. US companies publish results every quarter; many European and Asian companies (Nestlé, for one) only every six months, so their figures move twice a year.',
   },
   {
     q: 'What if a figure is missing?',

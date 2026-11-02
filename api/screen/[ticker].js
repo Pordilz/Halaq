@@ -22,6 +22,19 @@ export default async function handler(req, res) {
 
   const ticker = String(queryTicker).toUpperCase();
 
+  // Read the company first: a ticker that doesn't exist, or a Yahoo
+  // outage, shouldn't use up one of the visitor's free screens.
+  let payload;
+  try {
+    payload = await getScreeningPayload(ticker);
+  } catch (err) {
+    const { status, message, retryAfter } = classifyYahooError(err);
+    console.error(`[Halaq API] Error screening ${ticker}:`, err.message);
+    res.setHeader('Cache-Control', 'no-store');
+    if (retryAfter) res.setHeader('Retry-After', String(retryAfter));
+    return res.status(status).json({ error: message });
+  }
+
   // Signed-in free users share a daily quota; signed-out visitors get a
   // smaller one keyed by a hashed IP (both atomic — migration 008).
   // Responses served from Vercel's CDN cache never reach this function, so
@@ -39,19 +52,10 @@ export default async function handler(req, res) {
     });
   }
 
-  try {
-    const payload = await getScreeningPayload(ticker);
-    // A stale fallback (Yahoo down) shouldn't sit in the CDN for long.
-    res.setHeader(
-      'Cache-Control',
-      payload.stale ? 's-maxage=60' : 's-maxage=300, stale-while-revalidate=900'
-    );
-    return res.status(200).json(payload);
-  } catch (err) {
-    const { status, message, retryAfter } = classifyYahooError(err);
-    console.error(`[Halaq API] Error screening ${ticker}:`, err.message);
-    res.setHeader('Cache-Control', 'no-store');
-    if (retryAfter) res.setHeader('Retry-After', String(retryAfter));
-    return res.status(status).json({ error: message });
-  }
+  // A stale fallback (Yahoo down) shouldn't sit in the CDN for long.
+  res.setHeader(
+    'Cache-Control',
+    payload.stale ? 's-maxage=60' : 's-maxage=300, stale-while-revalidate=900'
+  );
+  return res.status(200).json(payload);
 }

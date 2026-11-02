@@ -244,3 +244,16 @@ describe('purification', () => {
     assert.match(calculatePurification(0, 100).description, /No purification required/)
   })
 })
+
+test('purification is capped at 100% and not offered for a non-compliant stock', async () => {
+  const { screenStock } = await import('../src/services/complianceEngine.js')
+  const bank = { ticker: 'JPM', name: 'JPMorgan', sector: 'Financial Services', industry: 'Banks - Diversified', marketCap: 600e9 }
+  const r = screenStock(bank, { totalDebt: 400e9, totalAssets: 4e12, cashAndShortTermInvestments: 500e9, netReceivables: 1e9 }, { revenue: 170e9, interestIncome: 172.7e9, interestDataSource: 'explicit' })
+  assert.equal(r.status, 'NON_COMPLIANT')
+  assert.equal(r.purificationApplies, false)
+  assert.equal(r.purificationRate, null)
+  assert.equal(r.purificationNote, null)
+  const ok = screenStock({ ticker: 'X', name: 'X', sector: 'Technology', industry: 'Software - Application', marketCap: 100e9 }, { totalDebt: 1e9, totalAssets: 50e9, cashAndShortTermInvestments: 2e9, netReceivables: 1e9 }, { revenue: 10e9, interestIncome: 0.05e9, interestDataSource: 'explicit' })
+  assert.equal(ok.purificationApplies, true)
+  assert.ok(Math.abs(ok.purificationRate - 0.005) < 1e-9)
+})

@@ -76,7 +76,7 @@ export default function App() {
             <Route
               path="/home"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute signedOutTo="/">
                   <Home />
                 </ProtectedRoute>
               }
@@ -88,6 +88,8 @@ export default function App() {
             <Route path="/stock/:ticker" element={<StockDetail />} />
             <Route path="/learn" element={<Learn />} />
             <Route path="/upgrade" element={<Upgrade />} />
+            <Route path="/pricing" element={<Navigate to="/upgrade" replace />} />
+            <Route path="/plans" element={<Navigate to="/upgrade" replace />} />
 
             {/* Authenticated */}
             <Route
