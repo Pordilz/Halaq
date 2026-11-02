@@ -1,0 +1,31 @@
+/* Sits on the brand-green hero of both screeners. */
+.screener-switch {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius-full);
+  background-color: rgba(0, 0, 0, 0.18);
+}
+
+.screener-switch__item {
+  min-width: 5.5rem;
+  padding: 0.5rem 1.125rem;
+  border-radius: var(--radius-full);
+  color: rgba(255, 255, 255, 0.88);
+  font-size: var(--text-body-sm);
+  font-weight: var(--font-weight-heading);
+  text-align: center;
+  text-decoration: none;
+}
+
+.screener-switch__item:hover,
+.screener-switch__item:focus-visible {
+  color: var(--color-white);
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+.screener-switch__item.active {
+  background-color: var(--color-white);
+  color: var(--color-brand-strong);
+}

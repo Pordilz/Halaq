@@ -13,6 +13,7 @@ import NotFound from './pages/NotFound'
 // Lazy
 const Home = lazy(() => import('./pages/Home'))
 const Screener = lazy(() => import('./pages/Screener'))
+const Jobs = lazy(() => import('./pages/Jobs'))
 const StockDetail = lazy(() => import('./pages/StockDetail'))
 const Login = lazy(() => import('./pages/Login'))
 const Signup = lazy(() => import('./pages/Signup'))
@@ -83,6 +84,7 @@ export default function App() {
 
             {/* Public app pages */}
             <Route path="/screener" element={<Screener />} />
+            <Route path="/jobs" element={<Jobs />} />
             <Route path="/stock/:ticker" element={<StockDetail />} />
             <Route path="/learn" element={<Learn />} />
             <Route path="/upgrade" element={<Upgrade />} />

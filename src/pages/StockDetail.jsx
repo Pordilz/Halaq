@@ -12,6 +12,7 @@ import RatioBar from '../components/RatioBar'
 import ComplianceBadge from '../components/ComplianceBadge'
 import DisclaimerNotice from '../components/DisclaimerNotice'
 import ProvenanceCard from '../components/ProvenanceCard'
+import EthicsPanel, { useEthics, ethicsHeadline } from '../components/EthicsPanel'
 import useDocumentTitle from '../hooks/useDocumentTitle'
 import './StockDetail.css'
 
@@ -32,6 +33,7 @@ const TABS = [
   { id: 'ratios', label: 'Ratios' },
   { id: 'business', label: 'Business' },
   { id: 'purification', label: 'Purification' },
+  { id: 'ethics', label: 'Ethics' },
 ]
 
 const formatNumber = (n, currency, compact = true) => {
@@ -431,11 +433,18 @@ export default function StockDetail() {
             confidence={watchlistRow?.confidence}
             onReverify={inList ? handleVerify : null}
             reverifying={verifying}
+            onShowEthics={() => setActiveTab('ethics')}
           />
         )}
         {activeTab === 'ratios' && <Ratios stock={stock} isPro={isPro} navigate={navigate} />}
         {activeTab === 'business' && <Business stock={stock} isPro={isPro} navigate={navigate} />}
         {activeTab === 'purification' && <Purification stock={stock} isPro={isPro} navigate={navigate} />}
+        {activeTab === 'ethics' && (
+          <div className="sd-card">
+            <h3 className="sd-card__title">Ethics and boycotts</h3>
+            <EthicsPanel name={stock.name} ticker={stock.ticker} country={stock.country} />
+          </div>
+        )}
       </div>
 
       <div className="sd-mobile-foot">
@@ -478,7 +487,8 @@ function PremiumGate({ navigate, body }) {
   )
 }
 
-function Overview({ stock, isPro, navigate, verification, confidence, onReverify, reverifying }) {
+function Overview({ stock, isPro, navigate, verification, confidence, onReverify, reverifying, onShowEthics }) {
+  const ethics = useEthics({ name: stock.name, ticker: stock.ticker })
   const haramPct = stock.haramRevenuePercent == null ? null : stock.haramRevenuePercent * 100
   // Friendly label for the verdict in the summary sentence. Matches what
   // the banner badge shows so the page reads consistently.
@@ -526,10 +536,11 @@ function Overview({ stock, isPro, navigate, verification, confidence, onReverify
           value={haramPct == null ? '—' : `${haramPct.toFixed(2)}%`}
         />
         <OverviewCell
-          tone="neutral"
-          icon="event"
-          label="Data as of"
-          value={stock.dataSources.balanceSheetPeriod || '—'}
+          tone={!ethics ? 'neutral' : ethics.summary?.listed ? 'caution' : 'tertiary'}
+          icon={ethics?.summary?.listed ? 'flag' : 'public'}
+          label="Boycott lists"
+          value={ethicsHeadline(ethics?.summary)}
+          onClick={onShowEthics}
         />
       </div>
 
@@ -613,12 +624,13 @@ function AboutBlock({ name, description }) {
   )
 }
 
-function OverviewCell({ tone, icon, label, value }) {
+function OverviewCell({ tone, icon, label, value, onClick }) {
   // Mobile: icon + label sit on one row at the top so the label never
   // wraps around an absolutely-positioned icon. Desktop CSS promotes the
   // icon back to the top-right corner via `display: contents`.
+  const Tag = onClick ? 'button' : 'div'
   return (
-    <div className={`sd-cell sd-cell--${tone}`}>
+    <Tag type={onClick ? 'button' : undefined} onClick={onClick} className={`sd-cell sd-cell--${tone}${onClick ? ' sd-cell--action' : ''}`}>
       <div className="sd-cell__head">
         <div className="sd-cell__icon">
           <MaterialIcon name={icon} fill size={16} />
@@ -626,7 +638,7 @@ function OverviewCell({ tone, icon, label, value }) {
         <span className="sd-cell__label">{label}</span>
       </div>
       <span className="sd-cell__value">{value}</span>
-    </div>
+    </Tag>
   )
 }
 

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useLocation, useSearchParams } from 'react-router'
 import { useAuth } from '../contexts/AuthContext'
 import { useWatchlist } from '../hooks/useWatchlist'
+import ScreenerSwitch from '../components/ScreenerSwitch'
 import MaterialIcon from '../components/MaterialIcon'
 import ComplianceBadge from '../components/ComplianceBadge'
 import StockRowCard from '../components/StockRowCard'
@@ -198,6 +199,7 @@ export default function Screener() {
       )}
 
       <div className="screener-hero">
+        <ScreenerSwitch />
         <h1 className="text-h1 mb-2">Find halal stocks</h1>
         <p className="text-on-surface-variant text-body-lg mb-6">
           Search any listed company and see its verdict, with every number behind it.

@@ -9,6 +9,8 @@ import './Layout.css'
 const NAV_ITEMS = [
   { to: '/home', label: 'Home', icon: 'space_dashboard' },
   { to: '/screener', label: 'Screener', icon: 'search' },
+  // On phones the Screener tab covers jobs too; its page switches between them.
+  { to: '/jobs', label: 'Jobs', icon: 'work', desktopOnly: true },
   { to: '/watchlist', label: 'Watchlist', icon: 'bookmarks' },
   { to: '/learn', label: 'Learn', icon: 'school' },
 ]
@@ -193,8 +195,9 @@ export default function Layout({ children }) {
       {!location.pathname.startsWith('/stock/') && (
         <div className="mobile-safe-area">
           <nav className="mobile-bottom-nav glass-panel" aria-label="Primary navigation">
-            {NAV_ITEMS.map(item => {
-              const active = location.pathname === item.to || location.pathname.startsWith(item.to + '/')
+            {NAV_ITEMS.filter(item => !item.desktopOnly).map(item => {
+              const active = location.pathname === item.to || location.pathname.startsWith(item.to + '/') ||
+                (item.to === '/screener' && location.pathname.startsWith('/jobs'))
               return (
                 <Link
                   key={item.to}
@@ -226,6 +229,7 @@ export default function Layout({ children }) {
 function topbarTitle(pathname) {
   if (pathname.startsWith('/home')) return 'Home'
   if (pathname.startsWith('/screener')) return 'Screener'
+  if (pathname.startsWith('/jobs')) return 'Job screener'
   if (pathname.startsWith('/watchlist')) return 'Watchlist'
   if (pathname.startsWith('/learn')) return 'Learn'
   if (pathname.startsWith('/profile')) return 'Profile'

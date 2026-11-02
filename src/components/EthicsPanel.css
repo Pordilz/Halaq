@@ -1,0 +1,140 @@
+.ethics {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  font-size: var(--text-body-sm);
+  color: var(--color-on-surface-variant);
+}
+
+.ethics--loading {
+  min-height: 4rem;
+}
+
+.ethics__headline {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-xl);
+}
+
+.ethics__headline strong {
+  display: block;
+  color: inherit;
+  font-size: var(--text-body);
+}
+
+.ethics__headline p {
+  margin: var(--space-1) 0 0;
+  line-height: 1.45;
+}
+
+.ethics__headline .material-symbols-outlined {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.ethics__headline--clear {
+  background-color: var(--color-tertiary-fixed);
+  color: var(--color-on-tertiary-fixed);
+}
+
+.ethics__headline--listed {
+  background-color: var(--color-caution-container);
+  color: var(--color-on-caution-container, var(--color-on-surface));
+}
+
+.ethics__rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.ethics__row {
+  background-color: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.ethics__row-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+}
+
+.ethics__source {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--color-on-surface);
+  font-weight: var(--font-weight-heading);
+  text-decoration: none;
+}
+
+.ethics__source:hover,
+.ethics__source:focus-visible {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.ethics__type {
+  color: var(--color-outline);
+}
+
+.ethics__reason {
+  margin: 0;
+  color: var(--color-on-surface);
+  line-height: 1.45;
+}
+
+.ethics__brand {
+  font-weight: var(--font-weight-heading);
+}
+
+.ethics__topic {
+  align-self: flex-start;
+  font-size: var(--text-micro);
+  color: var(--color-on-surface-variant);
+  background-color: var(--color-surface-container-high);
+  border-radius: var(--radius-full);
+  padding: 0.125rem 0.625rem;
+}
+
+.ethics__country {
+  display: flex;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.ethics__country dt {
+  color: var(--color-outline);
+}
+
+.ethics__country dd {
+  margin: 0;
+  color: var(--color-on-surface);
+  font-weight: var(--font-weight-heading);
+}
+
+.ethics__note {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.ethics__foot {
+  margin: 0;
+  font-size: var(--text-micro);
+  line-height: 1.5;
+  color: var(--color-outline);
+}
+
+.ethics__foot a {
+  color: inherit;
+}

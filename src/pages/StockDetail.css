@@ -238,7 +238,7 @@
 /* Four equal tabs that always fit, so nothing hides off the edge on a phone. */
 .sd-tabs {
   display: grid;
-  grid-template-columns: repeat(4, auto);
+  grid-template-columns: repeat(5, auto);
   gap: 0.25rem;
   background-color: var(--color-surface-container-lowest);
   border-radius: var(--radius-full);
@@ -269,8 +269,20 @@
 }
 
 @media (max-width: 420px) {
-  .sd-tab { font-size: var(--text-micro); padding-inline: 0.5rem; }
+  .sd-tab { font-size: var(--text-micro); padding-inline: 0.625rem; }
 }
+
+/* Five tabs don't fit one row on a phone: they sit in two rows instead of
+   squeezing or hiding the last ones off-screen. */
+@media (max-width: 520px) {
+  .sd-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); border-radius: var(--radius-2xl); }
+  .sd-tab { white-space: nowrap; }
+}
+
+/* In a narrow cell a long label drops below its icon rather than
+   splitting a word. */
+.sd-cell__head { flex-wrap: wrap; }
+.sd-cell__label { min-width: min-content; }
 
 @media (max-width: 767px) {
   .sd-hero__right { width: 100%; text-align: left; }
@@ -691,4 +703,18 @@
   font-weight: var(--font-weight-heading);
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+
+/* A cell that opens its tab. */
+.sd-cell--action {
+  border: 0;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+
+.sd-cell--action:hover,
+.sd-cell--action:focus-visible {
+  background-color: var(--color-surface-container-low);
 }
