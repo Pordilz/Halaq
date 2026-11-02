@@ -438,8 +438,8 @@ export default function StockDetail() {
             onShowEthics={() => setActiveTab('ethics')}
           />
         )}
-        {activeTab === 'ratios' && <Ratios stock={stock} isPro={isPro} navigate={navigate} />}
-        {activeTab === 'business' && <Business stock={stock} isPro={isPro} navigate={navigate} />}
+        {activeTab === 'ratios' && <Ratios stock={stock} />}
+        {activeTab === 'business' && <Business stock={stock} />}
         {activeTab === 'purification' && <Purification stock={stock} isPro={isPro} navigate={navigate} />}
         {activeTab === 'ethics' && (
           <div className="sd-card">
@@ -555,8 +555,8 @@ function Overview({ stock, isPro, navigate, verification, confidence, onReverify
         <div className="sd-upsell">
           <MaterialIcon name="auto_awesome" className="text-primary" />
           <div>
-            <strong>See the full math</strong>
-            <span>Pro unlocks the exact debt, cash and impermissible-income ratios.</span>
+            <strong>Screen it your way</strong>
+            <span>Pro adds the S&amp;P, Dow Jones and FTSE standards, the purification calculator, batch screening and ETF X-Ray.</span>
           </div>
           <button type="button" className="btn btn-primary btn--sm" onClick={() => navigate('/upgrade')}>
             Upgrade
@@ -645,8 +645,9 @@ function OverviewCell({ tone, icon, label, value, onClick }) {
   )
 }
 
-function Ratios({ stock, isPro, navigate }) {
-  if (!isPro) return <PremiumGate navigate={navigate} body={`See exactly why ${stock.ticker} passed or failed each ratio under ${stock.methodology}. Pro unlocks the full breakdown.`} />
+// The ratios and the business screen are free: every verdict shows the
+// numbers and thresholds behind it.
+function Ratios({ stock }) {
   return (
     <div className="sd-card">
       <h3 className="sd-card__title">Financial ratios · {stock.methodology}</h3>
@@ -672,8 +673,7 @@ function Ratios({ stock, isPro, navigate }) {
   )
 }
 
-function Business({ stock, isPro, navigate }) {
-  if (!isPro) return <PremiumGate navigate={navigate} body="See the business-activity classifier and why this stock is in (or out of) the permissible universe." />
+function Business({ stock }) {
   const tone = stock.business.status === 'PASS' ? 'tertiary'
     : stock.business.status === 'FAIL' ? 'error' : 'caution'
   return (

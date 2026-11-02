@@ -42,7 +42,7 @@ const PLANS = [
   {
     name: 'Free',
     price: '$0',
-    lines: ['50 screens a day, 10 without an account', 'AAOIFI verdicts', 'A watchlist, re-screened daily'],
+    lines: ['50 screens a day, 10 without an account', 'AAOIFI verdicts with every ratio shown', 'A watchlist, re-screened daily'],
     action: { label: 'Create an account', to: '/signup' },
     tone: 'mint',
   },
@@ -52,7 +52,6 @@ const PLANS = [
     period: 'a month',
     lines: [
       'Unlimited screens',
-      'The full ratio and business breakdown',
       'Purification calculator',
       'Any of the four standards',
       'Batch screening and ETF X-Ray',

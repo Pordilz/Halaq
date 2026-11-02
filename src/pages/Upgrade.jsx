@@ -14,7 +14,7 @@ const PLANS = [
     price: '$0',
     lines: [
       '50 screens a day, 10 without an account',
-      'AAOIFI verdicts for any listed stock',
+      'AAOIFI verdicts for any listed stock, with every ratio and threshold',
       'A watchlist, re-screened every day',
       'Verify for saved stocks that need a second look',
     ],
@@ -27,7 +27,6 @@ const PLANS = [
     cadence: 'a month',
     lines: [
       'Unlimited screens',
-      'The full ratio and business breakdown',
       'Purification calculator',
       'Any of AAOIFI, S&P, Dow Jones and FTSE',
       'Batch screening, up to 20 tickers',
@@ -74,7 +73,7 @@ export default function Upgrade() {
       <header className="upgrade-page__header">
         <h1 className="upgrade-page__title">Free, or $9 a month</h1>
         <p className="upgrade-page__lead">
-          Start free. Pro adds every standard, the full breakdown, and the tools for funds and long
+          Start free, with every ratio behind every verdict. Pro adds every standard and the tools for funds and long
           lists. Cancel any time.
         </p>
       </header>

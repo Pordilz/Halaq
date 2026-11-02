@@ -233,8 +233,8 @@ export default function Home() {
             </div>
             <p className="home-plan-card__copy">
               {isPro
-                ? 'Unlimited screens, every standard, the full breakdown, batch screening and ETF X-Ray.'
-                : 'Free tier includes 50 screens per day. Pro unlocks unlimited screens and the full ratio breakdown.'}
+                ? 'Unlimited screens, every standard, the purification calculator, batch screening and ETF X-Ray.'
+                : 'Free tier includes 50 screens per day, with every ratio shown. Pro adds unlimited screens, every standard, batch screening and ETF X-Ray.'}
             </p>
           </div>
           <button
