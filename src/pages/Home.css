@@ -48,11 +48,11 @@
 
 .home-hero__actions .btn-primary {
   background: var(--color-white);
-  color: var(--color-on-primary-fixed-variant);
+  color: var(--color-brand-strong);
 }
 
 .home-hero__actions .btn-primary:hover:not(:disabled) {
-  background: var(--color-primary-fixed);
+  background: rgba(255, 255, 255, 0.88);
 }
 
 .home-hero__actions .btn-ghost {

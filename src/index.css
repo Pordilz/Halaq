@@ -160,9 +160,9 @@
 
 /* =====================================================================
    Dark theme. src/lib/theme.js sets data-theme from the user's choice
-   (Settings → Appearance) or the system setting. Fixed roles
-   (--color-*-fixed*) and --color-white keep their values: they're used
-   on brand-green surfaces that stay green in both themes.
+   (Settings → Appearance) or the system setting. --color-white and the
+   brand greens keep their values on surfaces that stay green in both
+   themes; the fixed chip roles get dark values below.
    ===================================================================== */
 :root[data-theme='dark'] {
   color-scheme: dark;
@@ -191,6 +191,19 @@
   --color-caution: #fbbf24;
   --color-caution-container: #3d2606;
   --color-on-caution-container: #fde68a;
+
+  /* The "fixed" chips stay light in Material's scheme, which glares on a
+     dark page and leaves tinted chips with dark text on dark tints. In dark
+     mode they become deep fills with light ink, still paired the same way. */
+  --color-primary-fixed: #0f4a30;
+  --color-on-primary-fixed: #c4f5dc;
+  --color-on-primary-fixed-variant: #a3f0ca;
+  --color-secondary-fixed: #3d2e00;
+  --color-on-secondary-fixed: #ffe792;
+  --color-on-secondary-fixed-variant: #f2d36b;
+  --color-tertiary-fixed: #0c3f27;
+  --color-on-tertiary-fixed: #b9f6d3;
+  --color-on-tertiary-fixed-variant: #90f5be;
 
   /* Cards (container-lowest) sit slightly above the page in dark mode. */
   --color-surface: #0f141a;
