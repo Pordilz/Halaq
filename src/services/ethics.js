@@ -88,16 +88,34 @@ export function findListings(data, { name, ticker, aliases = [] } = {}) {
 }
 
 /**
+ * Entries for a company's parents (from GLEIF), tagged 'parent' with the
+ * parent's name, so a subsidiary is judged with the group it belongs to.
+ */
+export function findParentListings(data, parents = []) {
+  const out = []
+  for (const parent of parents) {
+    for (const m of findListings(data, { name: parent.name })) {
+      if (!out.some(o => o.name === m.name)) out.push({ ...m, via: 'parent', parentCompany: parent.name })
+    }
+  }
+  return out
+}
+
+/**
  * The summary the page shows: which lists name the company (directly or
  * through a brand), and every listing in source order.
  */
 export function summarizeListings(matches) {
   const sources = new Set()
   const rows = []
+  // A company matched directly beats the same entry reached through a parent.
+  const seen = new Set()
   for (const m of matches) {
+    if (seen.has(m.name)) continue
+    seen.add(m.name)
     for (const l of m.listings) {
       sources.add(l.source)
-      rows.push({ ...l, company: m.name, via: m.via, parent: m.parent || null })
+      rows.push({ ...l, company: m.name, via: m.via, parent: m.parent || null, parentCompany: m.parentCompany || null })
     }
   }
   rows.sort((a, b) => SOURCE_ORDER.indexOf(a.source) - SOURCE_ORDER.indexOf(b.source))

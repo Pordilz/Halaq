@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { findListings, summarizeListings, loadBoycottData } from '../services/ethics'
+import { findListings, findParentListings, summarizeListings, loadBoycottData } from '../services/ethics'
+import { findParents } from '../services/gleif'
 import MaterialIcon from './MaterialIcon'
 import './EthicsPanel.css'
 
@@ -17,8 +18,16 @@ export function useEthics({ name, ticker, aliases }) {
     loadBoycottData()
       .then(data => {
         if (!live) return
-        const summary = summarizeListings(findListings(data, { name, ticker, aliases: aliasKey ? aliasKey.split('|') : [] }))
-        setState({ summary, data })
+        const own = findListings(data, { name, ticker, aliases: aliasKey ? aliasKey.split('|') : [] })
+        setState({ summary: summarizeListings(own), data, parents: null })
+        // Then the parent companies GLEIF records, which can take a moment.
+        if (!name) return
+        findParents(name)
+          .then(parents => {
+            if (!live) return
+            setState({ summary: summarizeListings([...own, ...findParentListings(data, parents)]), data, parents })
+          })
+          .catch(() => live && setState(prev => prev && { ...prev, parents: [] }))
       })
       .catch(() => live && setState({ summary: null, data: null, error: true }))
     return () => { live = false }
@@ -64,7 +73,7 @@ export default function EthicsPanel({ name, ticker, country, aliases, ethics: gi
           <p>
             {summary.listed
               ? 'Each list is a campaign by that organisation. What follows is what they say, in brief, with a link to read it in full.'
-              : 'That covers the company’s own name, its ticker and the brands the lists attribute to it.'}
+              : 'That covers the company’s own name, its ticker, the brands the lists attribute to it, and its parent companies.'}
           </p>
         </div>
       </div>
@@ -85,6 +94,7 @@ export default function EthicsPanel({ name, ticker, country, aliases, ethics: gi
                 </div>
                 <p className="ethics__reason">
                   {row.via === 'brand' && <span className="ethics__brand">{row.company}: </span>}
+                  {row.via === 'parent' && <span className="ethics__brand">Parent company {row.parentCompany}: </span>}
                   {row.reason}
                 </p>
                 {row.topic && !/israel/i.test(row.topic) && <span className="ethics__topic">{row.topic}</span>}
@@ -95,8 +105,20 @@ export default function EthicsPanel({ name, ticker, country, aliases, ethics: gi
       )}
 
       <dl className="ethics__country">
-        <dt>Headquarters</dt>
-        <dd>{country || 'Not given'}</dd>
+        <div>
+          <dt>Headquarters</dt>
+          <dd>{country || 'Not given'}</dd>
+        </div>
+        <div>
+          <dt>Parent company</dt>
+          <dd>
+            {ethics.parents == null
+              ? 'Checking…'
+              : ethics.parents.length
+                ? ethics.parents.map(p => p.name).join(', then ')
+                : 'None reported'}
+          </dd>
+        </div>
       </dl>
       {isIsraeli && (
         <p className="ethics__note">
@@ -114,7 +136,9 @@ export default function EthicsPanel({ name, ticker, country, aliases, ethics: gi
             {i < all.length - 1 ? ', ' : '.'}
           </span>
         ))}{' '}
-        A listing doesn’t change the Shariah verdict.
+        Parent companies come from{' '}
+        <a href="https://www.gleif.org/en/lei-data/global-lei-index" target="_blank" rel="noopener noreferrer">GLEIF</a>,
+        where companies report them. A listing doesn’t change the Shariah verdict.
       </p>
     </div>
   )
