@@ -15,14 +15,14 @@ import './Jobs.css'
 const VERDICT_ICON = { compliant: 'check_circle', review: 'rule', non: 'cancel' }
 
 const STOCK_STATUS = {
-  COMPLIANT: 'Compliant',
-  NON_COMPLIANT: 'Non-compliant',
-  REVIEW_REQUIRED: 'Needs review',
-  UNVERIFIED: 'Unverified',
-  DOUBTFUL: 'Unverified',
+  COMPLIANT: 'compliant',
+  NON_COMPLIANT: 'non-compliant',
+  REVIEW_REQUIRED: 'in need of review',
+  UNVERIFIED: 'unverified',
+  DOUBTFUL: 'unverified',
 }
 
-const APPLIES_TO = { role: 'This role', employer: 'The employer', mention: 'Mentioned in the posting' }
+const APPLIES_TO = { role: 'This role', employer: 'The employer', mention: 'Part of the employer’s business' }
 
 async function readPostingLink(url) {
   const res = await fetch(apiUrl(`/api/job-posting?url=${encodeURIComponent(url)}`))
@@ -157,6 +157,7 @@ export default function Jobs() {
       text: posting.text,
       industry: employer.data?.industry || posting.industry || '',
       businessStatus: employer.data?.business?.status || null,
+      description: employer.data?.description || '',
     })
   }, [posting, employer.data])
 
@@ -422,7 +423,7 @@ function EmployerProfile({ employer, companyName, posting }) {
       )}
       <p className="jobs-card__copy">
         <strong>{d.business.reason}.</strong> As an investment, {d.ticker} is{' '}
-        <strong>{(STOCK_STATUS[d.status] || 'unscreened').toLowerCase()}</strong> under {d.methodology}. That screen also
+        <strong>{STOCK_STATUS[d.status] || 'unscreened'}</strong> under {d.methodology}. That screen also
         tests debt and interest income, which matter for owning the shares, not for working there.{' '}
         <Link to={`/stock/${encodeURIComponent(d.ticker)}`}>Open the stock report</Link>
       </p>

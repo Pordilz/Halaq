@@ -61,6 +61,18 @@ its impermissible sales lines aren't in the data we screen:
 - Ad-driven internet platforms, interactive / electronic gaming
 - Luxury goods (conglomerates often carry alcohol divisions)
 
+A company is also flagged **CAUTION** when its business description names a
+restricted product, whatever industry it's filed under: alcohol, gambling,
+pork, adult content, tobacco or cannabis, weapons, indiscriminate weapons
+(cluster munitions, landmines, nuclear, chemical or biological weapons),
+music, or fortune-telling. This catches, say, an ammunition maker filed under
+Leisure. The activities, their patterns and their rulings live in
+`src/services/activities.js`, shared with the Job screener. Interest and
+insurance are left to the industry and the ratios, since most descriptions
+mention credit somewhere. On 147 stocks this moved two verdicts, Monster
+Beverage (an alcohol line) and Hormel (pork), from COMPLIANT to
+REVIEW_REQUIRED.
+
 If sector and industry are both unknown (e.g. ETFs, newly listed entities),
 the stock is **UNVERIFIED** — never silently passed.
 

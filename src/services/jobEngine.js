@@ -6,87 +6,21 @@
  *   1. Is the role itself part of something prohibited? (a loan officer
  *      writes riba contracts; a bartender serves alcohol)
  *   2. Is the employer's core business prohibited? A permissible role at a
- *      company whose core business is prohibited is where scholars differ.
+ *      company whose core business is prohibited is where scholars differ,
+ *      except for businesses no role can serve (adult content, indiscriminate
+ *      weapons, fortune-telling).
  *
  * The employer's financial ratios matter for owning its shares, not for
  * working there, so they don't enter the job verdict.
  *
- * Everything here is plain keyword matching, so it can explain each finding
- * and runs the same in the browser and in tests.
+ * The activities and their rulings live in activities.js, shared with the
+ * stock screen. Everything here is plain keyword matching, so it can explain
+ * each finding and runs the same in the browser and in tests.
  */
 
-// ── Rulings ─────────────────────────────────────────────────────────────
+import { ACTIVITIES, ACTIVITY_IDS, INDUSTRY_ACTIVITIES, describedActivities, activityLabels } from './activities.js'
 
-/**
- * `severity`: 'prohibited' when the role is direct participation in it;
- * 'differ' where scholars hold different views even for direct roles.
- */
-export const RULINGS = {
-  riba: {
-    label: 'Interest (riba)',
-    severity: 'prohibited',
-    summary:
-      'Lending or borrowing at interest is prohibited. The prohibition reaches beyond the lender: the Prophet ﷺ cursed the one who takes riba, the one who pays it, the one who writes the contract and its witnesses.',
-    evidence: ['Quran 2:275–279', 'Sahih Muslim 1598'],
-    employer:
-      'Scholars differ on roles with no part in interest at a conventional bank or lender. The Permanent Committee in Saudi Arabia, among others, holds that any job there supports its core business and should be avoided. Others allow roles such as IT, cleaning or security where there is need, while urging the worker to move on when they can.',
-  },
-  alcohol: {
-    label: 'Alcohol',
-    severity: 'prohibited',
-    summary:
-      'Intoxicants are prohibited, and so is helping them reach people: the Prophet ﷺ cursed the one who presses wine, carries it, serves it, sells it and buys it, as well as the one who drinks it.',
-    evidence: ['Quran 5:90–91', 'Sunan Abi Dawud 3674'],
-    employer:
-      'Working in a permissible role at a brewer, distiller or bar group is where scholars differ. Many advise against it because the company exists to sell alcohol; others allow roles with no hand in producing, selling or serving it.',
-  },
-  gambling: {
-    label: 'Gambling',
-    severity: 'prohibited',
-    summary: 'Gambling (maysir) is prohibited alongside intoxicants, and running or promoting it shares in the sin.',
-    evidence: ['Quran 5:90–91', 'Quran 2:219'],
-    employer:
-      'Scholars differ on permissible roles at a betting or casino company. Many advise against it, since the company’s income is gambling revenue.',
-  },
-  pork: {
-    label: 'Pork',
-    severity: 'prohibited',
-    summary: 'Pork is prohibited to eat, and the Prophet ﷺ prohibited trading in it.',
-    evidence: ['Quran 2:173', 'Sahih al-Bukhari 2236'],
-    employer: 'Scholars differ on roles away from the pork itself at a company built on pork products; most advise avoiding it.',
-  },
-  adult: {
-    label: 'Adult content',
-    severity: 'prohibited',
-    summary: 'Producing or promoting indecency is prohibited, as is spreading it among people.',
-    evidence: ['Quran 17:32', 'Quran 24:19'],
-    employer: 'A company whose business is adult content is not a permissible employer for any role.',
-  },
-  tobacco: {
-    label: 'Tobacco and recreational drugs',
-    severity: 'prohibited',
-    summary:
-      'Most contemporary scholars hold that smoking and recreational drugs are prohibited because of the harm they cause, which makes selling and promoting them prohibited too. Some older opinions held tobacco to be disliked rather than prohibited.',
-    evidence: ['Quran 2:195', 'Sunan Ibn Majah 2340'],
-    employer: 'Scholars differ on roles at a tobacco or cannabis company that have no part in the product itself.',
-  },
-  insurance: {
-    label: 'Conventional insurance',
-    severity: 'differ',
-    summary:
-      'The International Islamic Fiqh Academy ruled commercial insurance impermissible because of uncertainty (gharar) and interest, and approved cooperative insurance (takaful) instead. Some scholars allow it where it is required by law or there is no takaful option.',
-    evidence: ['IIFA Resolution 9 (2/9), 1985', 'AAOIFI Shariah Standard 26'],
-    employer:
-      'Scholars differ on working for a conventional insurer, especially in roles away from underwriting and claims.',
-  },
-  fortune: {
-    label: 'Fortune-telling',
-    severity: 'prohibited',
-    summary: 'Claiming knowledge of the unseen through astrology, tarot or psychic readings is prohibited, and so is earning from it.',
-    evidence: ['Quran 27:65', 'Sahih Muslim 2230'],
-    employer: 'A company built on fortune-telling is not a permissible employer.',
-  },
-}
+export const RULINGS = ACTIVITIES
 
 export const GENERAL_PRINCIPLE = {
   summary:
@@ -96,95 +30,20 @@ export const GENERAL_PRINCIPLE = {
 
 // ── Keywords ────────────────────────────────────────────────────────────
 
-/**
- * Role patterns are matched against the job title, where they mean the job
- * is direct participation. Employer patterns are matched against the whole
- * posting, where they describe what the company does.
- */
-const ROLE_PATTERNS = {
-  riba: [
-    /\bloan(s)? (officer|originator|processor|underwriter|advisor|adviser|specialist|closer|analyst)\b/,
-    /\bmortgage\b/,
-    /\b(credit|lending|loan) (underwriter|analyst|officer|manager|risk analyst)\b/,
-    /\bdebt (collector|collection|recovery)\b/,
-    /\bcollections? (agent|officer|specialist|advisor)\b/,
-    /\bpayday\b/,
-    /\b(debt|leveraged) (capital markets|finance)\b/,
-    /\b(fixed income|interest rates?|rates) (trader|trading|sales|structurer)\b/,
-    /\bcredit cards?\b/,
-  ],
-  alcohol: [
-    /\bbar ?(tender|man|maid|back|staff|supervisor|manager|team|lead|server|associate)\b/,
-    /\bmixologist\b/,
-    /\bsommelier\b/,
-    /\bbrew(er|master|ery|ing)\b/,
-    /\bdistill(er|ery)\b/,
-    /\bwine ?(maker|making|steward|advisor|consultant|sales|rep)\b/,
-    /\b(beer|spirits|wine|liquor|alcohol) (sales|brand|rep|representative|merchandiser|buyer)\b/,
-    /\bcellar ?(man|hand|person|master)\b/,
-    /\bpub\b/,
-  ],
-  gambling: [
-    /\bcasino\b/,
-    /\bcroupier\b/,
-    /\b(table games|blackjack|poker|roulette) dealer\b/,
-    /\bsports ?book\b/,
-    /\bbetting\b/,
-    /\bbookmaker\b/,
-    /\bodds ?compiler\b/,
-    /\b(i)?gaming floor\b/,
-    /\bslots?\b.*\b(technician|attendant|host)\b/,
-    /\blottery\b/,
-    /\bbingo\b/,
-  ],
-  pork: [/\bpork\b/, /\b(pig|swine|hog) (farm|farmer|unit|stockperson|stockman)\b/],
-  adult: [/\badult (content|entertainment|industry)\b/, /\b(stripper|exotic dancer|escort)\b/],
-  tobacco: [/\btobacco(nist)?\b/, /\bcigar(ette)?s?\b/, /\bvap(e|ing)\b/, /\bcannabis\b/, /\bbudtender\b/, /\bdispensary\b/],
-  insurance: [
-    /\binsurance (underwriter|broker|agent|sales|advisor|adviser|claims)\b/,
-    /\b(underwriter|underwriting)\b/,
-    /\bclaims (handler|adjuster|assessor|examiner)\b/,
-    /\bactuar(y|ial)\b/,
-  ],
-  fortune: [/\b(psychic|tarot|astrolog(er|y)|clairvoyant|medium reader)\b/],
-}
-
-const EMPLOYER_PATTERNS = {
-  riba: [/\bbank(s|ing)?\b/, /\blend(er|ers|ing)\b/, /\bloans?\b/, /\bmortgages?\b/, /\bcredit cards?\b/, /\binterest rates?\b/, /\bconsumer credit\b/],
-  alcohol: [/\bbrew(ery|eries|er|ers|ing)\b/, /\bdistill(ery|eries|er|ers)\b/, /\bbeers?\b/, /\bwines?\b/, /\bspirits\b/, /\bpubs?\b/, /\bcocktails?\b/, /\balcohol(ic)?\b/],
-  gambling: [/\bcasinos?\b/, /\bbetting\b/, /\bgambling\b/, /\bsports ?book\b/, /\bigaming\b/, /\bbingo\b/, /\blotter(y|ies)\b/, /\bwager(s|ing)?\b/],
-  pork: [/\bpork\b/, /\bbacon\b/, /\bham\b/, /\bpig(s)?\b/, /\bswine\b/],
-  adult: [/\badult (content|entertainment)\b/, /\bpornograph(y|ic)\b/],
-  tobacco: [/\btobacco\b/, /\bcigarettes?\b/, /\bvap(e|es|ing)\b/, /\bnicotine\b/, /\bcannabis\b/],
-  insurance: [/\binsur(ance|er|ers)\b/, /\breinsurance\b/, /\bunderwrit(ing|er)\b/],
-  fortune: [/\b(psychic|tarot|astrology|horoscopes?)\b/],
-}
-
 // Mentions this many times (or more) read as what the company does, rather
 // than an aside.
 const EMPLOYER_MIN_HITS = 3
 
-// Text that marks Islamic finance or halal work, which the keywords above
-// would otherwise read as their conventional twins.
+// Text that marks Islamic finance or halal work, which the keywords would
+// otherwise read as their conventional twins.
 const ISLAMIC_FINANCE = /\b(islamic (bank|banking|finance|window)|shariah?[- ]compliant|sharia|takaful|sukuk|murabaha|ijara|mudaraba|musharaka|halal)\b/
-
-// Yahoo industries, as `screenBusinessActivity` reads them, mapped to the
-// ruling they fall under.
-const INDUSTRY_RULINGS = [
-  [/\b(banks?|mortgage finance|credit services|consumer finance|capital markets|savings)\b/, 'riba'],
-  [/\binsurance\b/, 'insurance'],
-  [/\b(brewers|breweries|wineries|distilleries|distillers)\b/, 'alcohol'],
-  [/\b(gambling|casinos)\b/, 'gambling'],
-  [/\btobacco\b/, 'tobacco'],
-  [/\badult\b/, 'adult'],
-  [/\bpork\b/, 'pork'],
-]
+const ISLAMIC_EXEMPT = new Set(['riba', 'insurance', 'speculation'])
 
 const lower = s => String(s || '').toLowerCase().replace(/[–—]/g, '-')
 
 // Everyday phrases that contain an employer keyword without saying anything
 // about the business: UK bank holidays, health insurance as a perk, a
-// season-ticket loan.
+// season-ticket loan, concert tickets as a team treat.
 const NOISE = [
   /\bbank holidays?\b/g,
   /\b(bank|banking) (account|details|transfer|statement)s?\b/g,
@@ -195,6 +54,8 @@ const NOISE = [
   /\b(high|team) spirits\b/g,
   /\bguinea pigs?\b/g,
   /\bwine and dine\b/g,
+  /\bconcert tickets?\b/g,
+  /\bweapons? of choice\b/g,
 ]
 
 const withoutNoise = text => NOISE.reduce((t, re) => t.replace(re, ' '), text)
@@ -208,17 +69,17 @@ function countHits(text, patterns) {
   return hits
 }
 
-/** Rulings the job title itself falls under. */
+/** Activities the job title itself is part of. */
 export function screenRole(title) {
   const t = lower(title)
   if (!t || ISLAMIC_FINANCE.test(t)) return []
-  return Object.entries(ROLE_PATTERNS)
-    .filter(([, patterns]) => patterns.some(p => p.test(t)))
-    .map(([id]) => id)
+  const found = ACTIVITY_IDS.filter(id => ACTIVITIES[id].role?.some(p => p.test(t)))
+  // An indiscriminate-weapons role is also a weapons role; name it once.
+  return found.includes('indiscriminate') ? found.filter(id => id !== 'weapons') : found
 }
 
 /**
- * What the posting says the employer does: rulings mentioned at least
+ * What the posting says the employer does: activities mentioned at least
  * EMPLOYER_MIN_HITS times are the core business, fewer are mentions.
  */
 export function screenEmployerText(text) {
@@ -226,20 +87,28 @@ export function screenEmployerText(text) {
   const islamic = ISLAMIC_FINANCE.test(t)
   const core = []
   const mentions = []
-  for (const [id, patterns] of Object.entries(EMPLOYER_PATTERNS)) {
-    if (islamic && (id === 'riba' || id === 'insurance')) continue
-    const hits = countHits(t, patterns)
-    if (hits >= EMPLOYER_MIN_HITS) core.push(id)
+  for (const id of ACTIVITY_IDS) {
+    if (islamic && ISLAMIC_EXEMPT.has(id)) continue
+    const hits = countHits(t, ACTIVITIES[id].text || [])
+    // Indiscriminate weapons are core on a single mention.
+    if (hits >= EMPLOYER_MIN_HITS || (id === 'indiscriminate' && hits > 0)) core.push(id)
     else if (hits > 0) mentions.push(id)
   }
   return { core, mentions, islamicFinance: islamic }
 }
 
-/** The ruling a Yahoo industry falls under, if any. */
-export function industryRuling(industry) {
+/** The activity a Yahoo industry is, and whether it is the core business. */
+export function industryActivity(industry) {
   const i = lower(industry)
   if (!i) return null
-  return INDUSTRY_RULINGS.find(([re]) => re.test(i))?.[1] ?? null
+  const hit = INDUSTRY_ACTIVITIES.find(([re]) => re.test(i))
+  return hit ? { id: hit[1], core: hit[2] } : null
+}
+
+/** The activity a Yahoo industry is the core business of, if any. */
+export function industryRuling(industry) {
+  const hit = industryActivity(industry)
+  return hit?.core ? hit.id : null
 }
 
 /**
@@ -284,50 +153,67 @@ export const JOB_VERDICTS = {
 
 /**
  * @param {object} input
- * @param {string} input.title           Job title
- * @param {string} input.text            Whole posting text
- * @param {string} [input.industry]      Employer's industry, when it is listed
+ * @param {string} input.title            Job title
+ * @param {string} input.text             Whole posting text
+ * @param {string} [input.industry]       Employer's industry, when it is listed
  * @param {string} [input.businessStatus] screenBusinessActivity status for the employer
+ * @param {string} [input.description]    Employer's business description, when it is listed
  */
-export function screenJob({ title = '', text = '', industry = '', businessStatus = null }) {
+export function screenJob({ title = '', text = '', industry = '', businessStatus = null, description = '' }) {
   const role = screenRole(title)
   const fromText = screenEmployerText(`${title}\n${text}`)
-  const fromIndustry = industryRuling(industry)
+  const fromIndustry = industryActivity(industry)
 
   // A listed employer's industry outranks what the posting text suggests:
-  // once it is known, the text's findings are only mentions.
-  const employerCore = fromIndustry ? [fromIndustry] : industry ? [] : fromText.core
-  const employerMentions = [...(industry ? fromText.core : []), ...fromText.mentions]
-    .filter(id => !employerCore.includes(id) && !role.includes(id))
+  // once it is known, the text's findings are only mentions. Indiscriminate
+  // weapons stay core however they are found.
+  // When the posting and the company's own description (or its industry)
+  // agree on an activity, it's the core business: Lockheed Martin's
+  // postings and description both centre on missiles.
+  const described = describedActivities(description)
+  const corroborated = fromText.core.filter(id => described.includes(id) || fromIndustry?.id === id)
+  const employerCore = fromIndustry?.core
+    ? [fromIndustry.id]
+    : industry
+      ? fromText.core.filter(id => id === 'indiscriminate' || corroborated.includes(id))
+      : fromText.core
+  if (described.includes('indiscriminate') && !employerCore.includes('indiscriminate')) employerCore.push('indiscriminate')
+  const employerMentions = [
+    ...(fromIndustry && !fromIndustry.core ? [fromIndustry.id] : []),
+    ...(industry ? fromText.core : []),
+    ...fromText.mentions,
+    ...described,
+  ].filter((id, i, all) => all.indexOf(id) === i && !employerCore.includes(id) && !role.includes(id))
 
-  const prohibitedRole = role.filter(id => RULINGS[id].severity === 'prohibited')
-  const differRole = role.filter(id => RULINGS[id].severity === 'differ')
+  const prohibitedRole = role.filter(id => ACTIVITIES[id].severity === 'prohibited')
+  const differRole = role.filter(id => ACTIVITIES[id].severity === 'differ')
+  const hardCore = employerCore.filter(id => ACTIVITIES[id].hardEmployer)
 
   let verdict
   let reason
   if (prohibitedRole.length) {
     verdict = 'NOT_PERMISSIBLE'
-    reason = `The role itself involves ${joinLabels(prohibitedRole)}.`
+    reason = `The role itself involves ${activityLabels(prohibitedRole)}.`
+  } else if (hardCore.length) {
+    verdict = 'NOT_PERMISSIBLE'
+    reason = `The employer’s business is ${activityLabels(hardCore)}, which no role can serve.`
   } else if (differRole.length) {
     verdict = 'DIFFER'
-    reason = `The role itself involves ${joinLabels(differRole)}, where scholars differ.`
-  } else if (employerCore.some(id => id === 'adult' || id === 'fortune')) {
-    verdict = 'NOT_PERMISSIBLE'
-    reason = `The employer’s business is ${joinLabels(employerCore)}.`
+    reason = `The role itself involves ${activityLabels(differRole)}, where scholars differ.`
   } else if (employerCore.length) {
     verdict = 'DIFFER'
-    reason = `The role isn’t prohibited in itself, but the employer’s core business is ${joinLabels(employerCore)}.`
+    reason = `The role isn’t prohibited in itself, but the employer’s core business is ${activityLabels(employerCore)}.`
   } else if (businessStatus === 'CAUTION' || employerMentions.length) {
     verdict = 'CAUTION'
-    reason = businessStatus === 'CAUTION'
-      ? 'The role is permissible. The employer’s business is mostly permissible, with some income from prohibited sources.'
-      : `The role is permissible. The posting mentions ${joinLabels(employerMentions)}; check whether that is part of the business or only a mention.`
+    reason = employerMentions.length
+      ? `The role is permissible. The employer is involved in ${activityLabels(employerMentions)} in some way; check whether that is part of the business or only a mention.`
+      : 'The role is permissible. The employer’s business is mostly permissible, with some income from prohibited sources.'
   } else {
     verdict = 'PERMISSIBLE'
     reason = 'Nothing in the role or the employer’s business is prohibited.'
   }
 
-  const rulingIds = [...new Set([...role, ...employerCore, ...employerMentions])]
+  const ids = [...new Set([...role, ...employerCore, ...employerMentions])]
   return {
     verdict,
     ...JOB_VERDICTS[verdict],
@@ -336,19 +222,13 @@ export function screenJob({ title = '', text = '', industry = '', businessStatus
     employerCore,
     employerMentions,
     islamicFinance: fromText.islamicFinance,
-    rulings: rulingIds.map(id => ({
+    rulings: ids.map(id => ({
       id,
-      ...RULINGS[id],
+      ...ACTIVITIES[id],
       appliesTo: role.includes(id) ? 'role' : employerCore.includes(id) ? 'employer' : 'mention',
     })),
     benefits: screenBenefits(text),
   }
-}
-
-function joinLabels(ids) {
-  const labels = ids.map(id => RULINGS[id].label.toLowerCase())
-  if (labels.length <= 1) return labels[0] || ''
-  return `${labels.slice(0, -1).join(', ')} and ${labels.at(-1)}`
 }
 
 // ── Reading pasted text ─────────────────────────────────────────────────

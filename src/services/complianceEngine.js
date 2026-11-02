@@ -16,6 +16,8 @@
  * scholar for personal rulings.
  */
 
+import { describedActivities, activityLabels } from './activities.js'
+
 // ============================================================
 // 0. CONSTANTS
 // ============================================================
@@ -263,13 +265,31 @@ export function screenBusinessActivity(profile) {
     }
   }
 
-  if (
+  // The industry alone misses businesses Yahoo files elsewhere: an
+  // ammunition maker under Leisure, a cannabis grower under Drug
+  // Manufacturers. The description names what the company sells, so any
+  // restricted activity it names sends the stock to review.
+  const described = describedActivities(profile.description)
+  const cautionaryIndustry =
     CAUTIONARY_INDUSTRIES.some(c => industryMatch(industry, c)) ||
     CAUTIONARY_SECTORS.some(c => industryMatch(sector, c))
-  ) {
+
+  if (described.length) {
+    const named = activityLabels(described)
     return {
       pass: true,
       status: 'CAUTION',
+      activities: described,
+      reason: `Business description mentions ${named} — review the revenue mix`,
+      detail: `${profile.name || 'The company'}’s business description mentions ${named}. Check how much of its revenue comes from ${described.length > 1 ? 'these' : 'it'}: the haram income ratio only counts interest, so it can’t measure this.`,
+    }
+  }
+
+  if (cautionaryIndustry) {
+    return {
+      pass: true,
+      status: 'CAUTION',
+      activities: [],
       reason: 'Mixed business — requires <5% haram revenue check',
       detail: `The "${profile.industry || profile.sector}" industry may include non-permissible revenue streams. The haram income ratio test will determine final compliance.`,
     }
@@ -278,6 +298,7 @@ export function screenBusinessActivity(profile) {
   return {
     pass: true,
     status: 'PASS',
+    activities: [],
     reason: `Permissible business activity: ${profile.industry || profile.sector}`,
     detail: `The "${profile.industry || profile.sector}" industry does not involve prohibited activities.`,
   }
@@ -591,7 +612,9 @@ export function screenStock(profile, balanceSheet, income, options = {}) {
     // only paths to REVIEW_REQUIRED, so users see a small number of items
     // that genuinely need their attention rather than a noisy bucket.
     status = 'REVIEW_REQUIRED'
-    statusReason = 'Business activity is mixed — passes financial screens but the revenue mix requires human review.'
+    statusReason = businessScreen.activities?.length
+      ? `Its business includes ${activityLabels(businessScreen.activities)} — passes financial screens but the revenue mix requires human review.`
+      : 'Business activity is mixed — passes financial screens but the revenue mix requires human review.'
   }
 
   // Shariah-certified institution override — runs last so the screens above
