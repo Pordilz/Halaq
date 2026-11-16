@@ -3,6 +3,29 @@ import { apiUrl } from '../lib/apiBase'
 
 const API_BASE = apiUrl('/api')
 
+/**
+ * Checkout/portal URLs come from an API response, so never send the browser
+ * somewhere the API didn't intend: https only, on Lemon Squeezy itself.
+ */
+function safeBillingUrl(value) {
+  if (typeof value !== 'string' || !value) return null
+  try {
+    const url = new URL(value)
+    if (url.protocol !== 'https:') return null
+    const host = url.hostname.toLowerCase()
+    if (host !== 'lemonsqueezy.com' && !host.endsWith('.lemonsqueezy.com')) return null
+    return url.href
+  } catch {
+    return null
+  }
+}
+
+function requireBillingUrl(value) {
+  const safe = safeBillingUrl(value)
+  if (!safe) throw new Error('We couldn’t open the billing page. Please try again.')
+  return safe
+}
+
 async function authHeaders() {
   const headers = { 'Content-Type': 'application/json' }
   if (supabase?.auth?.getSession) {
@@ -33,12 +56,12 @@ async function postJson(path, body) {
 
 export async function createCheckoutSession(tier) {
   const { url } = await postJson('/lemonsqueezy/create-checkout', { tier })
-  if (url) window.location.href = url
+  window.location.href = requireBillingUrl(url)
 }
 
 export async function openBillingPortal() {
   const { url } = await postJson('/lemonsqueezy/create-portal')
-  if (url) window.location.href = url
+  window.location.href = requireBillingUrl(url)
 }
 
 /**

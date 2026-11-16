@@ -25,7 +25,7 @@
 
 import { isValidTicker, classifyYahooError } from '../_lib/yahoo.js';
 import { buildVerifiedScreening } from '../_lib/verify-screen.js';
-import { getUserFromToken, enforceFreeRateLimit, getSupabaseAdmin } from '../_lib/supabase.js';
+import { getUserFromToken, enforceFreeRateLimit, getSupabaseAdmin, bearerToken } from '../_lib/supabase.js';
 import { applyCors } from '../_lib/cors.js';
 
 export const config = { maxDuration: 60 };
@@ -44,7 +44,7 @@ export default async function handler(req, res) {
   }
   const ticker = String(queryTicker).toUpperCase();
 
-  const token = req.headers.authorization?.replace('Bearer ', '');
+  const token = bearerToken(req);
   if (!token) return res.status(401).json({ error: 'Sign in to verify a stock.' });
 
   const { user, profile } = await getUserFromToken(token);

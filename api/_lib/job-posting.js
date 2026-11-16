@@ -11,13 +11,15 @@
 
 import { lookup } from 'node:dns/promises';
 import net from 'node:net';
+import ipaddr from 'ipaddr.js';
 import { readPostingText } from '../../src/services/jobEngine.js';
+import { pinnedFetch, DEFAULT_MAX_BYTES } from './safe-fetch.js';
 
 const TIMEOUT_MS = 8000;
 // The whole read, redirects and API fallbacks included, has to finish well
 // inside the function's 20 seconds.
 const TOTAL_MS = 14000;
-const MAX_BYTES = 2_000_000;
+const MAX_BYTES = DEFAULT_MAX_BYTES;
 const MAX_REDIRECTS = 4;
 const MAX_TEXT = 20_000;
 
@@ -33,22 +35,40 @@ export class PostingError extends Error {
 
 // ── URL safety ──────────────────────────────────────────────────────────
 
+// Ranges that must never be reachable, expressed as CIDRs so IPv6 gaps that a
+// naive `startsWith('fe80')` check misses (ff00::/8 multicast, fec0::/10
+// site-local, 64:ff9b::/96 NAT64, the fe90::–febf:: part of fe80::/10, …) are
+// covered. `range() !== 'unicast'` adds a second, independent guard for
+// ipaddr.js's own special ranges (loopback, link-local, unique-local, 6to4,
+// teredo, RFC 6052, benchmarking, CGNAT, documentation, …).
+const BLOCKED_CIDRS = [
+  // IPv4: "this network", private, CGNAT, loopback, link-local, IETF/documentation,
+  // benchmarking, multicast and reserved.
+  '0.0.0.0/8', '10.0.0.0/8', '100.64.0.0/10', '127.0.0.0/8',
+  '169.254.0.0/16', '172.16.0.0/12', '192.0.0.0/24', '192.0.2.0/24',
+  '192.168.0.0/16', '198.18.0.0/15', '198.51.100.0/24', '203.0.113.0/24',
+  '224.0.0.0/4', '240.0.0.0/4',
+  // IPv6: unspecified/loopback, IPv4-compatible, NAT64, discard-only, protocol
+  // assignments/documentation, 6to4, unique-local, link-local, deprecated
+  // site-local and multicast.
+  '::/96', '::1/128', '64:ff9b::/96', '64:ff9b:1::/48', '100::/64',
+  '2001::/23', '2002::/16', '3fff::/20', 'fc00::/7', 'fe80::/10',
+  'fec0::/10', 'ff00::/8',
+].map(cidr => ipaddr.parseCIDR(cidr));
+
 function isPrivateAddress(ip) {
-  if (net.isIPv4(ip)) {
-    const [a, b] = ip.split('.').map(Number);
-    return (
-      a === 0 || a === 10 || a === 127 ||
-      (a === 100 && b >= 64 && b <= 127) ||
-      (a === 169 && b === 254) ||
-      (a === 172 && b >= 16 && b <= 31) ||
-      (a === 192 && b === 168) ||
-      (a === 198 && (b === 18 || b === 19)) ||
-      a >= 224
-    );
+  let addr;
+  try {
+    addr = ipaddr.parse(String(ip).toLowerCase());
+  } catch {
+    return true; // anything we cannot parse is refused
   }
-  const v6 = ip.toLowerCase();
-  if (v6.startsWith('::ffff:')) return isPrivateAddress(v6.slice(7));
-  return v6 === '::' || v6 === '::1' || v6.startsWith('fc') || v6.startsWith('fd') || v6.startsWith('fe80');
+  // IPv4-mapped IPv6 (::ffff:a.b.c.d) is just an IPv4 address in disguise.
+  if (addr.kind() === 'ipv6' && addr.isIPv4MappedAddress()) addr = addr.toIPv4Address();
+  if (addr.range() !== 'unicast') return true;
+  return BLOCKED_CIDRS.some(cidr => {
+    try { return addr.match(cidr); } catch { return false; }
+  });
 }
 
 export function parsePostingUrl(input) {
@@ -76,11 +96,14 @@ export function parsePostingUrl(input) {
   return url;
 }
 
-async function assertPublicHost(url, resolve) {
+// Resolve once, validate every answer, and return the single address that the
+// connection will be pinned to. The caller must pass this exact address to
+// pinnedFetch — plain fetch(url) would re-resolve and re-open the SSRF race.
+async function resolveAndPin(url, resolve) {
   const host = url.hostname.replace(/^\[|\]$/g, '');
   if (net.isIP(host)) {
     if (isPrivateAddress(host)) throw new PostingError('BAD_URL', 'Only public web links can be read.', 400);
-    return;
+    return { address: host, family: net.isIP(host) };
   }
   let addresses;
   try {
@@ -91,36 +114,56 @@ async function assertPublicHost(url, resolve) {
   if (!addresses.length || addresses.some(a => isPrivateAddress(a.address))) {
     throw new PostingError('BAD_URL', 'Only public web links can be read.', 400);
   }
+  const chosen = addresses[0];
+  return { address: chosen.address, family: Number(chosen.family) || net.isIP(chosen.address) };
 }
 
 const defaultResolve = host => lookup(host, { all: true });
 
-/** Fetches a public URL, following redirects by hand so each hop is checked. */
-export async function safeFetch(input, { accept = 'text/html,application/json;q=0.9,*/*;q=0.5', resolve = defaultResolve, fetchImpl = fetch, deadline = Date.now() + TOTAL_MS } = {}) {
+/**
+ * Fetches a public URL, following redirects by hand so each hop is validated
+ * and pinned independently. DNS is resolved exactly once per hop and the
+ * connection is forced onto that validated IP by pinnedFetch, so a rebinding
+ * answer cannot slip a private address in after validation.
+ *
+ * `fetchImpl` is a TEST-ONLY injection hook. It is ignored unless
+ * `allowInjectedFetch` is explicitly true, because a caller-supplied fetch
+ * could otherwise re-resolve DNS and bypass the pin. Production callers must
+ * leave both unset (the secure pinnedFetch path is the default).
+ */
+export async function safeFetch(input, {
+  accept = 'text/html,application/json;q=0.9,*/*;q=0.5',
+  resolve = defaultResolve,
+  fetchImpl,
+  allowInjectedFetch = false,
+  deadline = Date.now() + TOTAL_MS,
+} = {}) {
   let url = input instanceof URL ? input : parsePostingUrl(input);
+  const impl = fetchImpl && allowInjectedFetch ? fetchImpl : pinnedFetch;
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
-    await assertPublicHost(url, resolve);
+    const pinned = await resolveAndPin(url, resolve);
     const left = Math.min(TIMEOUT_MS, deadline - Date.now());
     if (left <= 0) throw new PostingError('UNREACHABLE', 'The job site took too long to answer.', 422);
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), left);
-    let res;
     try {
-      res = await fetchImpl(url, {
-        redirect: 'manual',
-        signal: controller.signal,
-        headers: { 'User-Agent': UA, Accept: accept, 'Accept-Language': 'en' },
-      });
-    } catch (err) {
-      clearTimeout(timer);
-      throw new PostingError('UNREACHABLE', err?.name === 'AbortError' ? 'The job site took too long to answer.' : 'We couldn’t reach that website.', 422);
-    }
-    if (res.status >= 300 && res.status < 400 && res.headers.get('location')) {
-      clearTimeout(timer);
-      url = parsePostingUrl(new URL(res.headers.get('location'), url).href);
-      continue;
-    }
-    try {
+      let res;
+      try {
+        res = await impl(url, {
+          redirect: 'manual',
+          signal: controller.signal,
+          headers: { 'User-Agent': UA, Accept: accept, 'Accept-Language': 'en' },
+          // Used by pinnedFetch; ignored by an injected test fetch.
+          pinned,
+          maxBytes: MAX_BYTES,
+        });
+      } catch (err) {
+        throw new PostingError('UNREACHABLE', err?.name === 'AbortError' ? 'The job site took too long to answer.' : 'We couldn’t reach that website.', 422);
+      }
+      if (res.status >= 300 && res.status < 400 && res.headers.get('location')) {
+        url = parsePostingUrl(new URL(res.headers.get('location'), url).href);
+        continue;
+      }
       if ([401, 403, 429, 999].includes(res.status)) {
         throw new PostingError('BLOCKED', 'That job site doesn’t let us read its postings.', 422);
       }
@@ -128,6 +171,7 @@ export async function safeFetch(input, { accept = 'text/html,application/json;q=
       const body = await readCapped(res);
       return { url, body, contentType: res.headers.get('content-type') || '' };
     } finally {
+      // Keep the abort signal live through the body read, then release it.
       clearTimeout(timer);
     }
   }
@@ -203,18 +247,25 @@ function placeText(location) {
     .join('; ');
 }
 
-function findJobPosting(node) {
-  if (!node || typeof node !== 'object') return null;
-  if (Array.isArray(node)) {
-    for (const n of node) {
-      const hit = findJobPosting(n);
-      if (hit) return hit;
+function findJobPosting(root) {
+  // Untrusted JSON-LD can be arbitrarily deep; traverse iteratively with a
+  // hard depth cap so a crafted @graph cannot overflow the call stack.
+  const MAX_DEPTH = 32;
+  const stack = [{ node: root, depth: 0 }];
+  while (stack.length) {
+    const { node, depth } = stack.pop();
+    if (!node || typeof node !== 'object') continue;
+    if (Array.isArray(node)) {
+      for (const n of node) stack.push({ node: n, depth });
+      continue;
     }
-    return null;
+    const type = node['@type'];
+    if (type === 'JobPosting' || (Array.isArray(type) && type.includes('JobPosting'))) return node;
+    if (depth < MAX_DEPTH && node['@graph'] != null) {
+      stack.push({ node: node['@graph'], depth: depth + 1 });
+    }
   }
-  const type = node['@type'];
-  if (type === 'JobPosting' || (Array.isArray(type) && type.includes('JobPosting'))) return node;
-  return findJobPosting(node['@graph']);
+  return null;
 }
 
 export function extractJsonLdPosting(html) {
@@ -327,7 +378,13 @@ export async function readJobPosting(input, options = {}) {
     if (!/html|xml|text\/plain/i.test(contentType) && !/<html|<body/i.test(body.slice(0, 2000))) {
       throw new PostingError('NOT_A_PAGE', 'That link isn’t a web page we can read.', 422);
     }
-    posting = extractFromHtml(body, url);
+    try {
+      posting = extractFromHtml(body, url);
+    } catch {
+      // A malformed page must surface as a handled PostingError (422), not a
+      // 502 from the handler's generic catch.
+      throw new PostingError('EMPTY', 'We couldn’t find the job description on that page.', 422);
+    }
   }
 
   const text = (posting.text || '').slice(0, MAX_TEXT);

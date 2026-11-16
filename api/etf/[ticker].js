@@ -7,7 +7,7 @@
 
 import { isValidTicker, classifyYahooError } from '../_lib/yahoo.js';
 import { buildEtfXray } from '../_lib/etf.js';
-import { getUserFromToken } from '../_lib/supabase.js';
+import { getUserFromToken, bearerToken } from '../_lib/supabase.js';
 import { applyCors } from '../_lib/cors.js';
 
 const PAID_TIERS = new Set(['pro', 'scholar', 'admin']);
@@ -27,7 +27,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing or invalid ticker parameter' });
   }
 
-  const token = req.headers.authorization?.replace('Bearer ', '');
+  const token = bearerToken(req);
   const { user, profile } = token ? await getUserFromToken(token) : { user: null, profile: null };
   if (!user) return res.status(401).json({ error: 'Sign in to use the ETF X-Ray.' });
   if (!PAID_TIERS.has(profile?.subscription_tier)) {

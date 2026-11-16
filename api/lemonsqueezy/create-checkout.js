@@ -1,6 +1,7 @@
 import { lemonSqueezySetup, createCheckout } from '@lemonsqueezy/lemonsqueezy.js';
 import { createClient } from '@supabase/supabase-js';
 import { applyCors } from '../_lib/cors.js';
+import { bearerToken } from '../_lib/supabase.js';
 
 const supabaseAdmin = createClient(
   process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'http://localhost:54321',
@@ -16,14 +17,23 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const token = req.headers.authorization?.replace('Bearer ', '');
+  const token = bearerToken(req);
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
   const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
   if (error || !user) return res.status(401).json({ error: 'Unauthorized' });
 
-  const { tier } = req.body;
-  const variantId = tier === 'scholar' ? process.env.LEMON_SCHOLAR_VARIANT_ID : process.env.LEMON_PRO_VARIANT_ID;
+  // Only the two purchasable tiers may reach Lemon Squeezy. An arbitrary
+  // string would both select an unintended variant and be echoed back as
+  // trusted custom_data in webhook events.
+  const ALLOWED_TIERS = ['pro', 'scholar'];
+  const tier = req.body?.tier;
+  if (!ALLOWED_TIERS.includes(tier)) {
+    return res.status(400).json({ error: 'Invalid tier' });
+  }
+  const variantId = tier === 'scholar'
+    ? process.env.LEMON_SCHOLAR_VARIANT_ID
+    : process.env.LEMON_PRO_VARIANT_ID;
 
   try {
     const newCheckout = await createCheckout(process.env.LEMON_SQUEEZY_STORE_ID, variantId, {

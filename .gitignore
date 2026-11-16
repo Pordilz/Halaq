@@ -3,12 +3,21 @@ node_modules/
 
 # Build
 dist/
+.vercel/
+*.tsbuildinfo
+
+# Test / coverage output
+coverage/
 
 # Environment
 .env
 .env.local
 .env.*.local
 .env.android
+# Catch any other .env* file, but keep the tracked examples.
+.env*
+!.env.example
+!.env.android.example
 
 # Capacitor — generated / local-only
 android/local.properties
@@ -19,6 +28,8 @@ android/app/build/
 android/app/release/
 android/keystores/
 android/app/google-services.json
+google-services.json
+local.properties
 *.keystore
 *.jks
 

@@ -6,16 +6,8 @@
     <meta name="theme-color" content="#1a6b47" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0f1a27" media="(prefers-color-scheme: dark)" />
     <meta name="color-scheme" content="light dark" />
-    <script>
-      // Entrance animations only hide content once scripts are running.
-      document.documentElement.classList.add('js')
-      // Apply the saved theme before first paint (see src/lib/theme.js).
-      try {
-        var pref = localStorage.getItem('halaq_theme')
-        var dark = pref === 'dark' || (pref !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches)
-        document.documentElement.dataset.theme = dark ? 'dark' : 'light'
-      } catch (e) {}
-    </script>
+    <!-- Pre-paint theme bootstrap; externalized so CSP can stay script-src 'self'. -->
+    <script src="/theme-init.js"></script>
 
     <title>Halaq — Shariah Stock Screener for Muslim Investors</title>
     <meta
@@ -69,8 +61,6 @@
     <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
-      media="print"
-      onload="this.media='all'"
     />
     <noscript>
       <link

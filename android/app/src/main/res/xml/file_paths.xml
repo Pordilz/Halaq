@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
-    <external-path name="my_images" path="." />
-    <cache-path name="my_cache_images" path="." />
+    <!-- Only expose the subdirectories the app actually shares; never the
+         whole external or cache root. -->
+    <external-path name="my_images" path="Pictures/" />
+    <cache-path name="my_cache_images" path="images/" />
 </paths>

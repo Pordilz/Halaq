@@ -18,6 +18,17 @@ const app = express();
 const PORT = process.env.PORT || 3005;
 const API_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'api');
 
+// Don't advertise the framework/version to every caller.
+app.disable('x-powered-by');
+
+// Only honour X-Forwarded-* from a proxy we actually control. TRUST_PROXY is
+// the number of trusted hops (0/unset = direct connections only, which is the
+// safe local default). api/_lib/supabase.js reads the same value when it
+// decides whether a forwarding header may be used as the anon-quota IP, so a
+// client cannot reset its quota by inventing x-real-ip/x-forwarded-for.
+const trustProxy = Number(process.env.TRUST_PROXY ?? 0);
+app.set('trust proxy', Number.isFinite(trustProxy) && trustProxy > 0 ? Math.floor(trustProxy) : 0);
+
 // Same explicit allowlist the Vercel functions use (api/_lib/cors.js). The
 // `cors` middleware answers OPTIONS preflights before the handlers run, so
 // this must apply the identical policy to local dev.

@@ -22,18 +22,29 @@ test('vercel.json sets the required security headers on all responses', () => {
   assert.match(all['Strict-Transport-Security'] || '', /max-age=\d+/)
 })
 
-test('no wildcard CORS origin is published, statically or at runtime', () => {
+test('the CORS origin is owned at runtime, never published statically', () => {
+  // A static ACAO here would duplicate/override the exact origin reflected by
+  // applyCors(), breaking credentialed native WebView requests. Vercel may
+  // still publish the preflight method/header hints and Vary: Origin; only
+  // the origin itself is decided at request time.
   for (const rule of vercel.headers) {
     for (const header of rule.headers) {
-      if (header.key.toLowerCase() === 'access-control-allow-origin') {
-        assert.notEqual(header.value.trim(), '*', 'static wildcard CORS origin is not allowed')
-      }
+      assert.notEqual(
+        header.key.toLowerCase(),
+        'access-control-allow-origin',
+        'static Access-Control-Allow-Origin is not allowed',
+      )
     }
   }
   assert.doesNotMatch(
     corsSource,
     /setHeader\(\s*['"]Access-Control-Allow-Origin['"]\s*,\s*['"]\*['"]\s*\)/,
     'the runtime policy must not emit a wildcard origin',
+  )
+  assert.match(
+    corsSource,
+    /setHeader\(\s*['"]Access-Control-Allow-Origin['"]\s*,\s*origin\s*\)/,
+    'applyCors must reflect the exact allowlisted origin',
   )
 })
 

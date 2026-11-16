@@ -38,13 +38,65 @@ if (isNative) {
   // the Android manifest and iOS Info.plist. Map them onto the hash route so
   // the router picks them up on both cold start and resume. getLaunchUrl()
   // covers the cold-start event that can fire before React mounts.
-  const openDeepLink = url => {
-    const prefix = 'com.halaq.app://'
-    if (typeof url !== 'string' || !url.toLowerCase().startsWith(prefix)) return
-    const [rawPath = '', rawQuery] = url.slice(prefix.length).split('?')
-    const path = `/${rawPath.replace(/^\/+/, '')}`
-    if (path === '/') return
-    const target = `#${path}${rawQuery ? `?${rawQuery}` : ''}`
+  //
+  // The incoming URL is untrusted, so require the exact scheme, a known
+  // route, and only the query keys this app actually reads. Everything else
+  // is dropped rather than reflected into window.location.hash.
+  const DEEP_LINK_SCHEME = 'com.halaq.app://'
+  const ROUTE_PREFIXES = [
+    '/stock/', '/etf/', '/jobs', '/screener', '/watchlist', '/learn',
+    '/batch', '/chat', '/profile', '/settings', '/upgrade', '/legal',
+    '/home', '/pricing', '/plans',
+  ]
+  const QUERY_KEYS = ['url', 'q', 'tier', 'upgrade']
+
+  const openDeepLink = raw => {
+    if (typeof raw !== 'string') return
+    const value = raw.trim()
+    if (value.slice(0, DEEP_LINK_SCHEME.length).toLowerCase() !== DEEP_LINK_SCHEME) return
+    const rest = value.slice(DEEP_LINK_SCHEME.length)
+    if (!rest || rest.includes('#') || /[\\\u0000-\u001f\u007f]/.test(rest)) return
+
+    const qIndex = rest.indexOf('?')
+    const rawPath = qIndex === -1 ? rest : rest.slice(0, qIndex)
+    const rawQuery = qIndex === -1 ? '' : rest.slice(qIndex + 1)
+    // A leading "//" would be parsed as a host by URL parsers; never allow it.
+    if (!rawPath || rawPath.startsWith('//')) return
+
+    let path
+    try {
+      path = decodeURIComponent(rawPath)
+    } catch {
+      return
+    }
+    if (/[\\\u0000-\u001f\u007f]/.test(path)) return
+    if (path.split('/').some(segment => segment === '..' || segment === '.')) return
+    const route = `/${path.replace(/^\/+/, '')}`.replace(/\/{2,}/g, '/')
+    const knownRoute = ROUTE_PREFIXES.some(prefix =>
+      prefix.endsWith('/')
+        ? route.startsWith(prefix) && route.length > prefix.length
+        : route === prefix || route.startsWith(`${prefix}/`),
+    )
+    if (!knownRoute) return
+
+    const incoming = new URLSearchParams(rawQuery)
+    const clean = new URLSearchParams()
+    for (const key of QUERY_KEYS) {
+      for (const candidate of incoming.getAll(key)) {
+        // `url` is consumed by the job screener: allow bare domains, but if a
+        // scheme is present it must be http(s), never javascript:/data:.
+        if (key === 'url' && /^[a-z][a-z0-9+.-]*:/i.test(candidate)) {
+          let ok = false
+          try {
+            ok = ['http:', 'https:'].includes(new URL(candidate).protocol)
+          } catch {}
+          if (!ok) continue
+        }
+        clean.append(key, candidate)
+      }
+    }
+    const query = clean.toString()
+    const target = `#${route}${query ? `?${query}` : ''}`
     if (window.location.hash !== target) window.location.hash = target
   }
 

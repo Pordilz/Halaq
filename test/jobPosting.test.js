@@ -22,17 +22,17 @@ test('only public web links are accepted', () => {
 })
 
 test('a host that resolves to a private address is refused', async () => {
-  await assert.rejects(safeFetch('https://sneaky.example.com/', { resolve: privateDns, fetchImpl: fakeFetch({}) }), { code: 'BAD_URL' })
+  await assert.rejects(safeFetch('https://sneaky.example.com/', { resolve: privateDns, fetchImpl: fakeFetch({}), allowInjectedFetch: true }), { code: 'BAD_URL' })
 })
 
 test('redirects are checked hop by hop', async () => {
   const fetchImpl = fakeFetch({ 'https://jobs.example.com/a': { status: 302, headers: { location: 'http://169.254.169.254/latest' } } })
-  await assert.rejects(safeFetch('https://jobs.example.com/a', { resolve: publicDns, fetchImpl }), { code: 'BAD_URL' })
+  await assert.rejects(safeFetch('https://jobs.example.com/a', { resolve: publicDns, fetchImpl, allowInjectedFetch: true }), { code: 'BAD_URL' })
 })
 
 test('sites that refuse bots are reported as blocked', async () => {
   const fetchImpl = fakeFetch({ 'https://www.linkedin.com/jobs/view/1': { status: 403 } })
-  await assert.rejects(readJobPosting('https://www.linkedin.com/jobs/view/1', { resolve: publicDns, fetchImpl }), { code: 'BLOCKED' })
+  await assert.rejects(readJobPosting('https://www.linkedin.com/jobs/view/1', { resolve: publicDns, fetchImpl, allowInjectedFetch: true }), { code: 'BLOCKED' })
 })
 
 const LD_PAGE = `<html><head><title>Careers</title>
@@ -64,7 +64,7 @@ test('Greenhouse links use the public job API', async () => {
       body: JSON.stringify({ title: 'Analyst', company_name: 'Acme', location: { name: 'Remote' }, content: '&lt;p&gt;Analyse things for our customers every single day. '.repeat(10) + '&lt;/p&gt;' }),
     },
   })
-  const job = await readJobPosting('https://boards.greenhouse.io/acme/jobs/42', { resolve: publicDns, fetchImpl })
+  const job = await readJobPosting('https://boards.greenhouse.io/acme/jobs/42', { resolve: publicDns, fetchImpl, allowInjectedFetch: true })
   assert.equal(job.source, 'greenhouse')
   assert.equal(job.company, 'Acme')
   assert.equal(job.location, 'Remote')

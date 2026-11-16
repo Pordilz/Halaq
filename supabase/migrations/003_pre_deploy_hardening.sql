@@ -50,6 +50,15 @@ END $$;
 CREATE INDEX IF NOT EXISTS idx_watchlist_user_id ON public.watchlist(user_id);
 
 -- ---------- portfolio_items (legacy table from a prior prototype) ----------
+-- Declare the table before indexing it so a fresh deploy (or a replayed
+-- partial migration chain) does not fail here. 011 repeats this defensively
+-- and turns on RLS; the policies below remain the authoritative access rules.
+CREATE TABLE IF NOT EXISTS public.portfolio_items (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  data jsonb NOT NULL DEFAULT '{}'::jsonb
+);
 CREATE INDEX IF NOT EXISTS idx_portfolio_items_user_id
   ON public.portfolio_items(user_id);
 

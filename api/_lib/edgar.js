@@ -21,6 +21,10 @@ const EDGAR_HEADERS = {
   'User-Agent': USER_AGENT,
   'Accept-Encoding': 'gzip, deflate',
 };
+// A stalled EDGAR response must not hold a verification request open. The
+// AbortController signal stays live until the body has been read (res.json()),
+// not just until the headers arrive.
+const EDGAR_TIMEOUT_MS = 8000;
 
 // Static ticker→CIK map. EDGAR refreshes this file daily but the CIKs
 // themselves are stable so a weekly refresh on our side is plenty.
@@ -34,11 +38,18 @@ async function loadCikMap() {
   if (cikMapCache && Date.now() - cikMapFetchedAt < CIK_MAP_TTL_MS) {
     return cikMapCache;
   }
-  const res = await fetch(CIK_MAP_URL, { headers: EDGAR_HEADERS });
-  if (!res.ok) {
-    throw new Error(`EDGAR CIK map fetch failed: ${res.status}`);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), EDGAR_TIMEOUT_MS);
+  let json;
+  try {
+    const res = await fetch(CIK_MAP_URL, { headers: EDGAR_HEADERS, signal: controller.signal });
+    if (!res.ok) {
+      throw new Error(`EDGAR CIK map fetch failed: ${res.status}`);
+    }
+    json = await res.json(); // signal stays active until the body is consumed
+  } finally {
+    clearTimeout(timer);
   }
-  const json = await res.json();
   // SEC ships this as { "0": { cik_str, ticker, title }, "1": {...}, ... }
   const byTicker = {};
   for (const key of Object.keys(json)) {
@@ -173,12 +184,19 @@ export async function fetchEdgarFacts(ticker) {
   if (!cik) return null;
 
   try {
-    const res = await fetch(
-      `https://data.sec.gov/api/xbrl/companyfacts/CIK${cik}.json`,
-      { headers: EDGAR_HEADERS }
-    );
-    if (!res.ok) return null;
-    const json = await res.json();
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), EDGAR_TIMEOUT_MS);
+    let json;
+    try {
+      const res = await fetch(
+        `https://data.sec.gov/api/xbrl/companyfacts/CIK${cik}.json`,
+        { headers: EDGAR_HEADERS, signal: controller.signal }
+      );
+      if (!res.ok) return null;
+      json = await res.json(); // signal stays active until the body is consumed
+    } finally {
+      clearTimeout(timer);
+    }
 
     const facts = json?.facts?.['us-gaap'];
     if (!facts) return null;

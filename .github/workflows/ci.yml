@@ -6,6 +6,19 @@ permissions:
   contents: read
 
 jobs:
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # gitleaks scans the full history, so fetch all refs/commits.
+          fetch-depth: 0
+      # Pinned to the commit behind the v2 tag (ff98106e4c7b2bc287b24eaf42907196329070c7)
+      # so the action can't change under us. Bump deliberately after reviewing changes.
+      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   test-and-build:
     runs-on: ubuntu-latest
     steps:

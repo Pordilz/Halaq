@@ -8,6 +8,18 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        // The WebView keeps Supabase session tokens in its localStorage under
+        // Library/WebKit. Mark that directory so backups exclude it, matching
+        // the Android data-extraction rules (no session data leaves the device).
+        if let library = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first {
+            let webKit = library.appendingPathComponent("WebKit", isDirectory: true)
+            if FileManager.default.fileExists(atPath: webKit.path) {
+                var values = URLResourceValues()
+                values.isExcludedFromBackup = true
+                var target = webKit
+                try? target.setResourceValues(values)
+            }
+        }
         return true
     }
 

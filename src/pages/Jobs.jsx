@@ -31,6 +31,21 @@ async function readPostingLink(url) {
   return body
 }
 
+/**
+ * External data (Yahoo profile websites, posting URLs, shared ?url= links)
+ * must never become a javascript:/data: href. Only absolute http(s) URLs are
+ * safe to render as a link; anything else is dropped.
+ */
+function safeExternalUrl(value) {
+  if (typeof value !== 'string' || !value) return null
+  try {
+    const parsed = new URL(value)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? parsed.href : null
+  } catch {
+    return null
+  }
+}
+
 /** hentai.com, careers.bet365.com → bet365.com: the site's own name. */
 function siteName(url) {
   try {
@@ -201,6 +216,7 @@ export default function Jobs() {
   // A company we know nothing about isn't "not listed" either, unless a list
   // does name it (private companies like Ahava are on them).
   const unknownAndUnlisted = !checking && job?.verdict === 'NO_INFORMATION' && !ethics?.summary?.listed
+  const safePostingUrl = safeExternalUrl(posting?.url)
 
   return (
     <div className="jobs-page container animate-entrance">
@@ -254,10 +270,10 @@ export default function Jobs() {
             <h2>{posting.isJob ? posting.title || 'Untitled role' : employerName || 'This business'}</h2>
             <p>
               {[employerName, posting.location].filter(Boolean).join(', ') || 'Employer not found in the posting'}
-              {posting.url && (
+              {safePostingUrl && (
                 <>
                   {' · '}
-                  <a href={posting.url} target="_blank" rel="noopener noreferrer">Open posting</a>
+                  <a href={safePostingUrl} target="_blank" rel="noopener noreferrer">Open posting</a>
                 </>
               )}
             </p>
@@ -470,6 +486,7 @@ function EmployerProfile({ employer, companyName, posting }) {
   }
   const description = d.description || ''
   const short = description.length > 420 && !open ? `${description.slice(0, 420).replace(/\s+\S*$/, '')}…` : description
+  const website = safeExternalUrl(d.website)
   return (
     <div className="jobs-employer-profile">
       <dl className="jobs-facts">
@@ -479,7 +496,14 @@ function EmployerProfile({ employer, companyName, posting }) {
           <div><dt>Employees</dt><dd>{d.employees.toLocaleString()}</dd></div>
         )}
         {d.website && (
-          <div><dt>Website</dt><dd><a href={d.website} target="_blank" rel="noopener noreferrer">{d.website.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}</a></dd></div>
+          <div>
+            <dt>Website</dt>
+            <dd>
+              {website
+                ? <a href={website} target="_blank" rel="noopener noreferrer">{d.website.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}</a>
+                : d.website}
+            </dd>
+          </div>
         )}
       </dl>
       {description && (
