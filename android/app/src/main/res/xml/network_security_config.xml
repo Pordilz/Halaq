@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!--
+      CERTIFICATE / PUBLIC-KEY PINNING — DISABLED UNTIL CONFIGURED.
+
+      DO NOT enable this as-is. The pins below are placeholders, NOT real
+      pins. Shipping an active <pin-set> with placeholder values would block
+      EVERY TLS connection to *.supabase.co and halaq.app, breaking login,
+      data loading and the API in production.
+
+      The <domain-config> blocks are intentionally commented out, so this file
+      is currently a safe no-op (Android default TLS behaviour is unchanged).
+      The manifest still references it so enabling later needs no manifest edit.
+
+      To turn pinning on:
+        1. Generate a SPKI SHA-256 pin for each host (primary AND backup):
+             openssl s_client -connect <host>:443 -servername <host> </dev/null \
+               | openssl x509 -pubkey -noout \
+               | openssl pkey -pubin -outform DER \
+               | openssl dgst -sha256 -binary | openssl base64
+           (for *.supabase.co, substitute your real project host, e.g.
+            abcdefghijklmno.supabase.co)
+        2. Replace every REPLACE_WITH_BASE64_SPKI_SHA256_PIN placeholder with
+           a real pin. Keep at least one backup pin per domain so a certificate
+           rotation cannot lock users out.
+        3. Uncomment the <domain-config> blocks below.
+        4. Bump the expiration date before it passes (pin sets stop being
+           enforced after expiration -> 2027-01-01 is only a starting value).
+        5. Test on a real device against production BEFORE releasing.
+    -->
+    <!--
+    <domain-config>
+        <domain includeSubdomains="true">supabase.co</domain>
+        <pin-set expiration="2027-01-01">
+            <pin digest="SHA-256">REPLACE_WITH_BASE64_SPKI_SHA256_PIN</pin>
+            <pin digest="SHA-256">REPLACE_WITH_BASE64_SPKI_SHA256_PIN</pin>
+        </pin-set>
+    </domain-config>
+    <domain-config>
+        <domain includeSubdomains="false">halaq.app</domain>
+        <pin-set expiration="2027-01-01">
+            <pin digest="SHA-256">REPLACE_WITH_BASE64_SPKI_SHA256_PIN</pin>
+            <pin digest="SHA-256">REPLACE_WITH_BASE64_SPKI_SHA256_PIN</pin>
+        </pin-set>
+    </domain-config>
+    -->
+</network-security-config>

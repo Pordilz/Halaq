@@ -34,15 +34,16 @@ const isNative =
 const Router = isNative ? HashRouter : BrowserRouter
 
 if (isNative) {
-  // Custom-scheme deep links (com.halaq.app://stock/AAPL) are registered in
-  // the Android manifest and iOS Info.plist. Map them onto the hash route so
-  // the router picks them up on both cold start and resume. getLaunchUrl()
-  // covers the cold-start event that can fire before React mounts.
+  // Deep links (legacy custom scheme com.halaq.app://... and verified HTTPS
+  // App/Universal Links https://halaq.app/...) are registered natively. Map
+  // them onto the hash route so the router picks them up on both cold start
+  // and resume. getLaunchUrl() covers the cold-start event before React mounts.
   //
-  // The incoming URL is untrusted, so require the exact scheme, a known
+  // The incoming URL is untrusted, so require the exact scheme/host, a known
   // route, and only the query keys this app actually reads. Everything else
   // is dropped rather than reflected into window.location.hash.
   const DEEP_LINK_SCHEME = 'com.halaq.app://'
+  const VERIFIED_HOST = 'halaq.app'
   const ROUTE_PREFIXES = [
     '/stock/', '/etf/', '/jobs', '/screener', '/watchlist', '/learn',
     '/batch', '/chat', '/profile', '/settings', '/upgrade', '/legal',
@@ -50,16 +51,44 @@ if (isNative) {
   ]
   const QUERY_KEYS = ['url', 'q', 'tier', 'upgrade']
 
-  const openDeepLink = raw => {
-    if (typeof raw !== 'string') return
+  // BEGIN deep-link parser (self-contained so the hardening test can exercise
+  // the exact untrusted-input logic outside the browser).
+  const parseIncoming = raw => {
+    if (typeof raw !== 'string') return null
     const value = raw.trim()
-    if (value.slice(0, DEEP_LINK_SCHEME.length).toLowerCase() !== DEEP_LINK_SCHEME) return
-    const rest = value.slice(DEEP_LINK_SCHEME.length)
-    if (!rest || rest.includes('#') || /[\\\u0000-\u001f\u007f]/.test(rest)) return
 
+    // Verified App Link / Universal Link: https://halaq.app/...
+    if (/^https:\/\//i.test(value)) {
+      let url
+      try {
+        url = new URL(value)
+      } catch {
+        return null
+      }
+      // Exact protocol + host only. Reject userinfo, non-default ports,
+      // fragments and lookalike hosts (halaq.app.evil.com, halaq.app@evil...).
+      if (url.protocol !== 'https:') return null
+      if (url.hostname !== VERIFIED_HOST) return null
+      if (url.username || url.password || url.port || url.hash) return null
+      if (value.includes('#')) return null
+      return { rawPath: url.pathname, rawQuery: url.search.replace(/^\?/, '') }
+    }
+
+    // Legacy custom scheme: com.halaq.app://...
+    if (value.slice(0, DEEP_LINK_SCHEME.length).toLowerCase() !== DEEP_LINK_SCHEME) return null
+    const rest = value.slice(DEEP_LINK_SCHEME.length)
+    if (!rest || rest.includes('#') || /[\\\u0000-\u001f\u007f]/.test(rest)) return null
     const qIndex = rest.indexOf('?')
     const rawPath = qIndex === -1 ? rest : rest.slice(0, qIndex)
     const rawQuery = qIndex === -1 ? '' : rest.slice(qIndex + 1)
+    return { rawPath, rawQuery }
+  }
+  // END deep-link parser
+
+  const openDeepLink = raw => {
+    const parsed = parseIncoming(raw)
+    if (!parsed) return
+    let { rawPath, rawQuery } = parsed
     // A leading "//" would be parsed as a host by URL parsers; never allow it.
     if (!rawPath || rawPath.startsWith('//')) return
 

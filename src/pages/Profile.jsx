@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { getThemePreference, setThemePreference } from '../lib/theme'
-import { openBillingPortal, verifySubscription } from '../services/halaqApi'
+import { openBillingPortal, verifySubscription, updateMethodology } from '../services/halaqApi'
 import MaterialIcon from '../components/MaterialIcon'
 import {
   displayName,
@@ -168,21 +168,21 @@ export default function Profile() {
 
   // Persist methodology immediately on change. Optimistic UI with rollback
   // if the write fails. Free users can't switch off AAOIFI (the <option>s
-  // for the others are `disabled`), so this is reachable only for Pro+.
+  // for the others are `disabled`), and the API re-checks the tier anyway.
+  // The write goes through /api/preferences/methodology because the DB trigger
+  // now rejects direct client updates of this paid preference.
   async function changeMethodology(next) {
     if (!user) return
     const previous = methodology
     setMethodology(next)
     if (!supabase.isConfigured) return
-    const { error } = await supabase
-      .from('profiles')
-      .update({ methodology: next })
-      .eq('id', user.id)
-    if (error) {
-      setMethodology(previous)
-      setBillingError(`Couldn't save methodology: ${error.message}`)
-    } else {
+    try {
+      const result = await updateMethodology(next)
+      setMethodology(result?.methodology || next)
       await refreshProfile()
+    } catch (err) {
+      setMethodology(previous)
+      setBillingError(`Couldn't save methodology: ${err?.message || 'Please try again.'}`)
     }
   }
 

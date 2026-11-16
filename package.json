@@ -13,6 +13,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "node --test \"test/**/*.test.js\"",
+    "setup:associated-domains": "node scripts/update-associated-domains.mjs",
     "android:build": "vite build --mode android && cap sync android",
     "android:open": "cap open android",
     "android:run": "npm run android:build && cap run android",

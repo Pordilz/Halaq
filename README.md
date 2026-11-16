@@ -84,3 +84,73 @@ npm run ios:run         # build and run on a connected device/simulator
 
 Android and iOS projects live in `android/` and `ios/`; the Capacitor app id is
 `com.halaq.app` and the web asset directory is `dist`.
+
+## Native hardening: verified links, pinning, device integrity
+
+### Verified deep links (do this before any release)
+
+The legacy custom scheme `com.halaq.app://` is hijackable by another installed
+app, so verified HTTPS links are the supported path:
+
+- Android App Links: `https://halaq.app/...` (`android:autoVerify="true"` in
+  `AndroidManifest.xml`).
+- iOS Universal Links: `https://halaq.app/...` (`applinks:halaq.app` in
+  `ios/App/App/App.entitlements`, enabled as the Associated Domains capability).
+
+Both platforms fetch association files from the **domain root**. The checked-in
+files contain **placeholders that MUST be replaced before release**:
+
+| File | Placeholder | Replace with |
+| --- | --- | --- |
+| `public/.well-known/assetlinks.json` | `REPLACE_WITH_SHA256_FINGERPRINT` | SHA-256 fingerprint of the **release** signing certificate (64 hex chars) |
+| `public/.well-known/apple-app-site-association` | `REPLACE_WITH_TEAM_ID` | Apple Developer Team ID (10 alphanumeric chars) |
+
+Fill them with the helper script (it validates both values and rewrites the
+files):
+
+```sh
+ANDROID_SHA256_FINGERPRINT=<64 hex chars> \
+APPLE_TEAM_ID=<team id> \
+npm run setup:associated-domains
+```
+
+The files must be publicly reachable with no redirects at:
+
+- `https://halaq.app/.well-known/assetlinks.json`
+- `https://halaq.app/.well-known/apple-app-site-association`
+
+Vercel serves everything in `public/` from the root of the deployment (`dist/`),
+so a normal redeploy publishes both files — verify with `curl` after deploying.
+The app should be rebuilt (`npm run android:build` / `npm run ios:build`) after
+changing them. Universal Links already flow through Capacitor's
+`appUrlOpen` event; `src/main.jsx` accepts only `https://halaq.app/...` (exact
+host, no userinfo, https only) and maps it onto the same allowlisted hash
+routes as the custom scheme, rejecting every other host.
+
+### Certificate pinning (disabled by default)
+
+`android/app/src/main/res/xml/network_security_config.xml` is referenced from
+the manifest, but its `<pin-set>` blocks are **intentionally commented out**.
+Do not enable it as-is: the `REPLACE_WITH_BASE64_SPKI_SHA256_PIN` placeholders
+are not real pins and would block all TLS traffic to Supabase and halaq.app.
+To enable, generate real primary **and backup** pins per host, replace the
+placeholders, uncomment the `<domain-config>` blocks, and check the expiration:
+
+```sh
+openssl s_client -connect <host>:443 -servername <host> </dev/null \
+  | openssl x509 -pubkey -noout \
+  | openssl pkey -pubin -outform DER \
+  | openssl dgst -sha256 -binary | openssl base64
+```
+
+Test on a real device against production before shipping a pin-set.
+
+### Root / jailbreak detection and screen shielding (non-blocking)
+
+`MainActivity.java` adds `FLAG_SECURE` (blocks screenshots, recordings and
+recent-app previews) and a conservative root heuristic; `AppDelegate.swift`
+shows an opaque overlay while screen capture/AirPlay is active and uses a
+jailbreak heuristic. Detection is a **warning signal only**: it logs to the
+console and dispatches a `halaq:device-integrity` event with
+`detail: { compromised: true }` that the web layer can listen for. It never
+crashes, exits or blocks the app, and it is not a security boundary.

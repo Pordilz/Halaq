@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useAuth } from '../contexts/AuthContext'
 import MaterialIcon from '../components/MaterialIcon'
-import { fetchAllScreeningData } from '../services/yahooFinanceApi'
-import { screenStock } from '../services/complianceEngine'
+import { screenBatch } from '../services/halaqApi'
 import ComplianceBadge from '../components/ComplianceBadge'
 import FeatureGate from '../components/FeatureGate'
 import useDocumentTitle from '../hooks/useDocumentTitle'
@@ -12,12 +11,13 @@ import './Batch.css'
 const MAX_TICKERS = 20
 
 export default function Batch() {
-  const { isPro, profile } = useAuth()
+  const { isPro } = useAuth()
   const navigate = useNavigate()
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState([])
   const [progress, setProgress] = useState({ done: 0, total: 0 })
+  const [error, setError] = useState(null)
 
   useDocumentTitle('Batch screening', 'Screen up to 20 stocks at once for Shariah compliance.')
 
@@ -32,39 +32,23 @@ export default function Batch() {
 
     setLoading(true)
     setResults([])
+    setError(null)
     setProgress({ done: 0, total: tickers.length })
 
-    // Honor the user's chosen methodology (Pro-only). Free users implicitly
-    // run AAOIFI (the default in screenStock).
-    const methodology = isPro ? profile?.methodology : undefined
-
-    // Run in parallel chunks of 4 to keep Yahoo Finance happy
-    const chunkSize = 4
-    const collected = []
-    for (let i = 0; i < tickers.length; i += chunkSize) {
-      const chunk = tickers.slice(i, i + chunkSize)
-      const settled = await Promise.allSettled(
-        chunk.map(async (t) => {
-          const data = await fetchAllScreeningData(t)
-          return screenStock(data.profile, data.balanceSheet, data.income, { methodology })
-        })
-      )
-      settled.forEach((res, idx) => {
-        if (res.status === 'fulfilled') {
-          collected.push(res.value)
-        } else {
-          collected.push({
-            ticker: chunk[idx],
-            error: true,
-            statusReason: res.reason?.message || 'Could not fetch data',
-          })
-        }
-      })
-      setResults([...collected])
-      setProgress({ done: collected.length, total: tickers.length })
+    // Screening (and the tier/methodology decision) now happens on the server.
+    // The endpoint returns one row per ticker, including per-ticker error rows
+    // for partial failures, in the same shape the table below has always used.
+    try {
+      const data = await screenBatch(tickers)
+      setResults(data.results)
+      setProgress({ done: data.results.length, total: tickers.length })
+    } catch (err) {
+      setResults([])
+      setError(err?.message || 'Batch screening failed. Please try again.')
+      setProgress({ done: 0, total: tickers.length })
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   if (!isPro) {
@@ -108,6 +92,10 @@ export default function Batch() {
             )}
           </button>
         </form>
+
+        {error && (
+          <p className="text-error mb-4" role="alert">{error}</p>
+        )}
 
         {results.length > 0 && (
           <div className="batch-results animate-fade-in-up delay-2">
