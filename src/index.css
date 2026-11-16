@@ -646,9 +646,12 @@ input.input-field:focus {
   outline: none;
 }
 
-/* Ghost borders on focus state for specific interactive elements */
+/* Ghost borders on focus state for specific interactive elements.
+   These controls are borderless, so a visible outline is the only reliable
+   focus indicator — never suppress it without an equally visible replacement. */
 .focus-ghost:focus-visible {
-  outline: none;
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
   border-color: var(--color-outline-variant-15);
 }
 
@@ -927,4 +930,25 @@ input.input-field:focus {
 .scrollbar-hide {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
+}
+
+/* =============================================
+   REDUCED MOTION
+   Honour the OS "reduce motion" setting globally. Decorative and infinite
+   animations (spinners, skeleton pulses, marquees, entrance staggers) become
+   effectively instant, transitions collapse to near-zero, and delays are
+   cleared so revealed content appears immediately. Animation fill states are
+   preserved, so elements still settle on their final frame.
+   ============================================= */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
 }

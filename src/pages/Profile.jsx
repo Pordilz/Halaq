@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { getThemePreference, setThemePreference } from '../lib/theme'
@@ -363,10 +363,11 @@ export default function Profile() {
             <div className="settings-card">
               <div className="settings-row">
                 <div className="settings-info">
-                  <div className="settings-label">Default methodology</div>
+                  <div className="settings-label" id="methodology-label">Default methodology</div>
                   <div className="settings-desc">Which standard governs your compliance rules.</div>
                 </div>
                 <select
+                  aria-labelledby="methodology-label"
                   className="settings-select"
                   value={methodology}
                   onChange={(e) => changeMethodology(e.target.value)}
@@ -418,7 +419,7 @@ export default function Profile() {
             <div className="settings-card">
               <div className="settings-row">
                 <div className="settings-info">
-                  <div className="settings-label">Email alerts (coming soon)</div>
+                  <div className="settings-label" id="alerts-label">Email alerts (coming soon)</div>
                   <div className="settings-desc">
                     Email me when a watchlist verdict changes once email alerts launch. Changes
                     already show on your Watchlist.
@@ -428,6 +429,7 @@ export default function Profile() {
                   type="button"
                   className={`toggle-switch ${notifications ? 'active' : ''}`}
                   role="switch"
+                  aria-labelledby="alerts-label"
                   aria-checked={notifications}
                   onClick={toggleAlerts}
                 >
@@ -564,8 +566,8 @@ export default function Profile() {
                   Version 1.0 · Beta
                 </p>
                 <div className="about-card__links">
-                  <a href="/legal/terms">Terms of Use</a>
-                  <a href="/legal/privacy">Privacy Policy</a>
+                  <Link to="/legal/terms">Terms of Use</Link>
+                  <Link to="/legal/privacy">Privacy Policy</Link>
                   <a href="mailto:qromatech@gmail.com">Contact support</a>
                 </div>
               </div>

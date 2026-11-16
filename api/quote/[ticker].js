@@ -7,6 +7,7 @@
 
 import YahooFinance from 'yahoo-finance2'
 import { isValidTicker } from '../_lib/yahoo.js'
+import { applyCors } from '../_lib/cors.js'
 
 const yahoo = new YahooFinance({ suppressNotices: ['yahooSurvey'] })
 
@@ -19,6 +20,7 @@ function num(v) {
 }
 
 export default async function handler(req, res) {
+  applyCors(req, res)
   if (req.method === 'OPTIONS') return res.status(204).end()
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET, OPTIONS')

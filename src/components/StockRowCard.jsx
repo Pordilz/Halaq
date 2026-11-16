@@ -74,7 +74,7 @@ export default function StockRowCard({
         {showVerifyButton && (
           <button
             type="button"
-            className="stock-row-card__verify-btn focus-ghost"
+            className="stock-row-card__verify-btn"
             onClick={(e) => {
               e.stopPropagation()
               onVerify?.()
@@ -98,7 +98,7 @@ export default function StockRowCard({
         )}
         <button
           type="button"
-          className="stock-row-card__bookmark-btn focus-ghost"
+          className="stock-row-card__bookmark-btn"
           onClick={(e) => {
             e.stopPropagation()
             onToggleWatchlist?.()

@@ -113,15 +113,16 @@ export default function Batch() {
           <div className="batch-results animate-fade-in-up delay-2">
             <div className="card batch-table-container">
               <table className="batch-table">
+                <caption className="sr-only">Batch screening results</caption>
                 <thead>
                   <tr>
-                    <th>Ticker</th>
-                    <th>Company</th>
-                    <th>Status</th>
-                    <th>Debt ratio</th>
-                    <th>Cash ratio</th>
-                    <th>Recv. ratio</th>
-                    <th>Haram Inc</th>
+                    <th scope="col">Ticker</th>
+                    <th scope="col">Company</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Debt ratio</th>
+                    <th scope="col">Cash ratio</th>
+                    <th scope="col">Recv. ratio</th>
+                    <th scope="col">Haram Inc</th>
                   </tr>
                 </thead>
                 <tbody>

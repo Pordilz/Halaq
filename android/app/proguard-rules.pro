@@ -19,3 +19,10 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# R8 is enabled for release builds. Capacitor's library ships consumer rules
+# that keep plugin classes/methods, but WebView @JavascriptInterface methods are
+# invoked reflectively from JavaScript and must be preserved explicitly.
+-keepclassmembers,allowoptimization class * {
+    @android.webkit.JavascriptInterface <methods>;
+}

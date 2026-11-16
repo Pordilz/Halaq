@@ -272,8 +272,8 @@ export default function Signup() {
                 />
                 <span>
                   I agree to the{' '}
-                  <a href="/legal/privacy" target="_blank" rel="noreferrer">Privacy Policy</a>{' '}
-                  and <a href="/legal/terms" target="_blank" rel="noreferrer">Terms of Use</a>.
+                  <Link to="/legal/privacy">Privacy Policy</Link>{' '}
+                  and <Link to="/legal/terms">Terms of Use</Link>.
                 </span>
               </label>
 

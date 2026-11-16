@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "engines": {
-    "node": ">=24.22.1 <25"
+    "node": ">=24.22.1 <27"
   },
   "scripts": {
     "dev": "concurrently \"npm run dev:ui\" \"npm run dev:api\"",
@@ -42,7 +42,7 @@
     "yahoo-finance2": "^3.13.2"
   },
   "devDependencies": {
-    "@capacitor/cli": "^7.6.9",
+    "@capacitor/cli": "^7.6.10",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^6.1.2",

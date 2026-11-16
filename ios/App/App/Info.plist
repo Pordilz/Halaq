@@ -12,6 +12,19 @@
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<!-- Custom-scheme deep links, e.g. com.halaq.app://stock/AAPL.
+	     main.jsx maps the URL onto the native hash route. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.halaq.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.halaq.app</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>

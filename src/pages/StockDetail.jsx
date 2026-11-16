@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
+import { Capacitor } from '@capacitor/core'
 import { useAuth } from '../contexts/AuthContext'
 import { useWatchlist } from '../hooks/useWatchlist'
 import { supabase } from '../lib/supabase'
@@ -63,6 +64,21 @@ export default function StockDetail() {
   // Verify-screen call state, mirrors the pattern on Watchlist.jsx.
   const [verifying, setVerifying] = useState(false)
   const [verifyError, setVerifyError] = useState(null)
+
+  // React Router reuses this component when only :ticker changes, and useEffect
+  // runs *after* paint. Without a render-phase reset the previous ticker's
+  // error, stock and tab flash on screen for the new ticker before the load
+  // effect clears them. Reset synchronously as soon as the param changes.
+  const [renderedTicker, setRenderedTicker] = useState(ticker)
+  if (renderedTicker !== ticker) {
+    setRenderedTicker(ticker)
+    setStock(null)
+    setError(null)
+    setActiveTab('overview')
+    setShareNotice(null)
+    setVerifyError(null)
+    setVerifying(false)
+  }
 
   // Pull the watchlist row for this ticker (if the user has it saved) so we
   // can surface any prior verify-screen provenance + confidence stored on it.
@@ -268,7 +284,11 @@ export default function StockDetail() {
   }
 
   const handleShare = async () => {
-    const url = `${window.location.origin}/stock/${stock.ticker}`
+    // Native builds use HashRouter, so shareable links need the hash path.
+    const path = Capacitor.isNativePlatform()
+      ? `/#/stock/${encodeURIComponent(stock.ticker)}`
+      : `/stock/${encodeURIComponent(stock.ticker)}`
+    const url = `${window.location.origin}${path}`
     const title = `${stock.ticker} — ${stock.name} compliance report`
     // Always clear any prior toast first so a stale "Link copied" doesn't
     // hang around when the native share sheet appears.
@@ -282,6 +302,21 @@ export default function StockDetail() {
       setShareNotice('Link copied')
       setTimeout(() => setShareNotice(null), 2400)
     } catch {/* user cancelled or denied */}
+  }
+
+  // WAI-ARIA tabs pattern: arrow/Home/End move between tabs, with a roving
+  // tabindex so only the selected tab is reachable by Tab.
+  function handleTabKeyDown(e) {
+    const current = TABS.findIndex(t => t.id === activeTab)
+    let nextId
+    if (e.key === 'ArrowRight') nextId = TABS[(current + 1) % TABS.length].id
+    else if (e.key === 'ArrowLeft') nextId = TABS[(current - 1 + TABS.length) % TABS.length].id
+    else if (e.key === 'Home') nextId = TABS[0].id
+    else if (e.key === 'End') nextId = TABS[TABS.length - 1].id
+    if (!nextId) return
+    e.preventDefault()
+    setActiveTab(nextId)
+    document.getElementById(`sd-tab-${nextId}`)?.focus()
   }
 
   return (
@@ -410,13 +445,16 @@ export default function StockDetail() {
         />
       </section>
 
-      <div className="sd-tabs" role="tablist">
+      <div className="sd-tabs" role="tablist" aria-label="Stock report sections" onKeyDown={handleTabKeyDown}>
         {TABS.map(tab => (
           <button
             key={tab.id}
+            id={`sd-tab-${tab.id}`}
             type="button"
             role="tab"
             aria-selected={activeTab === tab.id}
+            aria-controls={`sd-panel-${tab.id}`}
+            tabIndex={activeTab === tab.id ? 0 : -1}
             className={`sd-tab ${activeTab === tab.id ? 'is-active' : ''}`}
             onClick={() => setActiveTab(tab.id)}
           >
@@ -425,7 +463,13 @@ export default function StockDetail() {
         ))}
       </div>
 
-      <div className="sd-pane">
+      <div
+        className="sd-pane"
+        role="tabpanel"
+        id={`sd-panel-${activeTab}`}
+        aria-labelledby={`sd-tab-${activeTab}`}
+        tabIndex={0}
+      >
         {activeTab === 'overview' && (
           <Overview
             stock={stock}

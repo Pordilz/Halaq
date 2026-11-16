@@ -1,5 +1,6 @@
 import { lemonSqueezySetup, createCheckout } from '@lemonsqueezy/lemonsqueezy.js';
 import { createClient } from '@supabase/supabase-js';
+import { applyCors } from '../_lib/cors.js';
 
 const supabaseAdmin = createClient(
   process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'http://localhost:54321',
@@ -9,6 +10,7 @@ const supabaseAdmin = createClient(
 lemonSqueezySetup({ apiKey: process.env.LEMON_SQUEEZY_API_KEY });
 
 export default async function handler(req, res) {
+  applyCors(req, res);
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });

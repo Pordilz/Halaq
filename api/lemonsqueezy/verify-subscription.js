@@ -17,6 +17,7 @@
 
 import { lemonSqueezySetup, listSubscriptions } from '@lemonsqueezy/lemonsqueezy.js';
 import { createClient } from '@supabase/supabase-js';
+import { applyCors } from '../_lib/cors.js';
 
 const supabaseUrl =
   process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -33,6 +34,7 @@ const VARIANT_TO_TIER = {
 };
 
 export default async function handler(req, res) {
+  applyCors(req, res);
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST, OPTIONS');

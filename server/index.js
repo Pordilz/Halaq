@@ -12,15 +12,23 @@ import cors from 'cors';
 import { readdir } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join, relative, sep } from 'node:path';
+import { isAllowedOrigin } from '../api/_lib/cors.js';
 
 const app = express();
 const PORT = process.env.PORT || 3005;
 const API_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'api');
 
+// Same explicit allowlist the Vercel functions use (api/_lib/cors.js). The
+// `cors` middleware answers OPTIONS preflights before the handlers run, so
+// this must apply the identical policy to local dev.
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? (process.env.VITE_APP_URL || true)
-    : true,
+  origin(origin, callback) {
+    // Non-browser / same-origin callers send no Origin and are always fine.
+    if (!origin || isAllowedOrigin(origin)) return callback(null, true);
+    return callback(null, false); // omit ACAO so the browser blocks it
+  },
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 // api/screen/[ticker].js → /api/screen/:ticker. Files under api/_lib are

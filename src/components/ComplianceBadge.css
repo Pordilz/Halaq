@@ -77,3 +77,13 @@
 .compliance-badge--pending .compliance-badge__icon {
   color: var(--color-outline);
 }
+
+/* UNKNOWN / unrecognised status: neutral and non-committal. It is not a
+   data-gap verdict, so it deliberately doesn't borrow UNVERIFIED's meaning. */
+.compliance-badge--unknown {
+  background-color: var(--color-surface-container-high);
+  color: var(--color-on-surface-variant);
+}
+.compliance-badge--unknown .compliance-badge__icon {
+  color: var(--color-outline);
+}

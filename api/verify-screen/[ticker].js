@@ -26,10 +26,12 @@
 import { isValidTicker, classifyYahooError } from '../_lib/yahoo.js';
 import { buildVerifiedScreening } from '../_lib/verify-screen.js';
 import { getUserFromToken, enforceFreeRateLimit, getSupabaseAdmin } from '../_lib/supabase.js';
+import { applyCors } from '../_lib/cors.js';
 
 export const config = { maxDuration: 60 };
 
 export default async function handler(req, res) {
+  applyCors(req, res);
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST, OPTIONS');

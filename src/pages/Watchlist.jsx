@@ -234,7 +234,7 @@ function RecentChanges({ changes, onOpen, onDismiss }) {
               </button>
               <button
                 type="button"
-                className="watchlist-change__dismiss focus-ghost"
+                className="watchlist-change__dismiss"
                 aria-label={`Dismiss the ${s.ticker} change`}
                 onClick={() => onDismiss(s.ticker)}
               >

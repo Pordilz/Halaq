@@ -6,10 +6,12 @@
  */
 
 import { readJobPosting, PostingError } from './_lib/job-posting.js';
+import { applyCors } from './_lib/cors.js';
 
 export const config = { maxDuration: 20 };
 
 export default async function handler(req, res) {
+  applyCors(req, res);
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET, OPTIONS');

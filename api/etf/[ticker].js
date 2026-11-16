@@ -8,12 +8,14 @@
 import { isValidTicker, classifyYahooError } from '../_lib/yahoo.js';
 import { buildEtfXray } from '../_lib/etf.js';
 import { getUserFromToken } from '../_lib/supabase.js';
+import { applyCors } from '../_lib/cors.js';
 
 const PAID_TIERS = new Set(['pro', 'scholar', 'admin']);
 
 export const config = { maxDuration: 30 };
 
 export default async function handler(req, res) {
+  applyCors(req, res);
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET, OPTIONS');

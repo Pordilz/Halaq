@@ -1,8 +1,17 @@
 apply plugin: 'com.android.application'
 
-// Load keystore credentials from keystore.properties (gitignored).
-// Falls back to debug signing if the file is absent — that lets the
-// project build for development without a release key on disk.
+// Capacitor 7's Android library compiles at the Java 21 language level.
+// Fail early with an actionable message instead of a cryptic javac error.
+if (JavaVersion.current() < JavaVersion.VERSION_21) {
+    throw new GradleException(
+        "Halaq's Android build requires JDK 21 (Capacitor 7 targets Java 21). " +
+        "Found ${JavaVersion.current()}; set JAVA_HOME to a JDK 21 install."
+    )
+}
+
+// Release signing credentials come from keystore.properties at the project root
+// (gitignored). Debug builds intentionally use Android's auto-generated debug
+// keystore so local dev / `cap run android` works on any machine with no setup.
 def keystorePropertiesFile = rootProject.file("keystore.properties")
 def keystoreProperties = new Properties()
 if (keystorePropertiesFile.exists()) {
@@ -36,13 +45,41 @@ android {
         }
     }
     buildTypes {
+        debug {
+            // Uses Android's default debug keystore automatically. Documented
+            // choice: keep dev builds keyless; fail fast on release below.
+        }
         release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // R8 shrinks and obfuscates the Java/Kotlin side of the app.
+            // Capacitor ships consumer ProGuard rules for its bridge/plugins.
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             if (keystorePropertiesFile.exists()) {
                 signingConfig signingConfigs.release
             }
         }
+    }
+}
+
+// Fail fast with a clear message instead of silently emitting an unsigned
+// release APK/AAB. Checked at task-graph time so `assembleDebug`, `cap sync`,
+// etc. still work on machines with no release keystore.
+gradle.taskGraph.whenReady { graph ->
+    def releaseRequested = graph.allTasks.any { task ->
+        task.project == project && task.name.toLowerCase().contains('release')
+    }
+    if (!releaseRequested) return
+
+    def requiredKeys = ['storeFile', 'storePassword', 'keyAlias', 'keyPassword']
+    def missingKeys = requiredKeys.findAll { !keystoreProperties[it] }
+    if (!keystorePropertiesFile.exists() || missingKeys) {
+        throw new GradleException(
+            'Release builds require a complete keystore.properties at the Android ' +
+            'project root (storeFile, storePassword, keyAlias, keyPassword). ' +
+            (missingKeys ? "Missing: ${missingKeys.join(', ')}. " : '') +
+            'Debug builds do not need it.'
+        )
     }
 }
 
@@ -65,12 +102,3 @@ dependencies {
 }
 
 apply from: 'capacitor.build.gradle'
-
-try {
-    def servicesJSON = file('google-services.json')
-    if (servicesJSON.text) {
-        apply plugin: 'com.google.gms.google-services'
-    }
-} catch(Exception e) {
-    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
-}

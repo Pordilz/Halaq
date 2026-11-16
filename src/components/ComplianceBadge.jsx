@@ -37,6 +37,15 @@ const STATUS_CONFIG = {
     className: 'compliance-badge--pending',
     tooltip: 'Compliance check has not run yet for this stock.',
   },
+  // Deliberately non-committal: an unrecognised or UNKNOWN status is not
+  // evidence of a data gap (UNVERIFIED), so it must not claim that. It also
+  // keeps stale/corrupt rows honest in the accessibility tree.
+  UNKNOWN: {
+    label: 'Unknown',
+    icon: 'help',
+    className: 'compliance-badge--unknown',
+    tooltip: 'Halaq couldn’t determine a compliance status for this stock. Try screening it again.',
+  },
   // Deprecated alias: existing watchlist rows still using 'DOUBTFUL' fall
   // through to UNVERIFIED rendering. Migration 007 backfills them on the
   // server; this guard keeps the UI safe in the interim.
@@ -50,10 +59,10 @@ const STATUS_CONFIG = {
 
 /**
  * Compliance Status Chip
- * @param {{ status: 'COMPLIANT'|'NON_COMPLIANT'|'REVIEW_REQUIRED'|'UNVERIFIED'|'PENDING'|'DOUBTFUL', size?: 'sm'|'md'|'lg' }} props
+ * @param {{ status: 'COMPLIANT'|'NON_COMPLIANT'|'REVIEW_REQUIRED'|'UNVERIFIED'|'PENDING'|'UNKNOWN'|'DOUBTFUL', size?: 'sm'|'md'|'lg' }} props
  */
 export default function ComplianceBadge({ status, size = 'sm' }) {
-  const { label, icon, className, tooltip } = STATUS_CONFIG[status] || STATUS_CONFIG.UNVERIFIED
+  const { label, icon, className, tooltip } = STATUS_CONFIG[status] || STATUS_CONFIG.UNKNOWN
 
   return (
     <span

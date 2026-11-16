@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from 'react-router'
+import { Link, useLocation } from 'react-router'
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import MaterialIcon from './MaterialIcon'
@@ -21,12 +21,21 @@ const PREMIUM_TOOLS = [
   { to: '/chat', label: 'AI Chat', icon: 'forum' },
 ]
 
+// The mobile bottom bar exposes premium tools through a "Tools" popover so
+// phone users can reach the same routes as the desktop sidebar. These extras
+// are available to everyone (the premium items themselves stay sign-in gated).
+const MOBILE_EXTRA_TOOLS = [
+  { to: '/jobs', label: 'Job screener', icon: 'work' },
+  { to: '/upgrade', label: 'Plans & pricing', icon: 'workspace_premium' },
+]
+
 export default function Layout({ children }) {
   const location = useLocation()
   const { user, profile } = useAuth()
-  const navigate = useNavigate()
   const [notifOpen, setNotifOpen] = useState(false)
   const notifRef = useRef(null)
+  const [toolsOpen, setToolsOpen] = useState(false)
+  const toolsRef = useRef(null)
 
   // Hide shell completely on landing/auth pages
   const isAuthPage = ['/', '/login', '/signup'].includes(location.pathname)
@@ -48,20 +57,29 @@ export default function Layout({ children }) {
     }
   }, [])
 
-  // Close notifications dropdown on outside click / Escape
+  // Close popovers on outside click / Escape.
   useEffect(() => {
-    if (!notifOpen) return
+    if (!notifOpen && !toolsOpen) return undefined
     const onDocClick = (e) => {
-      if (!notifRef.current?.contains(e.target)) setNotifOpen(false)
+      if (notifOpen && !notifRef.current?.contains(e.target)) setNotifOpen(false)
+      if (toolsOpen && !toolsRef.current?.contains(e.target)) setToolsOpen(false)
     }
-    const onKey = (e) => { if (e.key === 'Escape') setNotifOpen(false) }
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        setNotifOpen(false)
+        setToolsOpen(false)
+      }
+    }
     document.addEventListener('mousedown', onDocClick)
     document.addEventListener('keydown', onKey)
     return () => {
       document.removeEventListener('mousedown', onDocClick)
       document.removeEventListener('keydown', onKey)
     }
-  }, [notifOpen])
+  }, [notifOpen, toolsOpen])
+
+  // Navigating (including via a popover link) dismisses the tools menu.
+  useEffect(() => { setToolsOpen(false) }, [location.pathname])
 
   if (isAuthPage) {
     return <main className="main-auth">{children}</main>
@@ -72,6 +90,10 @@ export default function Layout({ children }) {
     .toUpperCase()
 
   const homePath = user ? '/home' : '/'
+
+  const toolsActive = [...PREMIUM_TOOLS, { to: '/upgrade' }].some(
+    item => location.pathname === item.to || location.pathname.startsWith(`${item.to}/`),
+  )
 
   return (
     <div className="layout">
@@ -211,6 +233,63 @@ export default function Layout({ children }) {
                 </Link>
               )
             })}
+            <div className="mobile-tools-wrap" ref={toolsRef}>
+              {toolsOpen && (
+                <div
+                  id="mobile-tools-menu"
+                  className="mobile-tools-menu glass-panel"
+                  role="group"
+                  aria-label="More tools"
+                >
+                  <p className="mobile-tools-menu__title">Tools</p>
+                  {user ? (
+                    PREMIUM_TOOLS.map(item => (
+                      <Link
+                        key={item.to}
+                        to={item.to}
+                        className="mobile-tools-menu__item"
+                        onClick={() => setToolsOpen(false)}
+                      >
+                        <MaterialIcon name={item.icon} size={20} className="mobile-tools-menu__icon" />
+                        <span>{item.label}</span>
+                      </Link>
+                    ))
+                  ) : (
+                    <Link
+                      to="/login"
+                      className="mobile-tools-menu__item"
+                      onClick={() => setToolsOpen(false)}
+                    >
+                      <MaterialIcon name="lock" size={20} className="mobile-tools-menu__icon" />
+                      <span>Log in to unlock tools</span>
+                    </Link>
+                  )}
+                  <div className="mobile-tools-menu__divider" />
+                  {MOBILE_EXTRA_TOOLS.map(item => (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      className="mobile-tools-menu__item"
+                      onClick={() => setToolsOpen(false)}
+                    >
+                      <MaterialIcon name={item.icon} size={20} className="mobile-tools-menu__icon" />
+                      <span>{item.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+              <button
+                type="button"
+                className={`mobile-nav-item ${toolsOpen || toolsActive ? 'active' : ''}`}
+                aria-label="More tools"
+                aria-expanded={toolsOpen}
+                aria-controls="mobile-tools-menu"
+                onClick={() => setToolsOpen(open => !open)}
+              >
+                <MaterialIcon name="apps" fill={toolsOpen || toolsActive} size={22} className="mobile-nav-icon" />
+                <span className="mobile-nav-label">Tools</span>
+              </button>
+            </div>
             <Link
               to="/profile"
               className={`mobile-nav-item ${location.pathname.startsWith('/profile') ? 'active' : ''}`}

@@ -295,6 +295,11 @@
   transition: color var(--transition-fast), transform var(--transition-fast);
   position: relative;
   padding: var(--space-2) 0;
+  /* Also used as a <button> (Tools), so reset UA button chrome. */
+  border: none;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
 }
 
 .mobile-nav-item:active {
@@ -321,6 +326,68 @@
   height: 4px;
   border-radius: var(--radius-full);
   background-color: var(--color-primary);
+}
+
+.mobile-nav-item:focus-visible,
+.mobile-tools-menu__item:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Mobile "Tools" popover — mirrors the desktop premium-tools sidebar so
+   phone users can reach Batch / ETF / Chat / Jobs / Plans too. */
+.mobile-tools-wrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+  min-width: 0;
+}
+
+.mobile-tools-menu {
+  position: absolute;
+  bottom: calc(100% + var(--space-2));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(19rem, calc(100vw - 2rem));
+  max-height: min(60vh, 24rem);
+  overflow-y: auto;
+  padding: var(--space-2);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-floating);
+  animation: fadeSlideUp 160ms ease;
+}
+
+.mobile-tools-menu__title {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-micro);
+  font-weight: var(--font-weight-heading);
+  color: var(--color-on-surface-variant);
+}
+
+.mobile-tools-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-xl);
+  color: var(--color-on-surface);
+  font-size: var(--text-body-sm);
+  font-weight: var(--font-weight-subheading);
+}
+
+.mobile-tools-menu__item:hover,
+.mobile-tools-menu__item:focus-visible {
+  background-color: var(--color-surface-container-low);
+}
+
+.mobile-tools-menu__icon {
+  color: var(--color-primary);
+}
+
+.mobile-tools-menu__divider {
+  height: 1px;
+  margin: var(--space-2) var(--space-3);
+  background-color: var(--color-outline-variant);
 }
 
 /* -------------------------------------
